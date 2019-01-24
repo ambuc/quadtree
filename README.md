@@ -2,11 +2,24 @@
 General purpose [point/region Quadtree](https://en.wikipedia.org/wiki/Quadtree)
 implementation for Rust.
 
-## Notes to myself:
- - Developing a Cargo library
-   - Generating docs: `cargo doc --no-deps`
-   - Previewing `README.md`: `grip README.md localhost:8000`.
- - Models for API
-   - Conform to
-     [`std::collections::HashMap`](https://doc.rust-lang.org/std/collections/struct.HashMap.html)
-     where possible
+Under active development.
+
+# Questions?
+
+Please file an issue on GitHub.
+
+# Authors
+
+See [`Cargo.toml`](Cargo.toml).
+
+# Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`NOTES.md`](NOTES.md)
+
+# License
+
+This project is licensed under the Apache 2.0 license.
+
+# Disclaimer
+
+This is not an official Google product. 
