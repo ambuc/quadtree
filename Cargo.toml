@@ -1,0 +1,36 @@
+[package]
+name = "quadtree_impl"
+version = "0.1.0"
+authors = ["James Adam Buckland <james.adam.buckland@gmail.com>"]
+edition = "2018"
+description = "A data structure for storing and accessing data by x/y coordinates."
+
+# TODO(ambuc): Push to docs.rs
+publish = false
+
+# documentation = "..."
+# homepage = "..."
+repository = "https://github.com/ambuc/quadtree"
+
+readme = "README.md"
+
+keywords = ["quadtree", "spatial", "algorithms", "tree"]
+
+# Matching categories within https://crates.io/category_slugs
+categories = ["algorithms", "graphics", "visualization"]
+
+# SPDX 2.1 license expression. See https://spdx.org/licenses/
+license = "Apache-2.0"
+
+# TODO(ambuc): Add docs.rs badges.
+# [badges]
+
+# One of: `actively-developed`, `passively-maintained`, `as-is`, `experimental`,
+# `looking-for-maintainer`, `deprecated`, `none`.
+maintenance = { status = "actively-developed" }
+
+[dependencies]
+failure = "*"
+tool = "*"
+num = "*"
+num-traits = "*"
