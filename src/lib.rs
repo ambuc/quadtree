@@ -1,4 +1,3 @@
-// Copyright 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,7 +43,7 @@
 //! // 1 ░░░▓▓▓▓▒▒▒
 //! //   |  ▒▒▒▒▒▒▒
 //! // 2 +--▒▒▒▒▒▒▒
-//! let mut query = q.get((1, 0), (2, 2));
+//! let mut query = q.query((1, 0), (2, 2));
 //!
 //! // There is an overlap between our query region and the region holding "foo",
 //! // so we expect that iterator to return the `(coordinate, value)` pair containing "foo".
@@ -311,38 +310,38 @@ where
     /// assert!(q.insert((1, 3), (1, 3), 57));
     ///
     /// // Query over the region anchored at (0, 5) with area 1x1.
-    /// let mut query_a = q.get((0, 5), (1, 1));
+    /// let mut query_a = q.query((0, 5), (1, 1));
     /// assert_eq!(query_a.next(), Some((&((0, 5), (7, 7)), &21)));
     /// assert_eq!(query_a.next(), None);
     ///
     /// // Query over the region anchored at (0, 0) with area 6x6.
-    /// let query_b = q.get((0, 0), (6, 6));
+    /// let query_b = q.query((0, 0), (6, 6));
     ///
     /// // It's unclear what order the regions should return in, but there will be two of them.
     /// assert_eq!(query_b.count(), 2);
     /// ```
-    pub fn get(&self, anchor: (U, U), size: (U, U)) -> Iter<U, V> {
+    pub fn query(&self, anchor: (U, U), size: (U, U)) -> Query<U, V> {
         assert!(!size.0.is_zero());
         assert!(!size.1.is_zero());
-        Iter::new(
+        Query::new(
             /*query_region=*/ (anchor, size).into(),
             /*len=*/ self.len(),
             /*qt=*/ self,
         )
     }
 
-    /// Returns an iterator (of type [`Iter`]) over `(&'a ((U, U), (U, U)), &'a V)` tuples
+    /// Returns an iterator (of type [`Query`]) over `(&'a ((U, U), (U, U)), &'a V)` tuples
     /// representing values intersecting the query point.
     ///
-    /// Alias for [`.get(anchor, (1, 1))`].
+    /// Alias for [`.query(anchor, (1, 1))`].
     ///
-    /// [`Iter`]: struct.Iter.html
-    /// [`.get(anchor, (1, 1))`]: struct.Quadtree.html#method.get
-    pub fn get_pt(&self, anchor: (U, U)) -> Iter<U, V> {
-        self.get(anchor, Self::default_region_size())
+    /// [`Query`]: struct.Query.html
+    /// [`.query(anchor, (1, 1))`]: struct.Quadtree.html#method.query
+    pub fn query_pt(&self, anchor: (U, U)) -> Query<U, V> {
+        self.query(anchor, Self::default_region_size())
     }
 
-    /// Returns a mutable iterator (of type [`IterMut`]) over
+    /// Returns a mutable iterator (of type [`QueryMut`]) over
     /// `(&'a ((U, U), (U, U)), &'a mut V)` tuples representing values either
     /// (a) wholly within or (b) intersecting the query region.
     ///
@@ -355,22 +354,22 @@ where
     /// assert!(q.insert((1, 3), (1, 3), 57));
     ///
     /// // We can verify that the region at (0, 5)->7x7 has the value 21.
-    /// assert_eq!(q.get((0, 5), (1, 1)).next().unwrap().1, &21);
+    /// assert_eq!(q.query((0, 5), (1, 1)).next().unwrap().1, &21);
     ///
     /// // A mutable iterator lets us access the value in-place:
-    /// for (_, val) in q.get_mut((0, 5), (1, 1)) {
+    /// for (_, val) in q.query_mut((0, 5), (1, 1)) {
     ///     *val = 1;
     /// }
     ///
     /// // And we can verify that the changes took effect.
-    /// assert_eq!(q.get((0, 5), (1, 1)).next().unwrap().1, &1);
+    /// assert_eq!(q.query((0, 5), (1, 1)).next().unwrap().1, &1);
     /// ```
     ///
-    /// [`IterMut`]: struct.IterMut.html
-    pub fn get_mut(&mut self, anchor: (U, U), size: (U, U)) -> IterMut<U, V> {
+    /// [`QueryMut`]: struct.QueryMut.html
+    pub fn query_mut(&mut self, anchor: (U, U), size: (U, U)) -> QueryMut<U, V> {
         assert!(!size.0.is_zero());
         assert!(!size.1.is_zero());
-        IterMut::new(
+        QueryMut::new(
             /*query_region=*/ (anchor, size).into(),
             /*len=*/ self.len(),
             /*qt=*/ self,
@@ -380,11 +379,11 @@ where
     /// Returns a mutable iterator over `(&'a ((U, U), (U, U)), &'a mut V)` tuples
     /// representing values intersecting the query point.
     ///
-    /// Alias for [`.get(anchor, (1, 1))`].
+    /// Alias for [`.query(anchor, (1, 1))`].
     ///
-    /// [`.get(anchor, (1, 1))`]: struct.Quadtree.html#method.get
-    pub fn get_pt_mut(&mut self, anchor: (U, U)) -> IterMut<U, V> {
-        self.get_mut(anchor, Self::default_region_size())
+    /// [`.query(anchor, (1, 1))`]: struct.Quadtree.html#method.query
+    pub fn query_pt_mut(&mut self, anchor: (U, U)) -> QueryMut<U, V> {
+        self.query_mut(anchor, Self::default_region_size())
     }
 
     /// Resets the quadtree to a totally empty state.
@@ -540,18 +539,18 @@ where
 
 /// An iterator over the keys and values of a [`Quadtree`].
 ///
-/// This struct is created by the [`get`] or [`get_pt`] methods on [`Quadtree`].
+/// This struct is created by the [`query`] or [`query_pt`] methods on [`Quadtree`].
 ///
 /// # TODOs:
 /// - Traits
-///   - TODO(ambuc): Implement `FusedIterator` for `Iter<'a, V>`.
-///   - TODO(ambuc): Implement `ExactSizeIterator` for `Iter<'a, V>`.
+///   - TODO(ambuc): Implement `FusedIterator` for `Query<'a, V>`.
+///   - TODO(ambuc): Implement `ExactSizeIterator` for `Query<'a, V>`.
 ///
-/// [`get`]: struct.Quadtree.html#method.get
-/// [`get_pt`]: struct.Quadtree.html#method.get_pt
+/// [`query`]: struct.Quadtree.html#method.query
+/// [`query_pt`]: struct.Quadtree.html#method.query_pt
 /// [`Quadtree`]: struct.Quadtree.html
 #[derive(Clone)]
-pub struct Iter<'a, U, V> {
+pub struct Query<'a, U, V> {
     region_stack: Vec<(&'a Area<U>, &'a V)>,
     qt_stack: Vec<&'a Quadtree<U, V>>,
     query_region: Area<U>,
@@ -560,9 +559,9 @@ pub struct Iter<'a, U, V> {
     exhausted: bool,
 }
 
-impl<'a, U, V> Iter<'a, U, V> {
-    fn new(query_region: Area<U>, len: usize, qt: &'a Quadtree<U, V>) -> Iter<U, V> {
-        Iter {
+impl<'a, U, V> Query<'a, U, V> {
+    fn new(query_region: Area<U>, len: usize, qt: &'a Quadtree<U, V>) -> Query<U, V> {
+        Query {
             region_stack: vec![],
             qt_stack: vec![qt],
             query_region,
@@ -573,7 +572,7 @@ impl<'a, U, V> Iter<'a, U, V> {
     }
 }
 
-impl<'a, U, V> Iterator for Iter<'a, U, V>
+impl<'a, U, V> Iterator for Query<'a, U, V>
 where
     U: num::PrimInt,
 {
@@ -619,7 +618,7 @@ where
     }
 }
 
-impl<'a, U, V> std::fmt::Debug for Iter<'a, U, V>
+impl<'a, U, V> std::fmt::Debug for Query<'a, U, V>
 where
     V: std::fmt::Debug,
 {
@@ -630,17 +629,17 @@ where
 
 /// A mutable iterator over the keys and values of a [`Quadtree`].
 ///
-/// This struct is created by the [`get_mut`] or [`get_pt_mut`] methods on [`Quadtree`].
+/// This struct is created by the [`query_mut`] or [`query_pt_mut`] methods on [`Quadtree`].
 ///
 /// # TODOs:
 /// - Traits
-///  - TODO(ambuc): Implement `FusedIterator` for `IterMut<'a, V>`.
-///  - TODO(ambuc): Implement `ExactSizeIterator` for `IterMut<'a, V>`.
+///  - TODO(ambuc): Implement `FusedIterator` for `QueryMut<'a, V>`.
+///  - TODO(ambuc): Implement `ExactSizeIterator` for `QueryMut<'a, V>`.
 ///
-/// [`get_mut`]: struct.Quadtree.html#method.get_mut
-/// [`get_pt_mut`]: struct.Quadtree.html#method.get_pt_mut
+/// [`query_mut`]: struct.Quadtree.html#method.query_mut
+/// [`query_pt_mut`]: struct.Quadtree.html#method.query_pt_mut
 /// [`Quadtree`]: struct.Quadtree.html
-pub struct IterMut<'a, U, V> {
+pub struct QueryMut<'a, U, V> {
     region_stack: Vec<(&'a Area<U>, &'a mut V)>,
     qt_stack: Vec<&'a mut Quadtree<U, V>>,
     query_region: Area<U>,
@@ -649,9 +648,9 @@ pub struct IterMut<'a, U, V> {
     exhausted: bool,
 }
 
-impl<'a, U, V> IterMut<'a, U, V> {
-    fn new(query_region: Area<U>, len: usize, qt: &'a mut Quadtree<U, V>) -> IterMut<U, V> {
-        IterMut {
+impl<'a, U, V> QueryMut<'a, U, V> {
+    fn new(query_region: Area<U>, len: usize, qt: &'a mut Quadtree<U, V>) -> QueryMut<U, V> {
+        QueryMut {
             region_stack: vec![],
             qt_stack: vec![qt],
             query_region,
@@ -662,7 +661,7 @@ impl<'a, U, V> IterMut<'a, U, V> {
     }
 }
 
-impl<'a, U, V> Iterator for IterMut<'a, U, V>
+impl<'a, U, V> Iterator for QueryMut<'a, U, V>
 where
     U: num::PrimInt,
 {
@@ -708,7 +707,7 @@ where
     }
 }
 
-impl<'a, U, V> std::fmt::Debug for IterMut<'a, U, V>
+impl<'a, U, V> std::fmt::Debug for QueryMut<'a, U, V>
 where
     V: std::fmt::Debug,
 {
