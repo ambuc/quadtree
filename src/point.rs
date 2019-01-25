@@ -86,21 +86,24 @@ where
         self.inner.1
     }
 
-    // Returns 0 if northeast of self,
-    //         1 if northwest of self,
-    //         2 if southeast of self,
-    //      or 3 if southwest of self. Will never return 4 or more.
+    // XY::dir_towards() expects that:
+    //   - (0, 0) is in the top-left corner,
+    //   - +x is right (east),
+    //   - -y is down (south).
+    //
+    // Returns 0 if east or northeast of self,
+    //         1 if north or northwest of self,
+    //         2 if south or southeast of self,
+    //      or 3 if west or southwest of self.
     pub fn dir_towards(&self, other: Point<U>) -> usize {
-        if other.y() < self.y() {
-            if other.x() < self.x() {
-                1 // northwest
-            } else {
-                0 // northeast
-            }
-        } else if other.x() < self.x() {
-            3 // southwest
+        if other.x() > self.x() && other.y() <= self.y() {
+            0 // east, northeast
+        } else if other.x() <= self.x() && other.y() < self.y() {
+            1 // north, northwest
+        } else if other.x() < self.x() && other.y() >= self.y() {
+            3 // west, southwest
         } else {
-            2 // southeast
+            2 // south, southeast
         }
     }
 }
@@ -127,5 +130,122 @@ mod tests {
         debug_assert_eq!(Point::from((1, 1)) - Point::from((0, 1)), (1, 0).into());
         debug_assert_eq!(Point::from((4, 5)) - Point::from((2, 2)), (2, 3).into());
         debug_assert_eq!(Point::from((4, 5)) - Point::from((0, 0)), (4, 5).into());
+    }
+
+    // Test addition / subtraction which reaches into the realm of negative numbers.
+
+    #[test]
+    fn subtracting_positive_numbers() {
+        debug_assert_eq!(Point::from((0, 0)) - (1, 1).into(), (-1, -1).into());
+        debug_assert_eq!(Point::from((0, 0)) - (0, 1).into(), (0, -1).into());
+        debug_assert_eq!(Point::from((0, 0)) - (1, 0).into(), (-1, 0).into());
+
+        debug_assert_eq!(Point::from((1, 10)) - (2, 20).into(), (-1, -10).into());
+    }
+
+    #[test]
+    fn adding_negative_numbers() {
+        debug_assert_eq!(Point::from((0, 0)) + (-1, 0).into(), (-1, 0).into());
+        debug_assert_eq!(Point::from((0, 0)) + (-1, -1).into(), (-1, -1).into());
+        debug_assert_eq!(Point::from((0, 0)) + (0, -1).into(), (0, -1).into());
+
+        debug_assert_eq!(Point::from((1, 10)) + (-2, -20).into(), (-1, -10).into());
+    }
+}
+
+// XY::dir_towards() expects that:
+//   - (0, 0) is in the top-left corner,
+//   - +x is right (east),
+//   - -y is down (south).
+//
+// This test suite ensures that the following segmentation of the grid around a given point is true
+// in all four [plane quadrants](https://en.wikipedia.org/wiki/Quadrant_(plane_geometry)):
+//
+//          N
+//          |
+//          |                      |
+//       11 1 00                   |
+//       11 1 00              III  |  IV
+//                                 |
+//  W ---33 P 00--> E,x    --------+-------->x
+//                                 |
+//       33 2 22               II  |  I
+//       33 2 22                   |
+//          |                      |
+//          v                      v
+//          S,y                    y
+//
+#[cfg(test)]
+mod quadrant_tests {
+    use super::Point;
+
+    #[test]
+    fn dir_towards_in_quadrant_i() {
+        let origin: Point<i8> = (2, 2).into();
+
+        debug_assert_eq!(origin.dir_towards((2, 1).into()), 1); // Due north
+        debug_assert_eq!(origin.dir_towards((3, 1).into()), 0); // Northeast
+        debug_assert_eq!(origin.dir_towards((3, 2).into()), 0); // Due east
+        debug_assert_eq!(origin.dir_towards((3, 3).into()), 2); // Southeast
+        debug_assert_eq!(origin.dir_towards((2, 3).into()), 2); // Due south
+        debug_assert_eq!(origin.dir_towards((1, 3).into()), 3); // Southwest
+        debug_assert_eq!(origin.dir_towards((1, 2).into()), 3); // Due west
+        debug_assert_eq!(origin.dir_towards((1, 1).into()), 1); // Northwest
+    }
+
+    #[test]
+    fn dir_towards_in_quadrant_ii() {
+        let origin: Point<i8> = (-2, 2).into();
+
+        debug_assert_eq!(origin.dir_towards((-2, 1).into()), 1); // Due north
+        debug_assert_eq!(origin.dir_towards((-1, 1).into()), 0); // Northeast
+        debug_assert_eq!(origin.dir_towards((-1, 2).into()), 0); // Due east
+        debug_assert_eq!(origin.dir_towards((-1, 3).into()), 2); // Southeast
+        debug_assert_eq!(origin.dir_towards((-2, 3).into()), 2); // Due south
+        debug_assert_eq!(origin.dir_towards((-3, 3).into()), 3); // Southwest
+        debug_assert_eq!(origin.dir_towards((-3, 2).into()), 3); // Due west
+        debug_assert_eq!(origin.dir_towards((-3, 1).into()), 1); // Northwest
+    }
+
+    #[test]
+    fn dir_towards_in_quadrant_iii() {
+        let origin: Point<i8> = (-2, -2).into();
+
+        debug_assert_eq!(origin.dir_towards((-2, -3).into()), 1); // Due north
+        debug_assert_eq!(origin.dir_towards((-1, -3).into()), 0); // Northeast
+        debug_assert_eq!(origin.dir_towards((-1, -2).into()), 0); // Due east
+        debug_assert_eq!(origin.dir_towards((-1, -1).into()), 2); // Southeast
+        debug_assert_eq!(origin.dir_towards((-2, -1).into()), 2); // Due south
+        debug_assert_eq!(origin.dir_towards((-3, -1).into()), 3); // Southwest
+        debug_assert_eq!(origin.dir_towards((-3, -2).into()), 3); // Due west
+        debug_assert_eq!(origin.dir_towards((-3, -3).into()), 1); // Northwest
+    }
+
+    #[test]
+    fn dir_towards_in_quadrant_iv() {
+        let origin: Point<i8> = (2, -2).into();
+
+        debug_assert_eq!(origin.dir_towards((2, -3).into()), 1); // Due north
+        debug_assert_eq!(origin.dir_towards((3, -3).into()), 0); // Northeast
+        debug_assert_eq!(origin.dir_towards((3, -2).into()), 0); // Due east
+        debug_assert_eq!(origin.dir_towards((3, -1).into()), 2); // Southeast
+        debug_assert_eq!(origin.dir_towards((2, -1).into()), 2); // Due south
+        debug_assert_eq!(origin.dir_towards((1, -1).into()), 3); // Southwest
+        debug_assert_eq!(origin.dir_towards((1, -2).into()), 3); // Due west
+        debug_assert_eq!(origin.dir_towards((1, -3).into()), 1); // Northwest
+    }
+
+    #[test]
+    fn dir_towards_from_origin() {
+        let origin: Point<i8> = (0, 0).into();
+
+        debug_assert_eq!(origin.dir_towards((0, -1).into()), 1); // Due north
+        debug_assert_eq!(origin.dir_towards((1, -1).into()), 0); // Northeast
+        debug_assert_eq!(origin.dir_towards((1, 0).into()), 0); // Due east
+        debug_assert_eq!(origin.dir_towards((1, 1).into()), 2); // Southeast
+        debug_assert_eq!(origin.dir_towards((0, 1).into()), 2); // Due south
+        debug_assert_eq!(origin.dir_towards((-1, 1).into()), 3); // Southwest
+        debug_assert_eq!(origin.dir_towards((-1, 0).into()), 3); // Due west
+        debug_assert_eq!(origin.dir_towards((-1, -1).into()), 1); // Northwest
     }
 }
