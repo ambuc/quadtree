@@ -141,7 +141,7 @@ where
     /// assert_eq!(q.height(), 4);
     /// ```
     pub fn new(depth: usize) -> Quadtree<U, V> {
-        Quadtree::new_with_anchor((num::Zero::zero(), num::Zero::zero()), depth)
+        Quadtree::new_with_anchor(Self::default_anchor(), depth)
     }
 
     /// Creates a new Quadtree with the requested anchor and depth.
@@ -293,7 +293,7 @@ where
     ///
     /// [`.insert(_, (1, 1), _)`]: struct.Quadtree.html#method.insert
     pub fn insert_pt(&mut self, anchor: (U, U), val: V) -> bool {
-        self.insert_region((anchor, (num::One::one(), num::One::one())).into(), val)
+        self.insert_region((anchor, Self::default_region_size()).into(), val)
     }
 
     /// Returns an iterator over `(&'a ((U, U), (U, U)), &'a V)` tuples representing values
@@ -335,7 +335,7 @@ where
     /// [`Iter`]: struct.Iter.html
     /// [`.get(anchor, (1, 1))`]: struct.Quadtree.html#method.get
     pub fn get_pt(&self, anchor: (U, U)) -> Iter<U, V> {
-        self.get(anchor, (num::One::one(), num::One::one()))
+        self.get(anchor, Self::default_region_size())
     }
 
     /// Returns a mutable iterator (of type [`IterMut`]) over
@@ -379,8 +379,7 @@ where
     ///
     /// [`.get(anchor, (1, 1))`]: struct.Quadtree.html#method.get
     pub fn get_pt_mut(&mut self, anchor: (U, U)) -> IterMut<U, V> {
-        // TODO(ambuc): refactor into default_anchor()?
-        self.get_mut(anchor, (num::One::one(), num::One::one()))
+        self.get_mut(anchor, Self::default_region_size())
     }
 
     /// Resets the quadtree to a totally empty state.
@@ -481,6 +480,16 @@ where
         let one: U = num::One::one();
         let two: U = one + one;
         self.anchor_pt() + Point::<U>::from((self.width() / two, self.height() / two))
+    }
+
+    // Strongly-typed alias for (zero(), zero()).
+    fn default_anchor() -> (U, U) {
+        (num::Zero::zero(), num::Zero::zero())
+    }
+
+    // Strongly-typed alias for (one(), one()).
+    fn default_region_size() -> (U, U) {
+        (num::One::one(), num::One::one())
     }
 }
 
