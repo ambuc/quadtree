@@ -318,8 +318,6 @@ where
     /// assert_eq!(query_b.count(), 2);
     /// ```
     pub fn get(&self, anchor: (U, U), size: (U, U)) -> Iter<U, V> {
-        // TODO(ambuc): get rid of this if it works
-        // assert!(size.0 > 0 && size.1 > 0);
         assert!(!size.0.is_zero());
         assert!(!size.1.is_zero());
         Iter::new(
@@ -365,9 +363,6 @@ where
     ///
     /// [`IterMut`]: struct.IterMut.html
     pub fn get_mut(&mut self, anchor: (U, U), size: (U, U)) -> IterMut<U, V> {
-        // TODO(ambuc): get rid of this if it works
-        // assert!(size.0 > 0);
-        // assert!(size.1 > 0);
         assert!(!size.0.is_zero());
         assert!(!size.1.is_zero());
         IterMut::new(
