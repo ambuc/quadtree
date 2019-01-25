@@ -549,6 +549,7 @@ where
     }
 }
 
+// TODO(ambuc): Is it possible to collapse the .next() logic between this and IterMut?
 /// An iterator over all keys and values of a [`Quadtree`].
 ///
 /// This struct is created by the [`iter`] method on [`Quadtree`].
@@ -581,9 +582,6 @@ impl<'a, U, V> Iter<'a, U, V> {
     }
 }
 
-// TODO(ambuc): There's a lot of overlap between this, IterMut, Query, and QueryMut. Dedup the core
-// algo somehow? Is it possible to encapsulate the decision tree of this algo. without the types?
-// A the very least, there's a clear overlap between Iter/Query and IterMut/QueryMut.
 impl<'a, U, V> Iterator for Iter<'a, U, V>
 where
     U: num::PrimInt,
@@ -711,22 +709,16 @@ where
 /// [`Quadtree`]: struct.Quadtree.html
 #[derive(Clone)]
 pub struct Query<'a, U, V> {
-    region_stack: Vec<(&'a Area<U>, &'a V)>,
-    qt_stack: Vec<&'a Quadtree<U, V>>,
     query_region: Area<U>,
-    upper_bound: usize,
-    consumed: usize,
+    iter: Iter<'a, U, V>,
     exhausted: bool,
 }
 
 impl<'a, U, V> Query<'a, U, V> {
     fn new(query_region: Area<U>, len: usize, qt: &'a Quadtree<U, V>) -> Query<U, V> {
         Query {
-            region_stack: vec![],
-            qt_stack: vec![qt],
             query_region,
-            upper_bound: len,
-            consumed: 0,
+            iter: Iter::new(len, qt),
             exhausted: false,
         }
     }
@@ -740,32 +732,19 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        // Check the region_stack.
-        if let Some((region, val)) = self.region_stack.pop() {
-            self.consumed += 1;
-            return Some((region.inner(), val));
-        }
-
-        // Then check the qt_stack.
-        if let Some(qt) = self.qt_stack.pop() {
-            // Push my regions onto the region stack
-            for (k, v) in qt.values.iter() {
-                if k.intersects(self.query_region) {
-                    self.region_stack.push((k, v));
+        match self.iter.next() {
+            Some((k, v)) => {
+                if self.query_region.intersects(k.clone().into()) {
+                    Some((k, v))
+                } else {
+                    self.next()
                 }
             }
-            // Push my subquadrants onto the qt_stack too.
-            for sq in qt.subquadrants.iter() {
-                if let Some(sub_qt) = sq {
-                    self.qt_stack.push(sub_qt);
-                }
+            None => {
+                self.exhausted = true;
+                None
             }
-            return self.next();
         }
-
-        // Else there's nothing left to search.
-        self.exhausted = true;
-        None
     }
 
     #[inline]
@@ -773,7 +752,8 @@ where
         if self.exhausted {
             (0, Some(0))
         } else {
-            (0, Some(self.upper_bound - self.consumed))
+            let (sh, _) = self.iter.size_hint();
+            (0, Some(sh))
         }
     }
 }
@@ -800,23 +780,17 @@ where
 /// [`query_pt_mut`]: struct.Quadtree.html#method.query_pt_mut
 /// [`Quadtree`]: struct.Quadtree.html
 pub struct QueryMut<'a, U, V> {
-    region_stack: Vec<(&'a Area<U>, &'a mut V)>,
-    qt_stack: Vec<&'a mut Quadtree<U, V>>,
     query_region: Area<U>,
-    upper_bound: usize,
-    consumed: usize,
     exhausted: bool,
+    iter: IterMut<'a, U, V>,
 }
 
 impl<'a, U, V> QueryMut<'a, U, V> {
     fn new(query_region: Area<U>, len: usize, qt: &'a mut Quadtree<U, V>) -> QueryMut<U, V> {
         QueryMut {
-            region_stack: vec![],
-            qt_stack: vec![qt],
             query_region,
-            upper_bound: len,
-            consumed: 0,
             exhausted: false,
+            iter: IterMut::new(len, qt),
         }
     }
 }
@@ -829,32 +803,19 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        // Check the region_stack.
-        if let Some((region, val)) = self.region_stack.pop() {
-            self.consumed += 1;
-            return Some((region.inner(), val));
-        }
-
-        // Then check the qt_stack.
-        if let Some(qt) = self.qt_stack.pop() {
-            // Push my regions onto the region stack
-            for (k, v) in qt.values.iter_mut() {
-                if k.intersects(self.query_region) {
-                    self.region_stack.push((k, v));
+        match self.iter.next() {
+            Some((k, v)) => {
+                if self.query_region.intersects(k.clone().into()) {
+                    Some((k, v))
+                } else {
+                    self.next()
                 }
             }
-            // Push my subquadrants onto the qt_stack too.
-            for sq in qt.subquadrants.iter_mut() {
-                if let Some(sub_qt) = sq {
-                    self.qt_stack.push(sub_qt);
-                }
+            None => {
+                self.exhausted = true;
+                None
             }
-            return self.next();
         }
-
-        // Else there's nothing left to search.
-        self.exhausted = true;
-        None
     }
 
     #[inline]
@@ -862,7 +823,8 @@ where
         if self.exhausted {
             (0, Some(0))
         } else {
-            (0, Some(self.upper_bound - self.consumed))
+            let (sh, _) = self.iter.size_hint();
+            (0, Some(sh))
         }
     }
 }
