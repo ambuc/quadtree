@@ -104,7 +104,6 @@ use crate::point::Point;
 ///   - TODO(ambuc): Implement `.retain(anchor, size, fn)`.
 /// - Traits
 ///   - TODO(ambuc): Implement `Eq` for `Quadtree`.
-///   - TODO(ambuc): Implement `Extend<(K, V)>` for `Quadtree`.
 ///   - TODO(ambuc): Implement `FromIterator<(K, V)>` for `Quadtree`.
 ///   - TODO(ambuc): Implement `Intoiterator` for `Quadtree`.
 /// - Other
@@ -508,6 +507,34 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{:?}", self)
+    }
+}
+
+/// `Extend<((U, U), V)>` will silently drop values whose coordinates do not fit in the region
+/// represented by the Quadtree. It is the responsibility of the callsite to ensure these points
+/// fit.
+impl<U, V> Extend<((U, U), V)> for Quadtree<U, V>
+where
+    U: num::PrimInt,
+{
+    fn extend<T: IntoIterator<Item = ((U, U), V)>>(&mut self, iter: T) {
+        for ((x, y), v) in iter {
+            self.insert_pt((x, y), v);
+        }
+    }
+}
+
+/// `Extend<(((U, U), (U, U), V)>` will silently drop values whose coordinates do not fit in the
+/// region represented by the Quadtree. It is the responsibility of the callsite to ensure these
+/// points fit.
+impl<U, V> Extend<(((U, U), (U, U)), V)> for Quadtree<U, V>
+where
+    U: num::PrimInt,
+{
+    fn extend<T: IntoIterator<Item = (((U, U), (U, U)), V)>>(&mut self, iter: T) {
+        for (((x, y), (w, h)), v) in iter {
+            self.insert((x, y), (w, h), v);
+        }
     }
 }
 
