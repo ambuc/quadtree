@@ -556,8 +556,8 @@ where
 ///
 /// # TODOs:
 /// - Traits
-///   - TODO(ambuc): Implement `FusedIterator` for `Query<'a, V>`.
-///   - TODO(ambuc): Implement `ExactSizeIterator` for `Query<'a, V>`.
+///   - TODO(ambuc): Implement `FusedIterator` for `Iter<'a, V>`.
+///   - TODO(ambuc): Implement `ExactSizeIterator` for `Iter<'a, V>`.
 ///
 /// [`iter`]: struct.Quadtree.html#method.iter
 /// [`Quadtree`]: struct.Quadtree.html
@@ -629,8 +629,8 @@ where
 ///
 /// # TODOs:
 /// - Traits
-///   - TODO(ambuc): Implement `FusedIterator` for `Query<'a, V>`.
-///   - TODO(ambuc): Implement `ExactSizeIterator` for `Query<'a, V>`.
+///   - TODO(ambuc): Implement `FusedIterator` for `IterMut<'a, V>`.
+///   - TODO(ambuc): Implement `ExactSizeIterator` for `IterMut<'a, V>`.
 ///
 /// [`iter_mut`]: struct.Quadtree.html#method.iter_mut
 /// [`Quadtree`]: struct.Quadtree.html
