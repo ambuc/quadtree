@@ -103,7 +103,13 @@ where
     // This only gets used in tests at the moment.
     #[allow(dead_code)]
     pub fn contains_pt(self, pt: Point<U>) -> bool {
-        self.contains((pt.into(), (num::One::one(), num::One::one())).into())
+        self.contains(
+            (
+                pt.into(),
+                /*default_region_size=*/ (U::one(), U::one()),
+            )
+                .into(),
+        )
     }
 
     // Whether or not an area intersects another area.

@@ -155,9 +155,7 @@ where
     /// assert_eq!(q.height(), 8);
     /// ```
     pub fn new_with_anchor(anchor: (U, U), depth: usize) -> Quadtree<U, V> {
-        let one: U = num::One::one();
-        let two: U = one + one;
-        let width: U = two.pow(depth as u32);
+        let width: U = Self::two().pow(depth as u32);
         let height: U = width;
         Quadtree::new_with_area((anchor, (width, height)).into(), depth)
     }
@@ -456,13 +454,13 @@ where
     // Accepts @direction as 0 (ne) 1 (nw) 2 (se) or 3 (sw).
     fn mk_subquadrant_anchor_pt(&mut self, direction: usize) -> Point<U> {
         // Construct cardinal anchor point:
-        let one: U = num::One::one();
-        let two: U = one + one;
         match direction {
-            0 => self.anchor_pt() + (self.width() / two, num::Zero::zero()).into(),
-            1 => self.anchor_pt() + (num::Zero::zero(), num::Zero::zero()).into(),
-            2 => self.anchor_pt() + (self.width() / two, self.height() / two).into(),
-            3 => self.anchor_pt() + (num::Zero::zero(), self.height() / two).into(),
+            0 => self.anchor_pt() + (self.width() / Self::two(), U::zero()).into(),
+            1 => self.anchor_pt() + (U::zero(), U::zero()).into(),
+            2 => {
+                self.anchor_pt() + (self.width() / Self::two(), self.height() / Self::two()).into()
+            }
+            3 => self.anchor_pt() + (U::zero(), self.height() / Self::two()).into(),
             _ => panic!("Don't send me a direction greater than 3."),
         }
     }
@@ -476,20 +474,23 @@ where
     }
 
     fn center_pt(&self) -> Point<U> {
-        // TODO(ambuc): .two() accessor.
-        let one: U = num::One::one();
-        let two: U = one + one;
-        self.anchor_pt() + Point::<U>::from((self.width() / two, self.height() / two))
+        self.anchor_pt()
+            + Point::<U>::from((self.width() / Self::two(), self.height() / Self::two()))
     }
 
     // Strongly-typed alias for (zero(), zero()).
     fn default_anchor() -> (U, U) {
-        (num::Zero::zero(), num::Zero::zero())
+        (U::zero(), U::zero())
     }
 
     // Strongly-typed alias for (one(), one()).
     fn default_region_size() -> (U, U) {
-        (num::One::one(), num::One::one())
+        (U::one(), U::one())
+    }
+
+    // Strongly-typed alias for U::one() + U::One()
+    fn two() -> U {
+        U::one() + U::one()
     }
 }
 
