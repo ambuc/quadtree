@@ -76,13 +76,12 @@ use crate::point::Point;
 /// (A [Quadtree](https://en.wikipedia.org/wiki/Quadtree).)
 ///
 /// `Quadtree<U, V>` is parameterized over
-///  - `U`, where `U` is the index type of the x/y coordinate (an unsigned
-/// primitive int), and
+///  - `U`, where `U` is the index type of the x/y coordinate, and
 ///  - `V`, where `V` is the value being stored in the data structure.
 ///
 /// Both points and regions are represented by the type
 /// ```
-/// type U = u64; // Or any primitive unsigned integer.
+/// type U = u64; // Or any primitive integer, signed or unsigned.
 ///
 /// let _region: (/*    anchor=*/ (U, U),
 ///               /*dimensions=*/ (U, U)) = ((1, 2), (3, 4)); // (for example)
@@ -111,7 +110,6 @@ use crate::point::Point;
 ///   - TODO(ambuc): Implement `Clone` for `Quadtree`.
 ///   - TODO(ambuc): Implement `Default` for `Quadtree`.
 /// - Other
-///   - TODO(ambuc): Parameterized `Quadtree<U, V>`, where `U` need not be `sign::Unsigned`.
 pub struct Quadtree<U, V> {
     // The depth of the current cell in its tree. Zero means it's at the very bottom.
     depth: usize,
@@ -125,7 +123,7 @@ pub struct Quadtree<U, V> {
 
 impl<U, V> Quadtree<U, V>
 where
-    U: num::PrimInt + num_traits::sign::Unsigned,
+    U: num::PrimInt,
 {
     // Constructors //
 
@@ -224,6 +222,10 @@ where
     }
 
     /// Whether or not the region represented by this quadtree could contain the given region.
+    ///
+    /// The region described may have an anchor anywhere on the plane, but it
+    /// must have positive, nonzero values for its width and height.
+    ///
     /// Perhaps before inserting a region, the callsite would like to check to see if that region
     /// could fit in the area represented by the quadtree.
     /// ```
@@ -263,6 +265,10 @@ where
 
     /// Attempts to insert the value at the requested anchor and size. Returns false if the region
     /// was too large.
+    ///
+    /// The region described may have an anchor anywhere on the plane, but it
+    /// must have positive, nonzero values for its width and height.
+    ///
     /// ```
     /// let mut q = quadtree_impl::Quadtree::<u32, i64>::new(2);
     ///
@@ -297,8 +303,10 @@ where
     /// Returns an iterator over `(&'a ((U, U), (U, U)), &'a V)` tuples representing values
     /// within the query region.
     ///  - Values returned may either partially intersect or be wholly within the query region.
-    ///  - Neither the height nor the width of the requested region can be zero. (i.e. the query
-    ///  region must have area.)
+    ///
+    /// The query region described may have an anchor anywhere on the plane, but it
+    /// must have positive, nonzero values for its width and height.
+    ///
     /// ```
     /// let mut q = quadtree_impl::Quadtree::<u32, i16>::new(4);
     /// assert!(q.insert((0, 5), (7, 7), 21));
@@ -340,8 +348,9 @@ where
     /// `(&'a ((U, U), (U, U)), &'a mut V)` tuples representing values either
     /// (a) wholly within or (b) intersecting the query region.
     ///
-    ///  - The requested region must have area.
-    ///  - Neither the height nor the width can be zero.
+    /// The query region described may have an anchor anywhere on the plane, but it
+    /// must have positive, nonzero values for its width and height.
+    ///
     /// ```
     /// let mut q = quadtree_impl::Quadtree::<u32, i16>::new(4);
     /// assert!(q.insert((0, 5), (7, 7), 21));
@@ -541,7 +550,7 @@ impl<'a, U, V> Iter<'a, U, V> {
 
 impl<'a, U, V> Iterator for Iter<'a, U, V>
 where
-    U: num::PrimInt + num_traits::sign::Unsigned,
+    U: num::PrimInt,
 {
     type Item = (&'a AreaType<U>, &'a V);
 
@@ -631,7 +640,7 @@ impl<'a, U, V> IterMut<'a, U, V> {
 
 impl<'a, U, V> Iterator for IterMut<'a, U, V>
 where
-    U: num::PrimInt + num_traits::sign::Unsigned,
+    U: num::PrimInt,
 {
     type Item = (&'a AreaType<U>, &'a mut V);
 

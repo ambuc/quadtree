@@ -13,16 +13,14 @@
 // limitations under the License.
 
 use crate::point::Point;
-use num_traits::sign;
 
 pub type AreaType<U> = ((U, U), (U, U));
 
 // Lightweight data type to represent a region.
+// The top-left anchor may be positive or negative in either coordinate.
 // Defined by a top-left anchor and a width/height.
+// The width/height must both be positive and nonzero.
 // Should be passed by value.
-//
-// TODO(ambuc): Should this be parameterized across sign::Signed as well? Write unit tests for this
-// case.
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub struct Area<U> {
     inner: AreaType<U>,
@@ -30,7 +28,7 @@ pub struct Area<U> {
 
 impl<U> std::fmt::Debug for Area<U>
 where
-    U: num::PrimInt + sign::Unsigned + std::fmt::Debug,
+    U: num::PrimInt + std::fmt::Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
@@ -45,7 +43,7 @@ where
 
 impl<U> Area<U>
 where
-    U: num::PrimInt + sign::Unsigned,
+    U: num::PrimInt,
 {
     pub fn anchor(&self) -> Point<U> {
         self.inner.0.into()
@@ -70,11 +68,16 @@ where
 
 impl<U> From<AreaType<U>> for Area<U>
 where
-    U: num::PrimInt + sign::Unsigned,
+    U: num::PrimInt,
 {
     fn from((xy, (w, h)): AreaType<U>) -> Self {
         assert!(!w.is_zero());
         assert!(!h.is_zero());
+        // Regions shouldn't be negative in dimenision. I guess there's a way to handle the math by
+        // going in the (-x,-y) direction, but it seems better to communicate that they shouldn't
+        // be.
+        assert!(w > U::zero());
+        assert!(h > U::zero());
         Area {
             inner: (xy, (w, h)),
         }
@@ -89,7 +92,7 @@ impl<U> Into<AreaType<U>> for Area<U> {
 
 impl<U> Area<U>
 where
-    U: num::PrimInt + sign::Unsigned,
+    U: num::PrimInt,
 {
     pub fn contains(self, other: Area<U>) -> bool {
         other.right() <= self.right()
@@ -137,8 +140,63 @@ where
 #[cfg(test)]
 mod tests {
     use super::Area;
-    #[test]
-    fn test_area_contains() {
+
+    mod invalid_area_creation {
+        use super::*;
+
+        #[test]
+        #[should_panic]
+        fn negative_width() {
+            let _a: Area<i8> = ((0, 0), (-1, 4)).into();
+        }
+
+        #[test]
+        #[should_panic]
+        fn negative_height() {
+            let _a: Area<i8> = ((0, 0), (1, -4)).into();
+        }
+
+        #[test]
+        #[should_panic]
+        fn zero_width() {
+            let _a: Area<i8> = ((0, 0), (0, 4)).into();
+        }
+
+        #[test]
+        #[should_panic]
+        fn zero_height() {
+            let _a: Area<i8> = ((0, 0), (1, 0)).into();
+        }
+    }
+
+    mod creation_in_quadrant {
+        use super::*;
+
+        #[test]
+        fn i() {
+            let _a: Area<i8> = ((1, 1), (1, 1)).into();
+        }
+
+        #[test]
+        fn ii() {
+            let _a: Area<i8> = ((-1, 1), (1, 1)).into();
+        }
+
+        #[test]
+        fn iii() {
+            let _a: Area<i8> = ((-1, -1), (1, 1)).into();
+        }
+
+        #[test]
+        fn iv() {
+            let _a: Area<i8> = ((1, -1), (1, 1)).into();
+        }
+    }
+
+    // Just positive values.
+    mod contains_a {
+        use super::*;
+
         //   0  1  2  3  4
         // 0 +--+--+--+--+
         //   |  |  |  |  |
@@ -150,125 +208,339 @@ mod tests {
         //   |  |  |  |  |
         // 4 +--+--+--+--+
 
-        let a: Area<u8> = ((1, 1), (2, 2)).into();
+        fn test_area() -> Area<u8> {
+            ((1, 1), (2, 2)).into()
+        }
 
-        // Does contain all component 1x1s
-        debug_assert!(a.contains(((1, 1), (1, 1)).into()));
-        debug_assert!(a.contains(((1, 2), (1, 1)).into()));
-        debug_assert!(a.contains(((2, 1), (1, 1)).into()));
-        debug_assert!(a.contains(((2, 2), (1, 1)).into()));
+        #[test]
+        fn all_component_1x1s() {
+            let a = test_area();
 
-        // Does contain self
-        debug_assert!(a.contains(((1, 1), (2, 2)).into()));
+            debug_assert!(a.contains(((1, 1), (1, 1)).into()));
+            debug_assert!(a.contains(((1, 2), (1, 1)).into()));
+            debug_assert!(a.contains(((2, 1), (1, 1)).into()));
+            debug_assert!(a.contains(((2, 2), (1, 1)).into()));
+        }
 
-        // Does NOT contain all neighboring 1x1s
-        debug_assert!(!a.contains(((0, 0), (1, 1)).into()));
-        debug_assert!(!a.contains(((1, 0), (1, 1)).into()));
-        debug_assert!(!a.contains(((2, 0), (1, 1)).into()));
-        debug_assert!(!a.contains(((3, 0), (1, 1)).into()));
-        debug_assert!(!a.contains(((4, 0), (1, 1)).into()));
-        debug_assert!(!a.contains(((0, 3), (1, 1)).into()));
-        debug_assert!(!a.contains(((1, 3), (1, 1)).into()));
-        debug_assert!(!a.contains(((2, 3), (1, 1)).into()));
-        debug_assert!(!a.contains(((3, 3), (1, 1)).into()));
-        debug_assert!(!a.contains(((4, 3), (1, 1)).into()));
-        debug_assert!(!a.contains(((0, 1), (1, 1)).into()));
-        debug_assert!(!a.contains(((0, 2), (1, 1)).into()));
-        debug_assert!(!a.contains(((0, 3), (1, 1)).into()));
-        debug_assert!(!a.contains(((3, 1), (1, 1)).into()));
-        debug_assert!(!a.contains(((3, 2), (1, 1)).into()));
-        debug_assert!(!a.contains(((3, 3), (1, 1)).into()));
+        #[test]
+        fn contains_self() {
+            let a = test_area();
 
-        // Does NOT contain overlapping 2x2s
-        debug_assert!(!a.contains(((0, 0), (2, 2)).into()));
-        debug_assert!(!a.contains(((2, 2), (2, 2)).into()));
+            debug_assert!(a.contains(((1, 1), (2, 2)).into()));
+        }
 
-        // Does NOT contain overlapping 3x3s
-        debug_assert!(!a.contains(((0, 0), (3, 3)).into()));
-        debug_assert!(!a.contains(((1, 0), (3, 3)).into()));
-        debug_assert!(!a.contains(((1, 1), (3, 3)).into()));
-        debug_assert!(!a.contains(((1, 1), (3, 3)).into()));
+        #[test]
+        fn no_neighboring_1x1s() {
+            let a = test_area();
+
+            debug_assert!(!a.contains(((0, 0), (1, 1)).into()));
+            debug_assert!(!a.contains(((1, 0), (1, 1)).into()));
+            debug_assert!(!a.contains(((2, 0), (1, 1)).into()));
+            debug_assert!(!a.contains(((3, 0), (1, 1)).into()));
+            debug_assert!(!a.contains(((4, 0), (1, 1)).into()));
+            debug_assert!(!a.contains(((0, 3), (1, 1)).into()));
+            debug_assert!(!a.contains(((1, 3), (1, 1)).into()));
+            debug_assert!(!a.contains(((2, 3), (1, 1)).into()));
+            debug_assert!(!a.contains(((3, 3), (1, 1)).into()));
+            debug_assert!(!a.contains(((4, 3), (1, 1)).into()));
+            debug_assert!(!a.contains(((0, 1), (1, 1)).into()));
+            debug_assert!(!a.contains(((0, 2), (1, 1)).into()));
+            debug_assert!(!a.contains(((0, 3), (1, 1)).into()));
+            debug_assert!(!a.contains(((3, 1), (1, 1)).into()));
+            debug_assert!(!a.contains(((3, 2), (1, 1)).into()));
+            debug_assert!(!a.contains(((3, 3), (1, 1)).into()));
+        }
+
+        #[test]
+        fn no_overlapping_2x2s() {
+            let a = test_area();
+
+            debug_assert!(!a.contains(((0, 0), (2, 2)).into()));
+            debug_assert!(!a.contains(((2, 2), (2, 2)).into()));
+        }
+
+        #[test]
+        fn no_overlapping_3x3s() {
+            let a = test_area();
+
+            debug_assert!(!a.contains(((0, 0), (3, 3)).into()));
+            debug_assert!(!a.contains(((1, 0), (3, 3)).into()));
+            debug_assert!(!a.contains(((1, 1), (3, 3)).into()));
+            debug_assert!(!a.contains(((1, 1), (3, 3)).into()));
+        }
+
+        #[test]
+        fn contains_pt() {
+            let a = test_area();
+
+            // DOES contain:
+            debug_assert!(a.contains_pt((1, 1).into()));
+            debug_assert!(a.contains_pt((1, 2).into()));
+            debug_assert!(a.contains_pt((2, 1).into()));
+            debug_assert!(a.contains_pt((2, 2).into()));
+
+            // Does NOT contain:
+            debug_assert!(!a.contains_pt((0, 0).into()));
+            debug_assert!(!a.contains_pt((0, 1).into()));
+            debug_assert!(!a.contains_pt((0, 2).into()));
+            debug_assert!(!a.contains_pt((0, 3).into()));
+            debug_assert!(!a.contains_pt((1, 0).into()));
+            debug_assert!(!a.contains_pt((2, 0).into()));
+            debug_assert!(!a.contains_pt((3, 0).into()));
+            debug_assert!(!a.contains_pt((3, 0).into()));
+            debug_assert!(!a.contains_pt((3, 1).into()));
+            debug_assert!(!a.contains_pt((3, 2).into()));
+            debug_assert!(!a.contains_pt((3, 3).into()));
+        }
     }
 
-    #[test]
-    fn test_area_contains_pt() {
-        let a: Area<u8> = ((1, 1), (2, 2)).into();
+    // Positive and negative values.
+    mod contains_b {
+        use super::*;
 
-        // DOES contain:
-        debug_assert!(a.contains_pt((1, 1).into()));
-        debug_assert!(a.contains_pt((1, 2).into()));
-        debug_assert!(a.contains_pt((2, 1).into()));
-        debug_assert!(a.contains_pt((2, 2).into()));
+        //  -2 -1  0  1  2
+        //-2 +--+--+--+--+
+        //   |  |  |  |  |
+        //-1 +--aaaaaaa--+
+        //   |  aaaaaaa  |
+        // 0 +--aaaaaaa--+
+        //   |  aaaaaaa  |
+        // 1 +--aaaaaaa--+
+        //   |  |  |  |  |
+        // 2 +--+--+--+--+
 
-        // Does NOT contain:
-        debug_assert!(!a.contains_pt((0, 0).into()));
-        debug_assert!(!a.contains_pt((0, 1).into()));
-        debug_assert!(!a.contains_pt((0, 2).into()));
-        debug_assert!(!a.contains_pt((0, 3).into()));
-        debug_assert!(!a.contains_pt((1, 0).into()));
-        debug_assert!(!a.contains_pt((2, 0).into()));
-        debug_assert!(!a.contains_pt((3, 0).into()));
-        debug_assert!(!a.contains_pt((3, 0).into()));
-        debug_assert!(!a.contains_pt((3, 1).into()));
-        debug_assert!(!a.contains_pt((3, 2).into()));
-        debug_assert!(!a.contains_pt((3, 3).into()));
+        fn test_area() -> Area<i8> {
+            ((-1, -1), (2, 2)).into()
+        }
+
+        #[test]
+        fn contains_one() {
+            let a = test_area();
+
+            debug_assert!(a.contains(((-1, -1), (1, 1)).into()));
+            debug_assert!(a.contains(((0, -1), (1, 1)).into()));
+            debug_assert!(a.contains(((0, 0), (1, 1)).into()));
+            debug_assert!(a.contains(((-1, 0), (1, 1)).into()));
+        }
+
+        #[test]
+        fn contains_self() {
+            let a = test_area();
+
+            debug_assert!(a.contains(((-1, -1), (2, 2)).into()));
+        }
+
+        #[test]
+        fn no_neighboring_1x1s() {
+            let a = test_area();
+
+            debug_assert!(!a.contains(((-2, -2), (1, 1)).into()));
+            debug_assert!(!a.contains(((-2, -1), (1, 1)).into()));
+            debug_assert!(!a.contains(((-2, 0), (1, 1)).into()));
+            debug_assert!(!a.contains(((-2, 1), (1, 1)).into()));
+            debug_assert!(!a.contains(((-2, 2), (1, 1)).into()));
+            debug_assert!(!a.contains(((-1, 2), (1, 1)).into()));
+            debug_assert!(!a.contains(((0, 2), (1, 1)).into()));
+            debug_assert!(!a.contains(((1, 2), (1, 1)).into()));
+            debug_assert!(!a.contains(((2, 2), (1, 1)).into()));
+            debug_assert!(!a.contains(((2, 1), (1, 1)).into()));
+            debug_assert!(!a.contains(((2, 0), (1, 1)).into()));
+            debug_assert!(!a.contains(((2, -1), (1, 1)).into()));
+            debug_assert!(!a.contains(((2, -2), (1, 1)).into()));
+            debug_assert!(!a.contains(((1, -2), (1, 1)).into()));
+            debug_assert!(!a.contains(((0, -2), (1, 1)).into()));
+            debug_assert!(!a.contains(((-1, -2), (1, 1)).into()));
+        }
+
+        #[test]
+        fn no_overlapping_2x2s() {
+            let a = test_area();
+
+            debug_assert!(!a.contains(((0, 0), (2, 2)).into()));
+            debug_assert!(!a.contains(((2, 2), (2, 2)).into()));
+            debug_assert!(!a.contains(((-2, -2), (2, 2)).into()));
+        }
+
+        #[test]
+        fn no_overlapping_3x3s() {
+            let a = test_area();
+
+            debug_assert!(!a.contains(((0, 0), (3, 3)).into()));
+            debug_assert!(!a.contains(((1, 0), (3, 3)).into()));
+            debug_assert!(!a.contains(((-1, -1), (3, 3)).into()));
+            debug_assert!(!a.contains(((-1, 1), (3, 3)).into()));
+            debug_assert!(!a.contains(((-2, 1), (3, 3)).into()));
+            debug_assert!(!a.contains(((-2, -2), (3, 3)).into()));
+        }
+
+        #[test]
+        fn contains_pt() {
+            let a = test_area();
+
+            // DOES contain:
+            debug_assert!(a.contains_pt((-1, -1).into()));
+            debug_assert!(a.contains_pt((-1, 0).into()));
+            debug_assert!(a.contains_pt((0, -1).into()));
+            debug_assert!(a.contains_pt((0, 0).into()));
+
+            // Does NOT contain:
+            debug_assert!(!a.contains_pt((-2, -2).into()));
+            debug_assert!(!a.contains_pt((-2, -1).into()));
+            debug_assert!(!a.contains_pt((-2, 0).into()));
+            debug_assert!(!a.contains_pt((-2, 1).into()));
+            debug_assert!(!a.contains_pt((-2, 2).into()));
+            debug_assert!(!a.contains_pt((-1, 2).into()));
+            debug_assert!(!a.contains_pt((0, 2).into()));
+            debug_assert!(!a.contains_pt((1, 2).into()));
+            debug_assert!(!a.contains_pt((2, 2).into()));
+            debug_assert!(!a.contains_pt((2, 1).into()));
+            debug_assert!(!a.contains_pt((2, 0).into()));
+            debug_assert!(!a.contains_pt((2, -1).into()));
+            debug_assert!(!a.contains_pt((2, -2).into()));
+            debug_assert!(!a.contains_pt((1, -2).into()));
+            debug_assert!(!a.contains_pt((0, -2).into()));
+            debug_assert!(!a.contains_pt((-1, -2).into()));
+        }
     }
 
-    //   0  1  2  3  4  5  6
-    // 0 +--+--+--+--+--+--+
-    //   |  |  |  |  |  |  |
-    // 1 +--+--+--+--+--+--+
-    //   |  |  |  |  |  |  |
-    // 2 +--+--aaaaaaa--+--+
-    //   |  |  aaaaaaa  |  |
-    // 3 +--+--aaaaaaa--+--+
-    //   |  |  aaaaaaa  |  |
-    // 4 +--+--aaaaaaa--+--+
-    //   |  |  |  |  |  |  |
-    // 5 +--+--+--+--+--+--+
-    //   |  |  |  |  |  |  |
-    // 6 +--+--+--+--+--+--+
-    #[test]
-    fn area_intersects_area() {
-        let a: Area<u8> = ((2, 2), (2, 2)).into();
+    // Just positive values.
+    mod intersects_a {
+        use super::*;
 
-        // All the 1x1s obviously contains
-        debug_assert!(a.intersects(((2, 2), (1, 1)).into()));
-        debug_assert!(a.intersects(((2, 3), (1, 1)).into()));
-        debug_assert!(a.intersects(((3, 2), (1, 1)).into()));
-        debug_assert!(a.intersects(((3, 3), (1, 1)).into()));
+        //   0  1  2  3  4  5  6
+        // 0 +--+--+--+--+--+--+
+        //   |  |  |  |  |  |  |
+        // 1 +--+--+--+--+--+--+
+        //   |  |  |  |  |  |  |
+        // 2 +--+--aaaaaaa--+--+
+        //   |  |  aaaaaaa  |  |
+        // 3 +--+--aaaaaaa--+--+
+        //   |  |  aaaaaaa  |  |
+        // 4 +--+--aaaaaaa--+--+
+        //   |  |  |  |  |  |  |
+        // 5 +--+--+--+--+--+--+
+        //   |  |  |  |  |  |  |
+        // 6 +--+--+--+--+--+--+
 
-        // And the one 2x2 obviously contained
-        debug_assert!(a.intersects(((2, 2), (2, 2)).into()));
+        fn test_area() -> Area<u8> {
+            ((2, 2), (2, 2)).into()
+        }
+
+        // All the 1x1s obviously contains.
+        #[test]
+        fn area_1x1() {
+            let a = test_area();
+
+            debug_assert!(a.intersects(((2, 2), (1, 1)).into()));
+            debug_assert!(a.intersects(((2, 3), (1, 1)).into()));
+            debug_assert!(a.intersects(((3, 2), (1, 1)).into()));
+            debug_assert!(a.intersects(((3, 3), (1, 1)).into()));
+        }
+
+        // And the one 2x2 obviously contained.
+        #[test]
+        fn area_2x2() {
+            let a = test_area();
+
+            debug_assert!(a.intersects(((2, 2), (2, 2)).into()));
+        }
 
         // But a single edge shared is not enough.
-        debug_assert!(!a.intersects(((1, 1), (1, 1)).into()));
-        debug_assert!(!a.intersects(((1, 1), (2, 1)).into()));
-        debug_assert!(!a.intersects(((1, 1), (4, 1)).into()));
-        debug_assert!(!a.intersects(((2, 1), (1, 1)).into()));
-        debug_assert!(!a.intersects(((3, 1), (2, 1)).into()));
-        debug_assert!(!a.intersects(((4, 1), (2, 1)).into()));
-        debug_assert!(!a.intersects(((1, 1), (1, 2)).into()));
-        debug_assert!(!a.intersects(((1, 2), (1, 2)).into()));
-        debug_assert!(!a.intersects(((1, 3), (1, 2)).into()));
-        debug_assert!(!a.intersects(((1, 4), (1, 2)).into()));
-        debug_assert!(!a.intersects(((2, 4), (1, 1)).into()));
-        debug_assert!(!a.intersects(((3, 4), (1, 1)).into()));
-        debug_assert!(!a.intersects(((4, 4), (1, 1)).into()));
+        #[test]
+        fn area_with_only_a_single_shared_edge() {
+            let a = test_area();
+
+            debug_assert!(!a.intersects(((1, 1), (1, 1)).into()));
+            debug_assert!(!a.intersects(((1, 1), (2, 1)).into()));
+            debug_assert!(!a.intersects(((1, 1), (4, 1)).into()));
+            debug_assert!(!a.intersects(((2, 1), (1, 1)).into()));
+            debug_assert!(!a.intersects(((3, 1), (2, 1)).into()));
+            debug_assert!(!a.intersects(((4, 1), (2, 1)).into()));
+            debug_assert!(!a.intersects(((1, 1), (1, 2)).into()));
+            debug_assert!(!a.intersects(((1, 2), (1, 2)).into()));
+            debug_assert!(!a.intersects(((1, 3), (1, 2)).into()));
+            debug_assert!(!a.intersects(((1, 4), (1, 2)).into()));
+            debug_assert!(!a.intersects(((2, 4), (1, 1)).into()));
+            debug_assert!(!a.intersects(((3, 4), (1, 1)).into()));
+            debug_assert!(!a.intersects(((4, 4), (1, 1)).into()));
+        }
 
         // But intersecting a 1x1 region counts.
-        debug_assert!(a.intersects(((1, 1), (2, 2)).into()));
-        debug_assert!(a.intersects(((0, 0), (3, 3)).into()));
-        debug_assert!(a.intersects(((3, 3), (2, 2)).into()));
-        debug_assert!(a.intersects(((1, 3), (2, 2)).into()));
+        #[test]
+        fn area_with_a_1x1_overlap() {
+            let a = test_area();
+
+            debug_assert!(a.intersects(((1, 1), (2, 2)).into()));
+            debug_assert!(a.intersects(((0, 0), (3, 3)).into()));
+            debug_assert!(a.intersects(((3, 3), (2, 2)).into()));
+            debug_assert!(a.intersects(((1, 3), (2, 2)).into()));
+        }
+
+        #[test]
+        fn regression_test() {
+            let a: Area<u8> = ((3, 3), (2, 2)).into();
+            let b: Area<u8> = ((0, 0), (6, 6)).into();
+
+            debug_assert!(b.intersects(a));
+            debug_assert!(a.intersects(b));
+        }
     }
 
-    #[test]
-    fn area_intersects_area_regression_test() {
-        let a: Area<u8> = ((3, 3), (2, 2)).into();
-        let b: Area<u8> = ((0, 0), (6, 6)).into();
+    // Positive and negative values.
+    mod intersects_b {
+        use super::*;
 
-        debug_assert!(b.intersects(a));
-        debug_assert!(a.intersects(b));
+        //  -3 -2 -1  0  1  2  3
+        //-3 +--+--+--+--+--+--+
+        //   |  |  |  |  |  |  |
+        //-2 +--+--+--+--+--+--+
+        //   |  |  |  |  |  |  |
+        //-1 +--+--aaaaaaa--+--+
+        //   |  |  aaaaaaa  |  |
+        // 0 +--+--aaaaaaa--+--+
+        //   |  |  aaaaaaa  |  |
+        // 1 +--+--aaaaaaa--+--+
+        //   |  |  |  |  |  |  |
+        // 2 +--+--+--+--+--+--+
+        //   |  |  |  |  |  |  |
+        // 3 +--+--+--+--+--+--+
+
+        fn test_area() -> Area<i8> {
+            ((-1, -1), (2, 2)).into()
+        }
+
+        #[test]
+        fn area_1x1() {
+            let a = test_area();
+            debug_assert!(a.intersects(((-1, -1), (1, 1)).into()));
+            debug_assert!(a.intersects(((-1, 0), (1, 1)).into()));
+            debug_assert!(a.intersects(((0, 0), (1, 1)).into()));
+            debug_assert!(a.intersects(((0, -1), (1, 1)).into()));
+        }
+
+        #[test]
+        fn area_self() {
+            let a = test_area();
+            debug_assert!(a.intersects(((-1, -1), (2, 2)).into()));
+        }
+
+        #[test]
+        fn area_with_a_1x1_overlap() {
+            let a = test_area();
+            debug_assert!(a.intersects(((-2, -2), (2, 2)).into()));
+            debug_assert!(a.intersects(((0, -2), (2, 2)).into()));
+            debug_assert!(a.intersects(((0, 0), (2, 2)).into()));
+            debug_assert!(a.intersects(((-2, 0), (2, 2)).into()));
+        }
+
+        #[test]
+        fn area_with_only_a_single_shared_edge() {
+            let a = test_area();
+            debug_assert!(!a.intersects(((1, -1), (1, 1)).into()));
+            debug_assert!(!a.intersects(((1, 1), (1, 1)).into()));
+            debug_assert!(!a.intersects(((-1, 1), (1, 1)).into()));
+            debug_assert!(!a.intersects(((-2, 0), (1, 1)).into()));
+            debug_assert!(!a.intersects(((-2, -2), (1, 1)).into()));
+        }
     }
 }
