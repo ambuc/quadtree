@@ -70,6 +70,7 @@ mod point;
 
 use crate::area::{Area, AreaType};
 use crate::point::Point;
+use std::iter::FusedIterator;
 
 /// A data structure for storing and accessing data by x/y coordinates.
 /// (A [Quadtree](https://en.wikipedia.org/wiki/Quadtree).)
@@ -367,6 +368,10 @@ where
     ///
     /// [`QueryMut`]: struct.QueryMut.html
     pub fn query_mut(&mut self, anchor: (U, U), size: (U, U)) -> QueryMut<U, V> {
+        // TODO(ambuc): There is an optimization we can do here where, before returning the
+        // QueryMut, we recursively descend into the tree to initialize the QueryMut struct with
+        // the smallest possible subtree which does not completely contain the requested query
+        // region. (Implement this for .query() too.)
         assert!(!size.0.is_zero());
         assert!(!size.1.is_zero());
         QueryMut::new(
@@ -554,10 +559,6 @@ where
 ///
 /// This struct is created by the [`iter`] method on [`Quadtree`].
 ///
-/// # TODOs:
-/// - Traits
-///   - TODO(ambuc): Implement `FusedIterator` for `Iter<'a, V>`.
-///
 /// [`iter`]: struct.Quadtree.html#method.iter
 /// [`Quadtree`]: struct.Quadtree.html
 #[derive(Clone)]
@@ -622,6 +623,8 @@ where
     }
 }
 
+impl<'a, U, V> FusedIterator for Iter<'a, U, V> where U: num::PrimInt {}
+
 impl<'a, U, V> ExactSizeIterator for Iter<'a, U, V>
 where
     U: num::PrimInt,
@@ -634,10 +637,6 @@ where
 /// A mutable iterator over all keys and values of a [`Quadtree`].
 ///
 /// This struct is created by the [`iter_mut`] method on [`Quadtree`].
-///
-/// # TODOs:
-/// - Traits
-///   - TODO(ambuc): Implement `FusedIterator` for `IterMut<'a, V>`.
 ///
 /// [`iter_mut`]: struct.Quadtree.html#method.iter_mut
 /// [`Quadtree`]: struct.Quadtree.html
@@ -702,6 +701,8 @@ where
     }
 }
 
+impl<'a, U, V> FusedIterator for IterMut<'a, U, V> where U: num::PrimInt {}
+
 impl<'a, U, V> ExactSizeIterator for IterMut<'a, U, V>
 where
     U: num::PrimInt,
@@ -714,10 +715,6 @@ where
 /// An iterator over the keys and values of a [`Quadtree`].
 ///
 /// This struct is created by the [`query`] or [`query_pt`] methods on [`Quadtree`].
-///
-/// # TODOs:
-/// - Traits
-///   - TODO(ambuc): Implement `FusedIterator` for `Query<'a, V>`.
 ///
 /// [`query`]: struct.Quadtree.html#method.query
 /// [`query_pt`]: struct.Quadtree.html#method.query_pt
@@ -773,6 +770,8 @@ where
     }
 }
 
+impl<'a, U, V> FusedIterator for Query<'a, U, V> where U: num::PrimInt {}
+
 impl<'a, U, V> std::fmt::Debug for Query<'a, U, V>
 where
     V: std::fmt::Debug,
@@ -785,10 +784,6 @@ where
 /// A mutable iterator over the keys and values of a [`Quadtree`].
 ///
 /// This struct is created by the [`query_mut`] or [`query_pt_mut`] methods on [`Quadtree`].
-///
-/// # TODOs:
-/// - Traits
-///  - TODO(ambuc): Implement `FusedIterator` for `QueryMut<'a, V>`.
 ///
 /// [`query_mut`]: struct.Quadtree.html#method.query_mut
 /// [`query_pt_mut`]: struct.Quadtree.html#method.query_pt_mut
@@ -842,6 +837,8 @@ where
         }
     }
 }
+
+impl<'a, U, V> FusedIterator for QueryMut<'a, U, V> where U: num::PrimInt {}
 
 impl<'a, U, V> std::fmt::Debug for QueryMut<'a, U, V>
 where
