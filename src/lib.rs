@@ -718,7 +718,6 @@ where
 /// # TODOs:
 /// - Traits
 ///   - TODO(ambuc): Implement `FusedIterator` for `Query<'a, V>`.
-///   - TODO(ambuc): Implement `ExactSizeIterator` for `Query<'a, V>`.
 ///
 /// [`query`]: struct.Quadtree.html#method.query
 /// [`query_pt`]: struct.Quadtree.html#method.query_pt
@@ -790,7 +789,6 @@ where
 /// # TODOs:
 /// - Traits
 ///  - TODO(ambuc): Implement `FusedIterator` for `QueryMut<'a, V>`.
-///  - TODO(ambuc): Implement `ExactSizeIterator` for `QueryMut<'a, V>`.
 ///
 /// [`query_mut`]: struct.Quadtree.html#method.query_mut
 /// [`query_pt_mut`]: struct.Quadtree.html#method.query_pt_mut
