@@ -451,3 +451,86 @@ fn extend_with_points_and_regions() {
     debug_assert_eq!(q.query_pt((0, 0)).next(), Some((&((0, 0), (1, 2)), &0)));
     debug_assert_eq!(q.query_pt((2, 3)).next(), Some((&((2, 3), (3, 4)), &5)));
 }
+
+// TODO(ambuc): This is a good idea, try to segment the rest of these integration tests in a similar way.
+fn mk_quadtree_for_iter_tests() -> Quadtree<i32, i8> {
+    let mut q = Quadtree::<i32, i8>::new_with_anchor((-35, -35), 8);
+    assert!(q.insert_pt((0, -5), 10));
+    assert!(q.insert_pt((-15, 20), -25));
+    assert!(q.insert_pt((30, -35), 40));
+    q
+}
+
+#[test]
+fn iter_all() {
+    let mut q = mk_quadtree_for_iter_tests();
+
+    let iter = q.iter();
+
+    // TODO(ambuc): Write a rudimentary matcher for this purpose.
+    let mut collected: Vec<(&((i32, i32), (i32, i32)), &i8)> = iter.collect();
+    collected.sort();
+    debug_assert_eq!(
+        collected,
+        vec![
+            (&((-15, 20), (1, 1)), &-25),
+            (&((0, -5), (1, 1)), &10),
+            (&((30, -35), (1, 1)), &40)
+        ]
+    );
+}
+
+#[test]
+fn iter_size_hint() {
+    let mut q = mk_quadtree_for_iter_tests();
+
+    let mut iter = q.iter();
+    debug_assert_eq!(iter.size_hint(), (3, Some(3)));
+    iter.next();
+    debug_assert_eq!(iter.size_hint(), (2, Some(2)));
+    iter.next();
+    debug_assert_eq!(iter.size_hint(), (1, Some(1)));
+    iter.next();
+    debug_assert_eq!(iter.size_hint(), (0, Some(0)));
+    iter.next();
+    debug_assert_eq!(iter.size_hint(), (0, Some(0)));
+}
+
+// The same as iter_all(), except we mutate each value by +1.
+#[test]
+fn iter_mut_all() {
+    let mut q = mk_quadtree_for_iter_tests();
+
+    for (_, v) in q.iter_mut() {
+        *v += 1;
+    }
+
+    let iter = q.iter();
+
+    let mut collected: Vec<(&((i32, i32), (i32, i32)), &i8)> = iter.collect();
+    collected.sort();
+    debug_assert_eq!(
+        collected,
+        vec![
+            (&((-15, 20), (1, 1)), &-24),
+            (&((0, -5), (1, 1)), &11),
+            (&((30, -35), (1, 1)), &41)
+        ]
+    );
+}
+
+#[test]
+fn iter_mut_size_hint() {
+    let mut q = mk_quadtree_for_iter_tests();
+
+    let mut iter = q.iter_mut();
+    debug_assert_eq!(iter.size_hint(), (3, Some(3)));
+    iter.next();
+    debug_assert_eq!(iter.size_hint(), (2, Some(2)));
+    iter.next();
+    debug_assert_eq!(iter.size_hint(), (1, Some(1)));
+    iter.next();
+    debug_assert_eq!(iter.size_hint(), (0, Some(0)));
+    iter.next();
+    debug_assert_eq!(iter.size_hint(), (0, Some(0)));
+}

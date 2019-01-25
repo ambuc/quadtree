@@ -392,6 +392,18 @@ where
         self.subquadrants = [None, None, None, None];
     }
 
+    /// Returns an iterator over all `(&((U, U), (U, U)), &V)` location/value pairs in the
+    /// Quadtree.
+    pub fn iter(&mut self) -> Iter<U, V> {
+        Iter::new(/*total_size=*/ self.len(), /*qt=*/ self)
+    }
+
+    /// Returns a mutable iterator over all `(&((U, U), (U, U)), &mut V)` location/value pairs in the
+    /// Quadtree.
+    pub fn iter_mut(&mut self) -> IterMut<U, V> {
+        IterMut::new(/*total_size=*/ self.len(), /*qt=*/ self)
+    }
+
     // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
     // Private functions // // // // // // // // // // // // // // // // // // // // // // // // //
     // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
@@ -534,6 +546,154 @@ where
         for (((x, y), (w, h)), v) in iter {
             self.insert((x, y), (w, h), v);
         }
+    }
+}
+
+/// An iterator over all keys and values of a [`Quadtree`].
+///
+/// This struct is created by the [`iter`] method on [`Quadtree`].
+///
+/// # TODOs:
+/// - Traits
+///   - TODO(ambuc): Implement `FusedIterator` for `Query<'a, V>`.
+///   - TODO(ambuc): Implement `ExactSizeIterator` for `Query<'a, V>`.
+///
+/// [`iter`]: struct.Quadtree.html#method.iter
+/// [`Quadtree`]: struct.Quadtree.html
+#[derive(Clone)]
+pub struct Iter<'a, U, V> {
+    region_stack: Vec<(&'a Area<U>, &'a V)>,
+    qt_stack: Vec<&'a Quadtree<U, V>>,
+    total_size: usize,
+    consumed: usize,
+    exhausted: bool,
+}
+
+impl<'a, U, V> Iter<'a, U, V> {
+    fn new(total_size: usize, qt: &'a Quadtree<U, V>) -> Iter<U, V> {
+        Iter {
+            region_stack: vec![],
+            qt_stack: vec![qt],
+            total_size,
+            consumed: 0,
+            exhausted: false,
+        }
+    }
+}
+
+// TODO(ambuc): There's a lot of overlap between this, IterMut, Query, and QueryMut. Dedup the core
+// algo somehow? Is it possible to encapsulate the decision tree of this algo. without the types?
+// A the very least, there's a clear overlap between Iter/Query and IterMut/QueryMut.
+impl<'a, U, V> Iterator for Iter<'a, U, V>
+where
+    U: num::PrimInt,
+{
+    type Item = (&'a AreaType<U>, &'a V);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        // Check the region_stack.
+        if let Some((region, val)) = self.region_stack.pop() {
+            self.consumed += 1;
+            return Some((region.inner(), val));
+        }
+
+        // Then check the qt_stack.
+        if let Some(qt) = self.qt_stack.pop() {
+            // Push my regions onto the region stack
+            for (k, v) in qt.values.iter() {
+                self.region_stack.push((k, v));
+            }
+            // Push my subquadrants onto the qt_stack too.
+            for sq in qt.subquadrants.iter() {
+                if let Some(sub_qt) = sq {
+                    self.qt_stack.push(sub_qt);
+                }
+            }
+            return self.next();
+        }
+
+        // Else there's nothing left to search.
+        self.exhausted = true;
+        None
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let definite_num = self.total_size - self.consumed;
+        (definite_num, Some(definite_num))
+    }
+}
+
+/// A mutable iterator over all keys and values of a [`Quadtree`].
+///
+/// This struct is created by the [`iter_mut`] method on [`Quadtree`].
+///
+/// # TODOs:
+/// - Traits
+///   - TODO(ambuc): Implement `FusedIterator` for `Query<'a, V>`.
+///   - TODO(ambuc): Implement `ExactSizeIterator` for `Query<'a, V>`.
+///
+/// [`iter_mut`]: struct.Quadtree.html#method.iter_mut
+/// [`Quadtree`]: struct.Quadtree.html
+pub struct IterMut<'a, U, V> {
+    region_stack: Vec<(&'a Area<U>, &'a mut V)>,
+    qt_stack: Vec<&'a mut Quadtree<U, V>>,
+    total_size: usize,
+    consumed: usize,
+    exhausted: bool,
+}
+
+impl<'a, U, V> IterMut<'a, U, V> {
+    fn new(total_size: usize, qt: &'a mut Quadtree<U, V>) -> IterMut<U, V> {
+        IterMut {
+            region_stack: vec![],
+            qt_stack: vec![qt],
+            total_size,
+            consumed: 0,
+            exhausted: false,
+        }
+    }
+}
+
+impl<'a, U, V> Iterator for IterMut<'a, U, V>
+where
+    U: num::PrimInt,
+{
+    type Item = (&'a AreaType<U>, &'a mut V);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        // Check the region_stack.
+        if let Some((region, val)) = self.region_stack.pop() {
+            self.consumed += 1;
+            return Some((region.inner(), val));
+        }
+
+        // Then check the qt_stack.
+        if let Some(qt) = self.qt_stack.pop() {
+            // Push my regions onto the region stack
+            for (k, v) in qt.values.iter_mut() {
+                self.region_stack.push((k, v));
+            }
+            // Push my subquadrants onto the qt_stack too.
+            for sq in qt.subquadrants.iter_mut() {
+                if let Some(sub_qt) = sq {
+                    self.qt_stack.push(sub_qt);
+                }
+            }
+            return self.next();
+        }
+
+        // Else there's nothing left to search.
+        self.exhausted = true;
+        None
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let definite_num = self.total_size - self.consumed;
+        (definite_num, Some(definite_num))
     }
 }
 
