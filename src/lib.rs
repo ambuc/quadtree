@@ -546,7 +546,6 @@ where
 /// - Traits
 ///   - TODO(ambuc): Implement `FusedIterator` for `Iter<'a, V>`.
 ///   - TODO(ambuc): Implement `ExactSizeIterator` for `Iter<'a, V>`.
-///   - TODO(ambuc): Implement `Clone` for `Iter<'a, V>`.
 ///
 /// [`get`]: struct.Quadtree.html#method.get
 /// [`get_pt`]: struct.Quadtree.html#method.get_pt
