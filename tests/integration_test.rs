@@ -534,3 +534,31 @@ fn iter_mut_size_hint() {
     iter.next();
     debug_assert_eq!(iter.size_hint(), (0, Some(0)));
 }
+
+#[test]
+fn iter_exact_size() {
+    let mut q = mk_quadtree_for_iter_tests();
+    let mut iter = q.iter();
+    debug_assert_eq!(iter.len(), 3);
+    iter.next();
+    debug_assert_eq!(iter.len(), 2);
+    iter.next();
+    iter.next();
+    debug_assert_eq!(iter.len(), 0);
+    iter.next();
+    debug_assert_eq!(iter.len(), 0);
+}
+
+#[test]
+fn iter_mut_exact_size() {
+    let mut q = mk_quadtree_for_iter_tests();
+    let mut iter = q.iter_mut();
+    debug_assert_eq!(iter.len(), 3);
+    iter.next();
+    debug_assert_eq!(iter.len(), 2);
+    iter.next();
+    iter.next();
+    debug_assert_eq!(iter.len(), 0);
+    iter.next();
+    debug_assert_eq!(iter.len(), 0);
+}

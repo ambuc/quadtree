@@ -557,7 +557,6 @@ where
 /// # TODOs:
 /// - Traits
 ///   - TODO(ambuc): Implement `FusedIterator` for `Iter<'a, V>`.
-///   - TODO(ambuc): Implement `ExactSizeIterator` for `Iter<'a, V>`.
 ///
 /// [`iter`]: struct.Quadtree.html#method.iter
 /// [`Quadtree`]: struct.Quadtree.html
@@ -623,6 +622,15 @@ where
     }
 }
 
+impl<'a, U, V> ExactSizeIterator for Iter<'a, U, V>
+where
+    U: num::PrimInt,
+{
+    fn len(&self) -> usize {
+        self.total_size - self.consumed
+    }
+}
+
 /// A mutable iterator over all keys and values of a [`Quadtree`].
 ///
 /// This struct is created by the [`iter_mut`] method on [`Quadtree`].
@@ -630,7 +638,6 @@ where
 /// # TODOs:
 /// - Traits
 ///   - TODO(ambuc): Implement `FusedIterator` for `IterMut<'a, V>`.
-///   - TODO(ambuc): Implement `ExactSizeIterator` for `IterMut<'a, V>`.
 ///
 /// [`iter_mut`]: struct.Quadtree.html#method.iter_mut
 /// [`Quadtree`]: struct.Quadtree.html
@@ -692,6 +699,15 @@ where
     fn size_hint(&self) -> (usize, Option<usize>) {
         let definite_num = self.total_size - self.consumed;
         (definite_num, Some(definite_num))
+    }
+}
+
+impl<'a, U, V> ExactSizeIterator for IterMut<'a, U, V>
+where
+    U: num::PrimInt,
+{
+    fn len(&self) -> usize {
+        self.total_size - self.consumed
     }
 }
 
