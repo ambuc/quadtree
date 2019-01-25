@@ -538,7 +538,7 @@ where
     }
 }
 
-/// An iterator over the values of a [`Quadtree`].
+/// An iterator over the keys and values of a [`Quadtree`].
 ///
 /// This struct is created by the [`get`] or [`get_pt`] methods on [`Quadtree`].
 ///
@@ -629,7 +629,7 @@ where
     }
 }
 
-/// A mutable iterator over the values of a [`Quadtree`].
+/// A mutable iterator over the keys and values of a [`Quadtree`].
 ///
 /// This struct is created by the [`get_mut`] or [`get_pt_mut`] methods on [`Quadtree`].
 ///
