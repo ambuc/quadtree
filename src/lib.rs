@@ -107,7 +107,6 @@ use crate::point::Point;
 ///   - TODO(ambuc): Implement `Extend<(K, V)>` for `Quadtree`.
 ///   - TODO(ambuc): Implement `FromIterator<(K, V)>` for `Quadtree`.
 ///   - TODO(ambuc): Implement `Intoiterator` for `Quadtree`.
-///   - TODO(ambuc): Implement `Default` for `Quadtree`.
 /// - Other
 #[derive(Clone)]
 pub struct Quadtree<U, V> {
