@@ -568,7 +568,7 @@ mod iterators {
     fn regions() {
         use crate::util::unordered_elements_are;
 
-        let mut q = mk_quadtree_for_iter_tests();
+        let q = mk_quadtree_for_iter_tests();
         debug_assert!(unordered_elements_are(
             q.regions(),
             vec![
@@ -577,5 +577,27 @@ mod iterators {
                 &((30, -35), (1, 1))
             ],
         ));
+    }
+
+    #[test]
+    fn values() {
+        use crate::util::unordered_elements_are;
+
+        let q = mk_quadtree_for_iter_tests();
+
+        debug_assert!(unordered_elements_are(q.values(), vec![&10, &-25, &40]));
+    }
+
+    #[test]
+    fn values_mut() {
+        use crate::util::unordered_elements_are;
+
+        let mut q = mk_quadtree_for_iter_tests();
+
+        for v in q.values_mut() {
+            *v += 1;
+        }
+
+        debug_assert!(unordered_elements_are(q.values(), vec![&11, &-24, &41]));
     }
 }

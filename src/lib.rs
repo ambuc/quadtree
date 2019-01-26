@@ -95,8 +95,6 @@ use std::iter::FusedIterator;
 ///
 /// ## TODOs:
 /// - Methods
-///   - TODO(ambuc): Implement `.values()`.
-///   - TODO(ambuc): Implement `.values_mut()`.
 ///   - TODO(ambuc): Implement strictly inclusive getters.
 ///   - TODO(ambuc): Implement `.clear(anchor, size)`.
 ///   - TODO(ambuc): Implement `.delete(anchor, size)`.
@@ -409,9 +407,19 @@ where
         IterMut::new(/*total_size=*/ self.len(), /*qt=*/ self)
     }
 
-    /// Returns an iterator over all `&((U, U), (U, U))` regions in the Quadtree.
-    pub fn regions(&mut self) -> Regions<U, V> {
+    /// Returns an iterator over all `&'a ((U, U), (U, U))` regions in the Quadtree.
+    pub fn regions(&self) -> Regions<U, V> {
         Regions::new(/*len=*/ self.len(), /*qt=*/ self)
+    }
+
+    /// Returns an iterator over all `&'a V` values in the Quadtree.
+    pub fn values(&self) -> Values<U, V> {
+        Values::new(/*len=*/ self.len(), /*qt=*/ self)
+    }
+
+    /// Returns a mutable iterator over all `&'a mut V` values in the Quadtree.
+    pub fn values_mut(&mut self) -> ValuesMut<U, V> {
+        ValuesMut::new(/*len=*/ self.len(), /*qt=*/ self)
     }
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
@@ -726,6 +734,15 @@ where
     }
 }
 
+impl<'a, U, V> std::fmt::Debug for IterMut<'a, U, V>
+where
+    V: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 /// An iterator over the regions and values of a [`Quadtree`].
 ///
 /// This struct is created by the [`query`] or [`query_pt`] methods on [`Quadtree`].
@@ -736,7 +753,7 @@ where
 #[derive(Clone)]
 pub struct Query<'a, U, V> {
     query_region: Area<U>,
-    iter: Iter<'a, U, V>,
+    inner: Iter<'a, U, V>,
     exhausted: bool,
 }
 
@@ -744,7 +761,7 @@ impl<'a, U, V> Query<'a, U, V> {
     fn new(query_region: Area<U>, len: usize, qt: &'a Quadtree<U, V>) -> Query<U, V> {
         Query {
             query_region,
-            iter: Iter::new(len, qt),
+            inner: Iter::new(len, qt),
             exhausted: false,
         }
     }
@@ -758,7 +775,7 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        match self.iter.next() {
+        match self.inner.next() {
             Some((k, v)) => {
                 if self.query_region.intersects(k.clone().into()) {
                     Some((k, v))
@@ -778,7 +795,7 @@ where
         if self.exhausted {
             (0, Some(0))
         } else {
-            let (sh, _) = self.iter.size_hint();
+            let (sh, _) = self.inner.size_hint();
             (0, Some(sh))
         }
     }
@@ -805,7 +822,7 @@ where
 pub struct QueryMut<'a, U, V> {
     query_region: Area<U>,
     exhausted: bool,
-    iter: IterMut<'a, U, V>,
+    inner: IterMut<'a, U, V>,
 }
 
 impl<'a, U, V> QueryMut<'a, U, V> {
@@ -813,7 +830,7 @@ impl<'a, U, V> QueryMut<'a, U, V> {
         QueryMut {
             query_region,
             exhausted: false,
-            iter: IterMut::new(len, qt),
+            inner: IterMut::new(len, qt),
         }
     }
 }
@@ -826,7 +843,7 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        match self.iter.next() {
+        match self.inner.next() {
             Some((k, v)) => {
                 if self.query_region.intersects(k.clone().into()) {
                     Some((k, v))
@@ -846,7 +863,7 @@ where
         if self.exhausted {
             (0, Some(0))
         } else {
-            let (sh, _) = self.iter.size_hint();
+            let (sh, _) = self.inner.size_hint();
             (0, Some(sh))
         }
     }
@@ -871,13 +888,13 @@ where
 /// [`Quadtree`]: struct.Quadtree.html
 #[derive(Clone)]
 pub struct Regions<'a, U, V> {
-    iter: Iter<'a, U, V>,
+    inner: Iter<'a, U, V>,
 }
 
 impl<'a, U, V> Regions<'a, U, V> {
     fn new(len: usize, qt: &'a Quadtree<U, V>) -> Regions<U, V> {
         Regions {
-            iter: Iter::new(len, qt),
+            inner: Iter::new(len, qt),
         }
     }
 }
@@ -890,7 +907,7 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        match self.iter.next() {
+        match self.inner.next() {
             Some((k, _v)) => Some(k),
             None => None,
         }
@@ -898,7 +915,7 @@ where
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.iter.size_hint()
+        self.inner.size_hint()
     }
 }
 
@@ -909,6 +926,123 @@ where
     V: std::fmt::Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self.iter)
+        write!(f, "{:?}", self.inner)
+    }
+}
+
+/// An iterator over the values held within a [`Quadtree`].
+///
+/// This struct is created by the [`values`] method on [`Quadtree`].
+///
+/// [`values`]: struct.Quadtree.html#method.values
+/// [`Quadtree`]: struct.Quadtree.html
+#[derive(Clone)]
+pub struct Values<'a, U, V> {
+    inner: Iter<'a, U, V>,
+}
+
+impl<'a, U, V> Values<'a, U, V> {
+    fn new(len: usize, qt: &'a Quadtree<U, V>) -> Values<U, V> {
+        Values {
+            inner: Iter::new(len, qt),
+        }
+    }
+}
+
+impl<'a, U, V> Iterator for Values<'a, U, V>
+where
+    U: num::PrimInt,
+{
+    type Item = (&'a V);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.inner.next() {
+            Some((_k, v)) => Some(v),
+            None => None,
+        }
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
+}
+
+impl<'a, U, V> FusedIterator for Values<'a, U, V> where U: num::PrimInt {}
+
+impl<'a, U, V> ExactSizeIterator for Values<'a, U, V>
+where
+    U: num::PrimInt,
+{
+    fn len(&self) -> usize {
+        self.inner.total_size - self.inner.consumed
+    }
+}
+
+impl<'a, U, V> std::fmt::Debug for Values<'a, U, V>
+where
+    V: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self.inner)
+    }
+}
+
+/// A mutable iterator over the values held within a [`Quadtree`].
+///
+/// This struct is created by the [`values_mut`] method on [`Quadtree`].
+///
+/// [`values_mut`]: struct.Quadtree.html#method.values_mut
+/// [`Quadtree`]: struct.Quadtree.html
+pub struct ValuesMut<'a, U, V> {
+    inner: IterMut<'a, U, V>,
+}
+
+impl<'a, U, V> ValuesMut<'a, U, V> {
+    fn new(len: usize, qt: &'a mut Quadtree<U, V>) -> ValuesMut<U, V> {
+        ValuesMut {
+            inner: IterMut::new(len, qt),
+        }
+    }
+}
+
+impl<'a, U, V> Iterator for ValuesMut<'a, U, V>
+where
+    U: num::PrimInt,
+{
+    type Item = (&'a mut V);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.inner.next() {
+            Some((_k, v)) => Some(v),
+            None => None,
+        }
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
+}
+
+impl<'a, U, V> FusedIterator for ValuesMut<'a, U, V> where U: num::PrimInt {}
+
+impl<'a, U, V> std::fmt::Debug for ValuesMut<'a, U, V>
+where
+    V: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self.inner)
+    }
+}
+
+impl<'a, U, V> ExactSizeIterator for ValuesMut<'a, U, V>
+where
+    U: num::PrimInt,
+{
+    fn len(&self) -> usize {
+        self.inner.total_size - self.inner.consumed
     }
 }
