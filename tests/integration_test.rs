@@ -14,6 +14,8 @@
 
 use quadtree_impl::Quadtree;
 
+mod util;
+
 #[test]
 fn new_with_depth() {
     // None of these should crash.
@@ -184,8 +186,7 @@ fn query_on_point() {
 
 #[test]
 fn query_in_region() {
-    // Convenient for iterator return types.
-    type AreaType = ((u32, u32), (u32, u32));
+    use crate::util::unordered_elements_are;
 
     let mut q = Quadtree::<u32, u8>::new(4);
     //   0  1  2  3  4  5  6
@@ -276,45 +277,30 @@ fn query_in_region() {
 
     // Queries which capture both #10 and #55. Dunno in what order.
 
-    let queryboth1 = q.query((3, 3), (1, 1));
-    let mut collected1: Vec<(&AreaType, &u8)> = queryboth1.collect();
-    collected1.sort();
-    debug_assert_eq!(
-        collected1,
+    debug_assert!(unordered_elements_are(
+        q.query((3, 3), (1, 1)),
         vec![(&((2, 2), (2, 2)), &10), (&((3, 3), (2, 2)), &55)]
-    );
+    ));
 
-    let queryboth2 = q.query((3, 3), (3, 3));
-    let mut collected2: Vec<(&AreaType, &u8)> = queryboth2.collect();
-    collected2.sort();
-    debug_assert_eq!(
-        collected2,
+    debug_assert!(unordered_elements_are(
+        q.query((3, 3), (3, 3)),
         vec![(&((2, 2), (2, 2)), &10), (&((3, 3), (2, 2)), &55)]
-    );
+    ));
 
-    let queryboth3 = q.query((0, 0), (6, 6));
-    let mut collected3: Vec<(&AreaType, &u8)> = queryboth3.collect();
-    collected3.sort();
-    debug_assert_eq!(
-        collected3,
+    debug_assert!(unordered_elements_are(
+        q.query((0, 0), (6, 6)),
         vec![(&((2, 2), (2, 2)), &10), (&((3, 3), (2, 2)), &55)]
-    );
+    ));
 
-    let queryboth4 = q.query((2, 2), (6, 6));
-    let mut collected4: Vec<(&AreaType, &u8)> = queryboth4.collect();
-    collected4.sort();
-    debug_assert_eq!(
-        collected4,
+    debug_assert!(unordered_elements_are(
+        q.query((2, 2), (6, 6)),
         vec![(&((2, 2), (2, 2)), &10), (&((3, 3), (2, 2)), &55)]
-    );
+    ));
 
-    let queryboth5 = q.query((2, 2), (2, 2));
-    let mut collected5: Vec<(&AreaType, &u8)> = queryboth5.collect();
-    collected5.sort();
-    debug_assert_eq!(
-        collected5,
+    debug_assert!(unordered_elements_are(
+        q.query((2, 2), (2, 2)),
         vec![(&((2, 2), (2, 2)), &10), (&((3, 3), (2, 2)), &55)]
-    );
+    ));
 }
 
 #[test]
@@ -463,21 +449,17 @@ fn mk_quadtree_for_iter_tests() -> Quadtree<i32, i8> {
 
 #[test]
 fn iter_all() {
+    use crate::util::unordered_elements_are;
     let mut q = mk_quadtree_for_iter_tests();
 
-    let iter = q.iter();
-
-    // TODO(ambuc): Write a rudimentary matcher for this purpose.
-    let mut collected: Vec<(&((i32, i32), (i32, i32)), &i8)> = iter.collect();
-    collected.sort();
-    debug_assert_eq!(
-        collected,
+    debug_assert!(unordered_elements_are(
+        q.iter(),
         vec![
             (&((-15, 20), (1, 1)), &-25),
             (&((0, -5), (1, 1)), &10),
             (&((30, -35), (1, 1)), &40)
         ]
-    );
+    ));
 }
 
 #[test]
@@ -499,24 +481,22 @@ fn iter_size_hint() {
 // The same as iter_all(), except we mutate each value by +1.
 #[test]
 fn iter_mut_all() {
+    use crate::util::unordered_elements_are;
+
     let mut q = mk_quadtree_for_iter_tests();
 
     for (_, v) in q.iter_mut() {
         *v += 1;
     }
 
-    let iter = q.iter();
-
-    let mut collected: Vec<(&((i32, i32), (i32, i32)), &i8)> = iter.collect();
-    collected.sort();
-    debug_assert_eq!(
-        collected,
+    debug_assert!(unordered_elements_are(
+        q.iter(),
         vec![
             (&((-15, 20), (1, 1)), &-24),
             (&((0, -5), (1, 1)), &11),
             (&((30, -35), (1, 1)), &41)
         ]
-    );
+    ));
 }
 
 #[test]
