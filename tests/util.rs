@@ -2,6 +2,9 @@ use std::hash::Hash;
 
 // Inspired by google/googletest's UnorderedElementsAre().
 // https://github.com/google/googletest/blob/master/googlemock/docs/CheatSheet.md#container-matchers
+//
+// This function only gets used in tests.
+#[allow(dead_code)]
 pub fn unordered_elements_are<T, X, Y>(x: X, y: Y) -> bool
 where
     X: IntoIterator<Item = T>,
