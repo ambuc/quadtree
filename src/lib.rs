@@ -449,7 +449,8 @@ where
 
         // If we're at the bottom depth, it had better fit.
         if self.depth == 0 {
-            self.values.push((req, val));
+            assert!(req == self.region);
+            self.exact_values.push(val);
             return true;
         }
 
@@ -482,26 +483,28 @@ where
 
     // Expand None => Some([None, None, None, None]).
     fn expand_subquadrants_if_necessary(&mut self) {
-        if self.subquadrants.is_none() {
-            self.subquadrants = Some([
-                Box::new(Quadtree::new_with_anchor(
-                    self.mk_subquadrant_anchor_pt(0).into(),
-                    self.depth - 1,
-                )),
-                Box::new(Quadtree::new_with_anchor(
-                    self.mk_subquadrant_anchor_pt(1).into(),
-                    self.depth - 1,
-                )),
-                Box::new(Quadtree::new_with_anchor(
-                    self.mk_subquadrant_anchor_pt(2).into(),
-                    self.depth - 1,
-                )),
-                Box::new(Quadtree::new_with_anchor(
-                    self.mk_subquadrant_anchor_pt(3).into(),
-                    self.depth - 1,
-                )),
-            ]);
+        if self.subquadrants.is_some() {
+            return;
         }
+
+        self.subquadrants = Some([
+            Box::new(Quadtree::new_with_anchor(
+                self.mk_subquadrant_anchor_pt(0).into(),
+                self.depth - 1,
+            )),
+            Box::new(Quadtree::new_with_anchor(
+                self.mk_subquadrant_anchor_pt(1).into(),
+                self.depth - 1,
+            )),
+            Box::new(Quadtree::new_with_anchor(
+                self.mk_subquadrant_anchor_pt(2).into(),
+                self.depth - 1,
+            )),
+            Box::new(Quadtree::new_with_anchor(
+                self.mk_subquadrant_anchor_pt(3).into(),
+                self.depth - 1,
+            )),
+        ]);
     }
 
     // Constructs the anchor of the requested subquadrant.
