@@ -62,7 +62,6 @@
 // For extra-pedantic documentation tests.
 #![doc(test(attr(deny(warnings))))]
 
-extern crate failure;
 extern crate num;
 extern crate tool;
 
