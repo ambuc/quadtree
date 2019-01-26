@@ -41,31 +41,6 @@ where
     }
 }
 
-impl<U> Area<U>
-where
-    U: num::PrimInt,
-{
-    pub fn anchor(&self) -> Point<U> {
-        self.inner.0.into()
-    }
-
-    pub fn width(&self) -> U {
-        self.dimensions().0
-    }
-
-    pub fn height(&self) -> U {
-        self.dimensions().1
-    }
-
-    pub fn inner(&self) -> &AreaType<U> {
-        &self.inner
-    }
-
-    fn dimensions(&self) -> (U, U) {
-        self.inner.1
-    }
-}
-
 impl<U> From<AreaType<U>> for Area<U>
 where
     U: num::PrimInt,
@@ -94,6 +69,61 @@ impl<U> Area<U>
 where
     U: num::PrimInt,
 {
+    // Accessors
+    pub fn inner(&self) -> &AreaType<U> {
+        &self.inner
+    }
+
+    pub fn anchor(&self) -> Point<U> {
+        self.inner.0.into()
+    }
+    fn dimensions(&self) -> (U, U) {
+        self.inner.1
+    }
+    // Properties
+    // // Measurements
+    pub fn width(&self) -> U {
+        self.dimensions().0
+    }
+    pub fn height(&self) -> U {
+        self.dimensions().1
+    }
+    // // Positions
+    fn top(&self) -> U {
+        self.anchor().y()
+    }
+    fn bottom(&self) -> U {
+        self.anchor().y() + self.height()
+    }
+    fn left(&self) -> U {
+        self.anchor().x()
+    }
+    fn right(&self) -> U {
+        self.anchor().x() + self.width()
+    }
+    // // Coordinates
+    pub fn tl_pt(&self) -> Point<U> {
+        (self.left(), self.top()).into()
+    }
+    pub fn tr_pt(&self) -> Point<U> {
+        (self.right(), self.top()).into()
+    }
+    pub fn bl_pt(&self) -> Point<U> {
+        (self.left(), self.bottom()).into()
+    }
+    pub fn br_pt(&self) -> Point<U> {
+        (self.right(), self.bottom()).into()
+    }
+    // Evaluation
+
+    // Whether or not an area intersects another area.
+    pub fn intersects(self, other: Area<U>) -> bool {
+        self.left() < other.right()
+            && self.right() > other.left()
+            && self.top() < other.bottom()
+            && self.bottom() > other.top()
+    }
+    // Whether or not an area wholly contains another area.
     pub fn contains(self, other: Area<U>) -> bool {
         other.right() <= self.right()
             && other.left() >= self.left()
@@ -113,27 +143,6 @@ where
             )
                 .into(),
         )
-    }
-
-    // Whether or not an area intersects another area.
-    pub fn intersects(self, other: Area<U>) -> bool {
-        self.left() < other.right()
-            && self.right() > other.left()
-            && self.top() < other.bottom()
-            && self.bottom() > other.top()
-    }
-
-    fn top(&self) -> U {
-        self.anchor().y()
-    }
-    fn bottom(&self) -> U {
-        self.anchor().y() + self.height()
-    }
-    fn left(&self) -> U {
-        self.anchor().x()
-    }
-    fn right(&self) -> U {
-        self.anchor().x() + self.width()
     }
 }
 
@@ -190,6 +199,31 @@ mod tests {
         #[test]
         fn iv() {
             let _a: Area<i8> = ((1, -1), (1, 1)).into();
+        }
+    }
+
+    mod properties {
+        use super::*;
+        fn mk() -> Area<i8> {
+            ((3, 4), (5, 7)).into()
+        }
+        #[test]
+        fn properties() {
+            let a = mk();
+            debug_assert_eq!(a.anchor(), (3, 4).into());
+            debug_assert_eq!(a.dimensions(), (5, 7));
+            debug_assert_eq!(a.width(), 5);
+            debug_assert_eq!(a.height(), 7);
+
+            debug_assert_eq!(a.left(), 3);
+            debug_assert_eq!(a.top(), 4);
+            debug_assert_eq!(a.right(), /*3+5*/ 8);
+            debug_assert_eq!(a.bottom(), /*4+7*/ 11);
+
+            debug_assert_eq!(a.tl_pt(), (3, 4).into());
+            debug_assert_eq!(a.tr_pt(), (8, 4).into());
+            debug_assert_eq!(a.bl_pt(), (3, 11).into());
+            debug_assert_eq!(a.br_pt(), (8, 11).into());
         }
     }
 
