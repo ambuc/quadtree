@@ -30,7 +30,6 @@ license = "Apache-2.0"
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-tool = "*"
 num = "*"
 num-traits = "*"
 

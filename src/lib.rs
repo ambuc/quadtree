@@ -63,7 +63,6 @@
 #![doc(test(attr(deny(warnings))))]
 
 extern crate num;
-extern crate tool;
 
 mod area;
 mod point;
