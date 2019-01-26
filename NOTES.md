@@ -85,11 +85,7 @@
          exact_values: Vec<V>, // Values contained at exactly this region.
          ref_values: Vec<&V>,  // References to values this region also touches.
 
-         subquadrants: [Option<Box<Quadtree<U, V>>>; 4],
-         // - Can be None, if the qt isn't subdivided.
-         // - Otherwise, is subdivided into 4 discrete area, but each could 
-         //   point to no boxed qt all, if nothing is there.
-         subquadrants: Option<[Option<Box<Quadtree<U,V>>>; 4]>,
+         subquadrants: Option<[Box<Quadtree<U,V>>; 4]>,
      }
 
      ```

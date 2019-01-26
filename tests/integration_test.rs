@@ -122,6 +122,20 @@ fn len() {
 }
 
 #[test]
+fn fill_quadrant() {
+    let mut q = Quadtree::<u8, f64>::new(2);
+    debug_assert!(q.is_empty());
+
+    debug_assert!(q.insert((0, 0), (2, 2), 49.17)); // This should 100% fill one quadrant.
+    debug_assert_eq!(q.len(), 1);
+    debug_assert!(!q.is_empty());
+
+    debug_assert!(q.insert((2, 2), (2, 2), 71.94)); // This should 100% fill one quadrant.
+    debug_assert_eq!(q.len(), 2);
+    debug_assert!(!q.is_empty());
+}
+
+#[test]
 fn is_empty() {
     let mut q = Quadtree::<u32, u64>::new(2);
     debug_assert!(q.is_empty());

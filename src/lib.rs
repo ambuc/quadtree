@@ -111,6 +111,9 @@ pub struct Quadtree<U, V> {
     region: Area<U>,
     // The regions held at this level in the tree.
     values: Vec<(Area<U>, V)>,
+    // The regions which fit this node exactly. They don't need to store an Area<U> with them,
+    // because the area is known to be self.region.
+    exact_values: Vec<V>,
     // The subquadrants under this cell. [ne, nw, se, sw]. If there are no subquadrants, this
     // entire list could be None.
     subquadrants: Option<[Box<Quadtree<U, V>>; 4]>,
@@ -193,6 +196,7 @@ where
     /// ```
     pub fn len(&self) -> usize {
         self.values.len()
+            + self.exact_values.len()
             + self
                 .subquadrants
                 .as_ref()
@@ -209,6 +213,7 @@ where
     /// ```
     pub fn is_empty(&self) -> bool {
         self.values.is_empty()
+            && self.exact_values.is_empty()
             && self
                 .subquadrants
                 .as_ref()
@@ -429,6 +434,7 @@ where
             depth,
             region,
             values: Vec::new(),
+            exact_values: Vec::new(),
             subquadrants: None,
         }
     }
@@ -444,6 +450,11 @@ where
         // If we're at the bottom depth, it had better fit.
         if self.depth == 0 {
             self.values.push((req, val));
+            return true;
+        }
+
+        if req == self.region {
+            self.exact_values.push(val);
             return true;
         }
 
@@ -622,6 +633,10 @@ where
             for (k, v) in qt.values.iter() {
                 self.region_stack.push((k, v));
             }
+            // Push my exact values onto the region stack too.
+            for v in qt.exact_values.iter() {
+                self.region_stack.push((&qt.region, v));
+            }
             // Push my subquadrants onto the qt_stack too.
             if let Some(sqs) = qt.subquadrants.as_ref() {
                 for sq in sqs.iter() {
@@ -708,6 +723,10 @@ where
             // Push my regions onto the region stack
             for (k, v) in qt.values.iter_mut() {
                 self.region_stack.push((k, v));
+            }
+            // Push my exact values onto the region stack too.
+            for v in qt.exact_values.iter_mut() {
+                self.region_stack.push((&qt.region, v));
             }
             // Push my subquadrants onto the qt_stack too.
             if let Some(sqs) = qt.subquadrants.as_mut() {
