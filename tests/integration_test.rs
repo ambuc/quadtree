@@ -459,7 +459,7 @@ mod extend {
 }
 
 // Test .iter(), .iter_mut().
-mod iterator {
+mod iterators {
     use super::*;
 
     fn mk_quadtree_for_iter_tests() -> Quadtree<i32, i8> {
@@ -562,5 +562,20 @@ mod iterator {
         debug_assert_eq!(iter.len(), 0);
         iter.next();
         debug_assert_eq!(iter.len(), 0);
+    }
+
+    #[test]
+    fn regions() {
+        use crate::util::unordered_elements_are;
+
+        let mut q = mk_quadtree_for_iter_tests();
+        debug_assert!(unordered_elements_are(
+            q.regions(),
+            vec![
+                &((0, -5), (1, 1)),
+                &((-15, 20), (1, 1)),
+                &((30, -35), (1, 1))
+            ],
+        ));
     }
 }

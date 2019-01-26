@@ -95,7 +95,6 @@ use std::iter::FusedIterator;
 ///
 /// ## TODOs:
 /// - Methods
-///   - TODO(ambuc): Implement `.keys()`.
 ///   - TODO(ambuc): Implement `.values()`.
 ///   - TODO(ambuc): Implement `.values_mut()`.
 ///   - TODO(ambuc): Implement strictly inclusive getters.
@@ -398,16 +397,21 @@ where
         self.subquadrants = [None, None, None, None];
     }
 
-    /// Returns an iterator over all `(&((U, U), (U, U)), &V)` location/value pairs in the
+    /// Returns an iterator over all `(&((U, U), (U, U)), &V)` region/value pairs in the
     /// Quadtree.
     pub fn iter(&mut self) -> Iter<U, V> {
         Iter::new(/*total_size=*/ self.len(), /*qt=*/ self)
     }
 
-    /// Returns a mutable iterator over all `(&((U, U), (U, U)), &mut V)` location/value pairs in the
+    /// Returns a mutable iterator over all `(&((U, U), (U, U)), &mut V)` region/value pairs in the
     /// Quadtree.
     pub fn iter_mut(&mut self) -> IterMut<U, V> {
         IterMut::new(/*total_size=*/ self.len(), /*qt=*/ self)
+    }
+
+    /// Returns an iterator over all `&((U, U), (U, U))` regions in the Quadtree.
+    pub fn regions(&mut self) -> Regions<U, V> {
+        Regions::new(/*len=*/ self.len(), /*qt=*/ self)
     }
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
@@ -556,7 +560,7 @@ where
 }
 
 // TODO(ambuc): Is it possible to collapse the .next() logic between this and IterMut?
-/// An iterator over all keys and values of a [`Quadtree`].
+/// An iterator over all regions and values of a [`Quadtree`].
 ///
 /// This struct is created by the [`iter`] method on [`Quadtree`].
 ///
@@ -572,7 +576,7 @@ pub struct Iter<'a, U, V> {
 }
 
 impl<'a, U, V> Iter<'a, U, V> {
-    fn new(total_size: usize, qt: &'a Quadtree<U, V>) -> Iter<U, V> {
+    pub fn new(total_size: usize, qt: &'a Quadtree<U, V>) -> Iter<U, V> {
         Iter {
             region_stack: vec![],
             qt_stack: vec![qt],
@@ -635,7 +639,16 @@ where
     }
 }
 
-/// A mutable iterator over all keys and values of a [`Quadtree`].
+impl<'a, U, V> std::fmt::Debug for Iter<'a, U, V>
+where
+    V: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+/// A mutable iterator over all regions and values of a [`Quadtree`].
 ///
 /// This struct is created by the [`iter_mut`] method on [`Quadtree`].
 ///
@@ -713,7 +726,7 @@ where
     }
 }
 
-/// An iterator over the keys and values of a [`Quadtree`].
+/// An iterator over the regions and values of a [`Quadtree`].
 ///
 /// This struct is created by the [`query`] or [`query_pt`] methods on [`Quadtree`].
 ///
@@ -782,7 +795,7 @@ where
     }
 }
 
-/// A mutable iterator over the keys and values of a [`Quadtree`].
+/// A mutable iterator over the regions and values of a [`Quadtree`].
 ///
 /// This struct is created by the [`query_mut`] or [`query_pt_mut`] methods on [`Quadtree`].
 ///
@@ -847,5 +860,55 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{:?}", self)
+    }
+}
+
+/// An iterator over the regions held within a [`Quadtree`].
+///
+/// This struct is created by the [`regions`] method on [`Quadtree`].
+///
+/// [`regions`]: struct.Quadtree.html#method.regions
+/// [`Quadtree`]: struct.Quadtree.html
+#[derive(Clone)]
+pub struct Regions<'a, U, V> {
+    iter: Iter<'a, U, V>,
+}
+
+impl<'a, U, V> Regions<'a, U, V> {
+    fn new(len: usize, qt: &'a Quadtree<U, V>) -> Regions<U, V> {
+        Regions {
+            iter: Iter::new(len, qt),
+        }
+    }
+}
+
+impl<'a, U, V> Iterator for Regions<'a, U, V>
+where
+    U: num::PrimInt,
+{
+    type Item = (&'a AreaType<U>);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.iter.next() {
+            Some((k, _v)) => Some(k),
+            None => None,
+        }
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+}
+
+impl<'a, U, V> FusedIterator for Regions<'a, U, V> where U: num::PrimInt {}
+
+impl<'a, U, V> std::fmt::Debug for Regions<'a, U, V>
+where
+    V: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self.iter)
     }
 }
