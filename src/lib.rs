@@ -109,8 +109,9 @@ pub struct Quadtree<U, V> {
     depth: usize,
     // The region  of the current cell.
     region: Area<U>,
-    // The regions held at this level in the tree.
-    values: Vec<(Area<U>, V)>,
+    // The regions held at this level in the tree. (NB: That doesn't mean each value in `values`
+    // is at self.region).
+    kept_values: Vec<(Area<U>, V)>,
     // The subquadrants under this cell. [ne, nw, se, sw]. If there are no subquadrants, this
     // entire list could be None.
     subquadrants: Option<[Box<Quadtree<U, V>>; 4]>,
@@ -192,7 +193,7 @@ where
     /// assert_eq!(q.len(), 2);
     /// ```
     pub fn len(&self) -> usize {
-        self.values.len()
+        self.kept_values.len()
             + self
                 .subquadrants
                 .as_ref()
@@ -208,7 +209,7 @@ where
     /// assert!(!q.is_empty());
     /// ```
     pub fn is_empty(&self) -> bool {
-        self.values.is_empty()
+        self.kept_values.is_empty()
             && self
                 .subquadrants
                 .as_ref()
@@ -389,7 +390,7 @@ where
 
     /// Resets the quadtree to a totally empty state.
     pub fn reset(&mut self) {
-        self.values.clear();
+        self.kept_values.clear();
         self.subquadrants = None;
     }
 
@@ -428,7 +429,7 @@ where
         Quadtree {
             depth,
             region,
-            values: Vec::new(),
+            kept_values: Vec::new(),
             subquadrants: None,
         }
     }
@@ -444,12 +445,12 @@ where
         // If we're at the bottom depth, it had better fit.
         if self.depth == 0 {
             assert!(req == self.region);
-            self.values.push((req, val));
+            self.kept_values.push((req, val));
             return true;
         }
 
         if req == self.region {
-            self.values.push((req, val));
+            self.kept_values.push((req, val));
             return true;
         }
 
@@ -465,7 +466,7 @@ where
             if sqs[q_index].contains_region(req) {
                 sqs[q_index].insert_region(req, val);
             } else {
-                self.values.push((req, val));
+                self.kept_values.push((req, val));
             }
         }
 
@@ -532,7 +533,7 @@ where
     // +--+--+--+    +--+--+--+
     fn expand_subquadrants_by_pt(&mut self, p: Point<U>) {
         assert!(self.region.contains_pt(p));
-        // TODO(ambuc): I think that (when pmv `values` goes away), this method will also be
+        // TODO(ambuc): I think that this method will also be
         // responsible for populating pmv `ref_values` with references to the kept value.
 
         let anchor_ne = self.anchor();
@@ -659,7 +660,7 @@ where
         // Then check the qt_stack.
         if let Some(qt) = self.qt_stack.pop() {
             // Push my regions onto the region stack
-            for (k, v) in qt.values.iter() {
+            for (k, v) in qt.kept_values.iter() {
                 self.region_stack.push((k, v));
             }
             // Push my subquadrants onto the qt_stack too.
@@ -746,7 +747,7 @@ where
         // Then check the qt_stack.
         if let Some(qt) = self.qt_stack.pop() {
             // Push my regions onto the region stack
-            for (k, v) in qt.values.iter_mut() {
+            for (k, v) in qt.kept_values.iter_mut() {
                 self.region_stack.push((k, v));
             }
             // Push my subquadrants onto the qt_stack too.
