@@ -111,9 +111,6 @@ pub struct Quadtree<U, V> {
     region: Area<U>,
     // The regions held at this level in the tree.
     values: Vec<(Area<U>, V)>,
-    // The regions which fit this node exactly. They don't need to store an Area<U> with them,
-    // because the area is known to be self.region.
-    exact_values: Vec<V>,
     // The subquadrants under this cell. [ne, nw, se, sw]. If there are no subquadrants, this
     // entire list could be None.
     subquadrants: Option<[Box<Quadtree<U, V>>; 4]>,
@@ -196,7 +193,6 @@ where
     /// ```
     pub fn len(&self) -> usize {
         self.values.len()
-            + self.exact_values.len()
             + self
                 .subquadrants
                 .as_ref()
@@ -213,7 +209,6 @@ where
     /// ```
     pub fn is_empty(&self) -> bool {
         self.values.is_empty()
-            && self.exact_values.is_empty()
             && self
                 .subquadrants
                 .as_ref()
@@ -434,7 +429,6 @@ where
             depth,
             region,
             values: Vec::new(),
-            exact_values: Vec::new(),
             subquadrants: None,
         }
     }
@@ -450,23 +444,23 @@ where
         // If we're at the bottom depth, it had better fit.
         if self.depth == 0 {
             assert!(req == self.region);
-            self.exact_values.push(val);
+            self.values.push((req, val));
             return true;
         }
 
         if req == self.region {
-            self.exact_values.push(val);
+            self.values.push((req, val));
             return true;
         }
+
+        self.split_with_regard_to_region(req);
 
         // For a subquadrant to totally contain the req. area, it must both (a) contain the req.
         // area's anchor and (b) contain the total area. We optimize by checking for (a) first.
         let q_index: usize = self.center_pt().dir_towards(req.anchor());
 
-        self.expand_subquadrants_if_necessary();
-
         // Attempt to insert the value into the subquadrant we think it might fit in,
-        assert!(self.subquadrants.is_some()); // We should have Someified this in .expand_.
+        assert!(self.subquadrants.is_some()); // We should have Someified this in .split().
         if let Some(sqs) = self.subquadrants.as_mut() {
             if sqs[q_index].contains_region(req) {
                 sqs[q_index].insert_region(req, val);
@@ -489,7 +483,7 @@ where
     //                      +--+--+--+--+   +--+--+--+--+
     fn split_with_regard_to_region(&mut self, q: Area<U>) {
         // There are some scenarios where we don't need to do anything.
-        if self.region == q || !self.region.intersects(q) {
+        if self.depth == 0 || self.region == q || !self.region.intersects(q) {
             return;
         }
         // Otherwise we're going to have to affect our subquadrants. If we're lucky and they
@@ -521,18 +515,12 @@ where
         }
     }
 
-    fn expand_subquadrants_if_necessary(&mut self) {
-        if self.subquadrants.is_some() {
-            return;
-        }
-        self.expand_subquadrants_by_center();
-    }
-
     // +--+--+    +--+--+
     // |     |    |  |  |
     // +     + => +--+--+
     // |     |    |  |  |
     // +--+--+    +--+--+
+    #[allow(dead_code)]
     fn expand_subquadrants_by_center(&mut self) {
         self.expand_subquadrants_by_pt(self.center_pt());
     }
@@ -544,6 +532,8 @@ where
     // +--+--+--+    +--+--+--+
     fn expand_subquadrants_by_pt(&mut self, p: Point<U>) {
         assert!(self.region.contains_pt(p));
+        // TODO(ambuc): I think that (when pmv `values` goes away), this method will also be
+        // responsible for populating pmv `ref_values` with references to the kept value.
 
         let anchor_ne = self.anchor();
         let anchor_nw = (p.x(), self.anchor_pt().y());
@@ -672,10 +662,6 @@ where
             for (k, v) in qt.values.iter() {
                 self.region_stack.push((k, v));
             }
-            // Push my exact values onto the region stack too.
-            for v in qt.exact_values.iter() {
-                self.region_stack.push((&qt.region, v));
-            }
             // Push my subquadrants onto the qt_stack too.
             if let Some(sqs) = qt.subquadrants.as_ref() {
                 for sq in sqs.iter() {
@@ -762,10 +748,6 @@ where
             // Push my regions onto the region stack
             for (k, v) in qt.values.iter_mut() {
                 self.region_stack.push((k, v));
-            }
-            // Push my exact values onto the region stack too.
-            for v in qt.exact_values.iter_mut() {
-                self.region_stack.push((&qt.region, v));
             }
             // Push my subquadrants onto the qt_stack too.
             if let Some(sqs) = qt.subquadrants.as_mut() {
