@@ -459,9 +459,6 @@ where
             return true;
         }
 
-        // Otherwise we might attempt to insert the region one layer down instead.
-        assert!(self.depth > 0);
-
         // For a subquadrant to totally contain the req. area, it must both (a) contain the req.
         // area's anchor and (b) contain the total area. We optimize by checking for (a) first.
         let q_index: usize = self.center_pt().dir_towards(req.anchor());
@@ -481,45 +478,84 @@ where
         true
     }
 
-    // Expand None => Some([None, None, None, None]).
+    // When inserting a region over an existing set of regions, quadrants might need to be split
+    // with regard to that region.
+    // +--+--+   +--+--+    +--+--+--+--+   +--+--+--+--+
+    // |XX   |   |XX|  |    |           |   |  |        |
+    // +     +-->+--+--+    +           +   +--+--+--+--+
+    // |     |   |  |  | ,  |   XXXXX   |-->|  |XXXXX|  |
+    // +--+--+   +--+--+    +           +   +  +--+--+--+
+    //                      |           |   |  |     |  |
+    //                      +--+--+--+--+   +--+--+--+--+
+    fn split_with_regard_to_region(&mut self, q: Area<U>) {
+        // There are some scenarios where we don't need to do anything.
+        if self.region == q || !self.region.intersects(q) {
+            return;
+        }
+        // Otherwise we're going to have to affect our subquadrants. If we're lucky and they
+        // haven't been build yet, we get to shape how they're split.
+        if self.subquadrants.is_none() {
+            // Must contains at least one pt!;
+            if self.region.contains_pt(q.tl_pt()) {
+                self.expand_subquadrants_by_pt(q.tl_pt());
+                return;
+            } else if self.region.contains_pt(q.tr_pt()) {
+                self.expand_subquadrants_by_pt(q.tr_pt());
+                return;
+            } else if self.region.contains_pt(q.bl_pt()) {
+                self.expand_subquadrants_by_pt(q.bl_pt());
+                return;
+            } else if self.region.contains_pt(q.br_pt()) {
+                self.expand_subquadrants_by_pt(q.br_pt());
+                return;
+            } else {
+                panic!("You told me one of the pts was in my inner region!");
+            }
+        }
+
+        // Otherwise (if they're already split), just recurse.
+        assert!(self.subquadrants.is_some());
+        if let Some(sqs) = self.subquadrants.as_mut() {
+            sqs.iter_mut()
+                .for_each(|sq| sq.split_with_regard_to_region(q));
+        }
+    }
+
     fn expand_subquadrants_if_necessary(&mut self) {
         if self.subquadrants.is_some() {
             return;
         }
-
-        self.subquadrants = Some([
-            Box::new(Quadtree::new_with_anchor(
-                self.mk_subquadrant_anchor_pt(0).into(),
-                self.depth - 1,
-            )),
-            Box::new(Quadtree::new_with_anchor(
-                self.mk_subquadrant_anchor_pt(1).into(),
-                self.depth - 1,
-            )),
-            Box::new(Quadtree::new_with_anchor(
-                self.mk_subquadrant_anchor_pt(2).into(),
-                self.depth - 1,
-            )),
-            Box::new(Quadtree::new_with_anchor(
-                self.mk_subquadrant_anchor_pt(3).into(),
-                self.depth - 1,
-            )),
-        ]);
+        self.expand_subquadrants_by_center();
     }
 
-    // Constructs the anchor of the requested subquadrant.
-    // Accepts @direction as 0 (ne) 1 (nw) 2 (se) or 3 (sw).
-    fn mk_subquadrant_anchor_pt(&mut self, direction: usize) -> Point<U> {
-        // Construct cardinal anchor point:
-        match direction {
-            0 => self.anchor_pt() + (self.width() / Self::two(), U::zero()).into(),
-            1 => self.anchor_pt() + (U::zero(), U::zero()).into(),
-            2 => {
-                self.anchor_pt() + (self.width() / Self::two(), self.height() / Self::two()).into()
-            }
-            3 => self.anchor_pt() + (U::zero(), self.height() / Self::two()).into(),
-            _ => panic!("Don't send me a direction greater than 3."),
-        }
+    // +--+--+    +--+--+
+    // |     |    |  |  |
+    // +     + => +--+--+
+    // |     |    |  |  |
+    // +--+--+    +--+--+
+    fn expand_subquadrants_by_center(&mut self) {
+        self.expand_subquadrants_by_pt(self.center_pt());
+    }
+
+    // +--+--+--+    +--+--+--+
+    // |        |    |     |  |
+    // +     p  + => +--+--+--+
+    // |        |    |     |  |
+    // +--+--+--+    +--+--+--+
+    fn expand_subquadrants_by_pt(&mut self, p: Point<U>) {
+        assert!(self.region.contains_pt(p));
+
+        let anchor_ne = self.anchor();
+        let anchor_nw = (p.x(), self.anchor_pt().y());
+        let anchor_se = (self.anchor_pt().x(), p.y());
+        let anchor_sw = p.into();
+
+        self.subquadrants = Some([
+            Box::new(Quadtree::new_with_anchor(anchor_ne, self.depth - 1)),
+            Box::new(Quadtree::new_with_anchor(anchor_nw, self.depth - 1)),
+            Box::new(Quadtree::new_with_anchor(anchor_se, self.depth - 1)),
+            Box::new(Quadtree::new_with_anchor(anchor_sw, self.depth - 1)),
+        ]);
     }
 
     fn contains_region(&self, a: Area<U>) -> bool {

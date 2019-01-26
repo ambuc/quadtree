@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Lightweight data type to represent a point. Should be passed by value.
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Copy)]
 pub struct Point<U> {
     inner: (U, U),
 }
