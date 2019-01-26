@@ -111,8 +111,9 @@ pub struct Quadtree<U, V> {
     region: Area<U>,
     // The regions held at this level in the tree.
     values: Vec<(Area<U>, V)>,
-    // The subquadrants under this cell. [ne, nw, se, sw]
-    subquadrants: [Option<Box<Quadtree<U, V>>>; 4],
+    // The subquadrants under this cell. [ne, nw, se, sw]. If there are no subquadrants, this
+    // entire list could be None.
+    subquadrants: Option<[Box<Quadtree<U, V>>; 4]>,
 }
 
 impl<U, V> Quadtree<U, V>
@@ -194,9 +195,8 @@ where
         self.values.len()
             + self
                 .subquadrants
-                .iter()
-                .map(|q| q.as_ref().map_or(0, |sq| sq.len()))
-                .sum::<usize>()
+                .as_ref()
+                .map_or(0, |a| a.iter().map(|q| q.as_ref().len()).sum::<usize>())
     }
 
     /// Whether or not the quadtree is empty.
@@ -211,8 +211,8 @@ where
         self.values.is_empty()
             && self
                 .subquadrants
-                .iter()
-                .all(|q| q.as_ref().map_or(true, |sq| sq.is_empty()))
+                .as_ref()
+                .map_or(true, |a| a.iter().all(|q| q.is_empty()))
     }
 
     /// Whether or not the region represented by this quadtree could contain the given region.
@@ -390,7 +390,7 @@ where
     /// Resets the quadtree to a totally empty state.
     pub fn reset(&mut self) {
         self.values.clear();
-        self.subquadrants = [None, None, None, None];
+        self.subquadrants = None;
     }
 
     /// Returns an iterator over all `(&((U, U), (U, U)), &V)` region/value pairs in the
@@ -429,7 +429,7 @@ where
             depth,
             region,
             values: Vec::new(),
-            subquadrants: [None, None, None, None],
+            subquadrants: None,
         }
     }
 
@@ -454,33 +454,42 @@ where
         // area's anchor and (b) contain the total area. We optimize by checking for (a) first.
         let q_index: usize = self.center_pt().dir_towards(req.anchor());
 
-        self.expand_subquadrant_if_necessary(q_index);
+        self.expand_subquadrants_if_necessary();
 
         // Attempt to insert the value into the subquadrant we think it might fit in,
-        match &mut self.subquadrants[q_index] {
-            Some(subquadrant) => {
-                // But if it doesn't fit in that subquadrant, insert it into our own @values vec.
-                if subquadrant.contains_region(req) {
-                    subquadrant.insert_region(req, val);
-                } else {
-                    self.values.push((req, val));
-                }
+        assert!(self.subquadrants.is_some()); // We should have Someified this in .expand_.
+        if let Some(sqs) = self.subquadrants.as_mut() {
+            if sqs[q_index].contains_region(req) {
+                sqs[q_index].insert_region(req, val);
+            } else {
+                self.values.push((req, val));
             }
-            _ => panic!("But you promised!"),
         }
 
         true
     }
 
-    // For the given direction index, attempt the expand the subquadrant, if it's not already
-    // expanded.
-    fn expand_subquadrant_if_necessary(&mut self, dir: usize) {
-        if self.subquadrants[dir].is_none() {
-            let subquadrant_anchor: Point<U> = self.mk_subquadrant_anchor_pt(dir);
-            self.subquadrants[dir] = Some(Box::new(Quadtree::new_with_anchor(
-                (subquadrant_anchor.x(), subquadrant_anchor.y()),
-                self.depth - 1,
-            )));
+    // Expand None => Some([None, None, None, None]).
+    fn expand_subquadrants_if_necessary(&mut self) {
+        if self.subquadrants.is_none() {
+            self.subquadrants = Some([
+                Box::new(Quadtree::new_with_anchor(
+                    self.mk_subquadrant_anchor_pt(0).into(),
+                    self.depth - 1,
+                )),
+                Box::new(Quadtree::new_with_anchor(
+                    self.mk_subquadrant_anchor_pt(1).into(),
+                    self.depth - 1,
+                )),
+                Box::new(Quadtree::new_with_anchor(
+                    self.mk_subquadrant_anchor_pt(2).into(),
+                    self.depth - 1,
+                )),
+                Box::new(Quadtree::new_with_anchor(
+                    self.mk_subquadrant_anchor_pt(3).into(),
+                    self.depth - 1,
+                )),
+            ]);
         }
     }
 
@@ -614,9 +623,9 @@ where
                 self.region_stack.push((k, v));
             }
             // Push my subquadrants onto the qt_stack too.
-            for sq in qt.subquadrants.iter() {
-                if let Some(sub_qt) = sq {
-                    self.qt_stack.push(sub_qt);
+            if let Some(sqs) = qt.subquadrants.as_ref() {
+                for sq in sqs.iter() {
+                    self.qt_stack.push(sq);
                 }
             }
             return self.next();
@@ -701,9 +710,9 @@ where
                 self.region_stack.push((k, v));
             }
             // Push my subquadrants onto the qt_stack too.
-            for sq in qt.subquadrants.iter_mut() {
-                if let Some(sub_qt) = sq {
-                    self.qt_stack.push(sub_qt);
+            if let Some(sqs) = qt.subquadrants.as_mut() {
+                for sq in sqs.iter_mut() {
+                    self.qt_stack.push(sq);
                 }
             }
             return self.next();
