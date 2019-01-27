@@ -150,9 +150,45 @@ mod iterator_tests {
     }
 
     #[test]
-    fn into_iterator_ref() {
+    fn into_iterator_consuming() {
         let q = mk_quadtree_for_iter_tests();
-        let v: Vec<(&((i32, i32), (i32, i32)), &i8)> = q.into_iter().collect();
-        debug_assert_eq!(v.len(), 3);
+        let v: Vec<(((i32, i32), (i32, i32)), i8)> = q.into_iter().collect();
+
+        debug_assert!(unordered_elements_are(
+            v,
+            vec![
+                (((0, -5), (1, 1)), 10),
+                (((-15, 20), (1, 1)), -25),
+                (((30, -35), (1, 1)), 40),
+            ],
+        ));
+    }
+
+    #[test]
+    fn into_iterator_reference() {
+        let mut q = mk_quadtree_for_iter_tests();
+        let iter: Vec<(&((i32, i32), (i32, i32)), &i8)> = (&q).into_iter().collect();
+        debug_assert_eq!(iter.len(), 3);
+
+        q.reset();
+        debug_assert!(q.is_empty());
+    }
+
+    #[test]
+    fn into_iterator_mutable_reference() {
+        let mut q = mk_quadtree_for_iter_tests();
+
+        for (_, v) in (&mut q).into_iter() {
+            *v += 1;
+        }
+
+        debug_assert!(unordered_elements_are(
+            q,
+            vec![
+                (((0, -5), (1, 1)), 11),
+                (((-15, 20), (1, 1)), -24),
+                (((30, -35), (1, 1)), 41),
+            ],
+        ));
     }
 }

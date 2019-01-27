@@ -100,7 +100,6 @@ use std::iter::FusedIterator;
 ///   - TODO(ambuc): Implement `.retain(anchor, size, fn)`.
 /// - Traits
 ///   - TODO(ambuc): Implement `FromIterator<(K, V)>` for `Quadtree`.
-///   - TODO(ambuc): Implement `Intoiterator` for `Quadtree`.
 /// - Other
 
 //   .d88b.  db    db  .d8b.  d8888b. d888888b d8888b. d88888b d88888b
@@ -612,6 +611,18 @@ where
     }
 }
 
+impl<U, V> IntoIterator for Quadtree<U, V>
+where
+    U: PrimInt,
+{
+    type Item = (AreaType<U>, V);
+    type IntoIter = IntoIter<U, V>;
+
+    fn into_iter(self) -> IntoIter<U, V> {
+        IntoIter::new(self)
+    }
+}
+
 // d888888b d888888b d88888b d8888b.
 //   `88'   `~~88~~' 88'     88  `8D
 //    88       88    88ooooo 88oobY'
@@ -785,6 +796,92 @@ where
         self.remaining
     }
 }
+
+// d888888b d8b   db d888888b  .d88b.  d888888b d888888b d88888b d8888b.
+//   `88'   888o  88 `~~88~~' .8P  Y8.   `88'   `~~88~~' 88'     88  `8D
+//    88    88V8o 88    88    88    88    88       88    88ooooo 88oobY'
+//    88    88 V8o88    88    88    88    88       88    88~~~~~ 88`8b
+//   .88.   88  V888    88    `8b  d8'   .88.      88    88.     88 `88.
+// Y888888P VP   V8P    YP     `Y88P'  Y888888P    YP    Y88888P 88   YD
+
+/// A consuming iterator over all region/value pairs held in a [`Quadtree`].
+/// TODO(ambuc): How is this created? `.into_iter()`? Find the right URL for it, if it's part of
+/// IntoIterator.
+///
+/// [`Quadtree`]: struct.Quadtree.html
+#[derive(Clone, Debug)]
+pub struct IntoIter<U, V>
+where
+    U: PrimInt,
+{
+    region_stack: Vec<(Area<U>, V)>,
+    qt_stack: Vec<Quadtree<U, V>>,
+    remaining: usize,
+}
+
+impl<U, V> IntoIter<U, V>
+where
+    U: PrimInt,
+{
+    fn new(qt: Quadtree<U, V>) -> IntoIter<U, V> {
+        let len = qt.len();
+        IntoIter {
+            region_stack: Vec::new(),
+            qt_stack: vec![qt],
+            remaining: len,
+        }
+    }
+}
+
+impl<U, V> Iterator for IntoIter<U, V>
+where
+    U: PrimInt,
+{
+    type Item = (AreaType<U>, V);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        // Check the region_stack.
+        if let Some((region, val)) = self.region_stack.pop() {
+            self.remaining -= 1;
+            return Some((*region.inner(), val));
+        }
+        // Then check the qt_stack.
+        if let Some(qt) = self.qt_stack.pop() {
+            // Push my regions onto the region stack
+            for (k, v) in qt.kept_values.into_iter() {
+                self.region_stack.push((k, v));
+            }
+            // Push my subquadrants onto the qt_stack too.
+            if let Some([a, b, c, d]) = qt.subquadrants {
+                self.qt_stack.push(*a);
+                self.qt_stack.push(*b);
+                self.qt_stack.push(*c);
+                self.qt_stack.push(*d);
+            }
+            return self.next();
+        }
+
+        // Else there's nothing left to search.
+        None
+    }
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.remaining, Some(self.remaining))
+    }
+}
+
+impl<U, V> ExactSizeIterator for IntoIter<U, V>
+where
+    U: PrimInt,
+{
+    #[inline]
+    fn len(&self) -> usize {
+        self.remaining
+    }
+}
+
+impl<U, V> FusedIterator for IntoIter<U, V> where U: PrimInt {}
 
 //  .d88b.  db    db d88888b d8888b. db    db
 // .8P  Y8. 88    88 88'     88  `8D `8b  d8'
