@@ -784,16 +784,13 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        match self.inner.next() {
-            Some((k, v)) => {
-                if self.query_region.intersects(k.clone().into()) {
-                    Some((k, v))
-                } else {
-                    self.next()
-                }
+        self.inner.next().map_or(None, |(k, v)| {
+            if self.query_region.intersects(k.into()) {
+                Some((k, v))
+            } else {
+                self.next()
             }
-            None => None,
-        }
+        })
     }
 
     #[inline]
@@ -827,16 +824,13 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        match self.inner.next() {
-            Some((k, v)) => {
-                if self.query_region.intersects(k.clone().into()) {
-                    Some((k, v))
-                } else {
-                    self.next()
-                }
+        self.inner.next().map_or(None, |(k, v)| {
+            if self.query_region.intersects(k.into()) {
+                Some((k, v))
+            } else {
+                self.next()
             }
-            None => None,
-        }
+        })
     }
 
     #[inline]

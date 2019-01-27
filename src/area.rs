@@ -59,6 +59,24 @@ where
     }
 }
 
+impl<U> From<&AreaType<U>> for Area<U>
+where
+    U: num::PrimInt,
+{
+    fn from((xy, (w, h)): &AreaType<U>) -> Self {
+        assert!(!w.is_zero());
+        assert!(!h.is_zero());
+        // Regions shouldn't be negative in dimenision. I guess there's a way to handle the math by
+        // going in the (-x,-y) direction, but it seems better to communicate that they shouldn't
+        // be.
+        assert!(*w > U::zero());
+        assert!(*h > U::zero());
+        Area {
+            inner: (*xy, (*w, *h)),
+        }
+    }
+}
+
 impl<U> Into<AreaType<U>> for Area<U> {
     fn into(self) -> AreaType<U> {
         self.inner
