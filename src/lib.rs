@@ -321,11 +321,7 @@ where
     pub fn query(&self, anchor: (U, U), size: (U, U)) -> Query<U, V> {
         assert!(!size.0.is_zero());
         assert!(!size.1.is_zero());
-        Query::new(
-            /*query_region=*/ (anchor, size).into(),
-            /*len=*/ self.len(),
-            /*qt=*/ self,
-        )
+        self.query_by_area((anchor, size).into())
     }
 
     /// Returns an iterator (of type [`Query`]) over `(&'a ((U, U), (U, U)), &'a V)` tuples
@@ -336,7 +332,7 @@ where
     /// [`Query`]: struct.Query.html
     /// [`.query(anchor, (1, 1))`]: struct.Quadtree.html#method.query
     pub fn query_pt(&self, anchor: (U, U)) -> Query<U, V> {
-        self.query(anchor, Self::default_region_size())
+        self.query_by_area((anchor, Self::default_region_size()).into())
     }
 
     /// Returns a mutable iterator (of type [`QueryMut`]) over
@@ -365,17 +361,9 @@ where
     ///
     /// [`QueryMut`]: struct.QueryMut.html
     pub fn query_mut(&mut self, anchor: (U, U), size: (U, U)) -> QueryMut<U, V> {
-        // TODO(ambuc): There is an optimization we can do here where, before returning the
-        // QueryMut, we recursively descend into the tree to initialize the QueryMut struct with
-        // the smallest possible subtree which does not completely contain the requested query
-        // region. (Implement this for .query() too.)
         assert!(!size.0.is_zero());
         assert!(!size.1.is_zero());
-        QueryMut::new(
-            /*query_region=*/ (anchor, size).into(),
-            /*len=*/ self.len(),
-            /*qt=*/ self,
-        )
+        self.query_mut_by_area((anchor, size).into())
     }
 
     /// Returns a mutable iterator over `(&'a ((U, U), (U, U)), &'a mut V)` tuples
@@ -385,7 +373,7 @@ where
     ///
     /// [`.query(anchor, (1, 1))`]: struct.Quadtree.html#method.query
     pub fn query_pt_mut(&mut self, anchor: (U, U)) -> QueryMut<U, V> {
-        self.query_mut(anchor, Self::default_region_size())
+        self.query_mut_by_area((anchor, Self::default_region_size()).into())
     }
 
     /// Resets the quadtree to a totally empty state.
@@ -545,6 +533,26 @@ where
             Box::new(Quadtree::new_with_anchor(anchor_se, self.depth - 1)),
             Box::new(Quadtree::new_with_anchor(anchor_sw, self.depth - 1)),
         ]);
+    }
+
+    // TODO(ambuc): There is an optimization we can do here where, before returning the
+    // query, we recursively descend into the tree to initialize the query struct with
+    // the smallest possible subtree which does not completely contain the requested query
+    // region. (Implement this for .query() and .query_mut_by_area().)
+    fn query_by_area(&self, a: Area<U>) -> Query<U, V> {
+        Query::new(
+            /*query_region=*/ a,
+            /*len=*/ self.len(),
+            /*qt=*/ self,
+        )
+    }
+
+    fn query_mut_by_area(&mut self, a: Area<U>) -> QueryMut<U, V> {
+        QueryMut::new(
+            /*query_region=*/ a,
+            /*len=*/ self.len(),
+            /*qt=*/ self,
+        )
     }
 
     fn contains_region(&self, a: Area<U>) -> bool {
