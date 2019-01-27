@@ -147,7 +147,7 @@ where
     /// assert_eq!(q.height(), 4);
     /// ```
     pub fn new(depth: usize) -> Quadtree<U, V> {
-        Quadtree::new_with_anchor(Self::default_anchor(), depth)
+        Self::new_with_anchor(Self::default_anchor(), depth)
     }
 
     /// Creates a new Quadtree with the requested anchor and depth.
@@ -163,7 +163,7 @@ where
     pub fn new_with_anchor(anchor: (U, U), depth: usize) -> Quadtree<U, V> {
         let width: U = Self::two().pow(depth as u32);
         let height: U = width;
-        Quadtree::new_with_area((anchor, (width, height)).into(), depth)
+        Self::new_with_area((anchor, (width, height)).into(), depth)
     }
 
     // Accessors //
@@ -504,10 +504,10 @@ where
         let anchor_se = p.into();
 
         self.subquadrants = Some([
-            Box::new(Quadtree::new_with_anchor(anchor_ne, self.depth - 1)),
-            Box::new(Quadtree::new_with_anchor(anchor_nw, self.depth - 1)),
-            Box::new(Quadtree::new_with_anchor(anchor_se, self.depth - 1)),
-            Box::new(Quadtree::new_with_anchor(anchor_sw, self.depth - 1)),
+            Box::new(Self::new_with_anchor(anchor_ne, self.depth - 1)),
+            Box::new(Self::new_with_anchor(anchor_nw, self.depth - 1)),
+            Box::new(Self::new_with_anchor(anchor_se, self.depth - 1)),
+            Box::new(Self::new_with_anchor(anchor_sw, self.depth - 1)),
         ]);
     }
 
