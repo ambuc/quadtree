@@ -565,8 +565,8 @@ where
     where
         T: IntoIterator<Item = ((U, U), V)>,
     {
-        for ((x, y), v) in iter {
-            self.insert_pt((x, y), v);
+        for (anchor, v) in iter {
+            self.insert_pt(anchor, v);
         }
     }
 }
@@ -582,8 +582,8 @@ where
     where
         T: IntoIterator<Item = (((U, U), (U, U)), V)>,
     {
-        for (((x, y), (w, h)), v) in iter {
-            self.insert((x, y), (w, h), v);
+        for ((anchor, dimensions), v) in iter {
+            self.insert(anchor, dimensions, v);
         }
     }
 }
