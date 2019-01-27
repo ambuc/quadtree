@@ -389,28 +389,34 @@ where
     /// Returns an iterator over all `(&((U, U), (U, U)), &V)` region/value pairs in the
     /// Quadtree.
     pub fn iter(&self) -> Iter<U, V> {
-        Iter::new(/*total_size=*/ self.len(), /*qt=*/ self)
+        Iter::new(self)
     }
 
     /// Returns a mutable iterator over all `(&((U, U), (U, U)), &mut V)` region/value pairs in the
     /// Quadtree.
     pub fn iter_mut(&mut self) -> IterMut<U, V> {
-        IterMut::new(/*total_size=*/ self.len(), /*qt=*/ self)
+        IterMut::new(self)
     }
 
     /// Returns an iterator over all `&'a ((U, U), (U, U))` regions in the Quadtree.
     pub fn regions(&self) -> Regions<U, V> {
-        Regions::new(/*len=*/ self.len(), /*qt=*/ self)
+        Regions {
+            inner: Iter::new(self),
+        }
     }
 
     /// Returns an iterator over all `&'a V` values in the Quadtree.
     pub fn values(&self) -> Values<U, V> {
-        Values::new(/*len=*/ self.len(), /*qt=*/ self)
+        Values {
+            inner: Iter::new(self),
+        }
     }
 
     /// Returns a mutable iterator over all `&'a mut V` values in the Quadtree.
     pub fn values_mut(&mut self) -> ValuesMut<U, V> {
-        ValuesMut::new(/*len=*/ self.len(), /*qt=*/ self)
+        ValuesMut {
+            inner: IterMut::new(self),
+        }
     }
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
@@ -498,19 +504,19 @@ where
     }
 
     fn query_by_area(&self, a: Area<U>) -> Query<U, V> {
-        Query::new(
-            /*query_region=*/ a,
-            /*len=*/ self.len(),
-            /*qt=*/ self,
-        )
+        Query {
+            query_region: a,
+            inner: Iter::new(self),
+            exhausted: false,
+        }
     }
 
     fn query_mut_by_area(&mut self, a: Area<U>) -> QueryMut<U, V> {
-        QueryMut::new(
-            /*query_region=*/ a,
-            /*len=*/ self.len(),
-            /*qt=*/ self,
-        )
+        QueryMut {
+            query_region: a,
+            inner: IterMut::new(self),
+            exhausted: false,
+        }
     }
 
     fn contains_region(&self, a: Area<U>) -> bool {
@@ -625,11 +631,11 @@ where
     U: num::PrimInt + std::fmt::Debug,
     V: std::fmt::Debug,
 {
-    pub fn new(total_size: usize, qt: &'a Quadtree<U, V>) -> Iter<U, V> {
+    pub fn new(qt: &'a Quadtree<U, V>) -> Iter<U, V> {
         Iter {
             region_stack: vec![],
             qt_stack: vec![qt],
-            total_size,
+            total_size: qt.len(),
             consumed: 0,
             exhausted: false,
         }
@@ -719,11 +725,12 @@ where
     U: num::PrimInt + std::fmt::Debug,
     V: std::fmt::Debug,
 {
-    fn new(total_size: usize, qt: &'a mut Quadtree<U, V>) -> IterMut<U, V> {
+    fn new(qt: &'a mut Quadtree<U, V>) -> IterMut<U, V> {
+        let len = qt.len();
         IterMut {
             region_stack: vec![],
             qt_stack: vec![qt],
-            total_size,
+            total_size: len,
             consumed: 0,
             exhausted: false,
         }
@@ -807,20 +814,6 @@ where
     exhausted: bool,
 }
 
-impl<'a, U, V> Query<'a, U, V>
-where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
-{
-    fn new(query_region: Area<U>, len: usize, qt: &'a Quadtree<U, V>) -> Query<U, V> {
-        Query {
-            query_region,
-            inner: Iter::new(len, qt),
-            exhausted: false,
-        }
-    }
-}
-
 impl<'a, U, V> Iterator for Query<'a, U, V>
 where
     U: num::PrimInt + std::fmt::Debug,
@@ -880,20 +873,6 @@ where
     inner: IterMut<'a, U, V>,
 }
 
-impl<'a, U, V> QueryMut<'a, U, V>
-where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
-{
-    fn new(query_region: Area<U>, len: usize, qt: &'a mut Quadtree<U, V>) -> QueryMut<U, V> {
-        QueryMut {
-            query_region,
-            exhausted: false,
-            inner: IterMut::new(len, qt),
-        }
-    }
-}
-
 impl<'a, U, V> Iterator for QueryMut<'a, U, V>
 where
     U: num::PrimInt + std::fmt::Debug,
@@ -951,18 +930,6 @@ where
     inner: Iter<'a, U, V>,
 }
 
-impl<'a, U, V> Regions<'a, U, V>
-where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
-{
-    fn new(len: usize, qt: &'a Quadtree<U, V>) -> Regions<U, V> {
-        Regions {
-            inner: Iter::new(len, qt),
-        }
-    }
-}
-
 impl<'a, U, V> Iterator for Regions<'a, U, V>
 where
     U: num::PrimInt + std::fmt::Debug,
@@ -1004,18 +971,6 @@ where
     V: std::fmt::Debug,
 {
     inner: Iter<'a, U, V>,
-}
-
-impl<'a, U, V> Values<'a, U, V>
-where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
-{
-    fn new(len: usize, qt: &'a Quadtree<U, V>) -> Values<U, V> {
-        Values {
-            inner: Iter::new(len, qt),
-        }
-    }
 }
 
 impl<'a, U, V> Iterator for Values<'a, U, V>
@@ -1069,18 +1024,6 @@ where
     V: std::fmt::Debug,
 {
     inner: IterMut<'a, U, V>,
-}
-
-impl<'a, U, V> ValuesMut<'a, U, V>
-where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
-{
-    fn new(len: usize, qt: &'a mut Quadtree<U, V>) -> ValuesMut<U, V> {
-        ValuesMut {
-            inner: IterMut::new(len, qt),
-        }
-    }
 }
 
 impl<'a, U, V> Iterator for ValuesMut<'a, U, V>
