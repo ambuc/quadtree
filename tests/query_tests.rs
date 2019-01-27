@@ -35,25 +35,20 @@ mod query_tests {
 
         // Requesting a region which does contain '49'.
         let mut iter1 = q.query((0, 0), (1, 1));
-        debug_assert_eq!(iter1.size_hint(), (0, Some(1)));
         debug_assert_eq!(iter1.next(), Some((&((0, 0), (1, 1)), &49)));
-        debug_assert_eq!(iter1.size_hint(), (0, Some(0)));
         debug_assert_eq!(iter1.next(), None);
         debug_assert_eq!(iter1.size_hint(), (0, Some(0)));
 
         // Requesting regions which don't contain '49'.
         let mut iter2 = q.query((0, 1), (1, 1));
-        debug_assert_eq!(iter2.size_hint(), (0, Some(1)));
         debug_assert_eq!(iter2.next(), None);
         debug_assert_eq!(iter2.size_hint(), (0, Some(0)));
 
         let mut iter3 = q.query((1, 0), (1, 1));
-        debug_assert_eq!(iter3.size_hint(), (0, Some(1)));
         debug_assert_eq!(iter3.next(), None);
         debug_assert_eq!(iter3.size_hint(), (0, Some(0)));
 
         let mut iter4 = q.query((1, 1), (1, 1));
-        debug_assert_eq!(iter4.size_hint(), (0, Some(1)));
         debug_assert_eq!(iter4.next(), None);
         debug_assert_eq!(iter4.size_hint(), (0, Some(0)));
     }

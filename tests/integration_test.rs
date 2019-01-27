@@ -244,6 +244,8 @@ mod extend {
 
         debug_assert_eq!(q.len(), 2);
 
+        dbg!(&q);
+
         debug_assert_eq!(q.query_pt((0, 0)).next(), Some((&((0, 0), (1, 2)), &0)));
         debug_assert_eq!(q.query_pt((2, 3)).next(), Some((&((2, 3), (3, 4)), &5)));
     }

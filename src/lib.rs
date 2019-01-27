@@ -454,7 +454,6 @@ where
         // For a subquadrant to totally contain the req. area, it must both (a) contain the req.
         // area's anchor and (b) contain the total area. We optimize by checking for (a) first.
         let q_index: usize = self.center_pt().dir_towards(req.anchor());
-        dbg!(q_index);
 
         // Attempt to insert the value into the subquadrant we think it might fit in,
         assert!(self.subquadrants.is_some()); // We should have Someified this in .split().
@@ -499,10 +498,6 @@ where
         ]);
     }
 
-    // TODO(ambuc): There is an optimization we can do here where, before returning the
-    // query, we recursively descend into the tree to initialize the query struct with
-    // the smallest possible subtree which does not completely contain the requested query
-    // region. (Implement this for .query() and .query_mut_by_area().)
     fn query_by_area(&self, a: Area<U>) -> Query<U, V> {
         Query::new(
             /*query_region=*/ a,
