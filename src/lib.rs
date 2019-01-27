@@ -533,8 +533,6 @@ where
     // +--+--+--+    +--+--+--+
     fn expand_subquadrants_by_pt(&mut self, p: Point<U>) {
         assert!(self.region.contains_pt(p));
-        // TODO(ambuc): I think that this method will also be
-        // responsible for populating pmv `ref_values` with references to the kept value.
 
         let anchor_ne = self.anchor();
         let anchor_nw = (p.x(), self.anchor_pt().y());

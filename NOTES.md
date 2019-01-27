@@ -50,44 +50,4 @@
      |           |    4.3    | 4.4 |       |     |     |    4.3    | 4.4 |
      +--+--+--+--+--+--+--+--+--+--+       +--+--+--+--+--+--+--+--+--+--+
 
-     top-level node => 
-       kept_values = [( (2,1)->4x4 , '\' )]
-       1 =>
-         1.1 => None
-         1.2 => None
-         1.3 => None
-         1.4 => ref[ &'\' ]
-       2 =>
-         2.1 => None
-         2.2 => None
-         2.3 => ref[ &'\' ]
-         2.4 => None
-       3 =>
-         3.1 => None
-         3.2 => ref[ &'\' ]
-         3.3 => None
-         3.4 => None
-       4 =>
-         kept_values = [( (4,5)->4x4, '/' )]
-         4.1 =>
-           tree =>
-             4.1.1 => ref [ &'\', &'/' ]
-             4.1.2 => ref [ &'/' ]
-             4.1.3 => ref [ &'/' ]
-             4.1.4 => ref [ &'/' ]
-         4.2 => None
-         4.3 => None
-         4.4 => None
-
-     pub struct Quadtree<U, V> {
-         depth: usize,
-         region: Area<U>,
-
-         values: Vec<(Area<U>, V)>, // Values contained within this node.
-         kept_values: Vec<V>, // Values contained at exactly this region.
-         ref_values: Vec<&V>,  // References to values this region also touches.
-
-         subquadrants: Option<[Box<Quadtree<U,V>>; 4]>,
-     }
-
      ```
