@@ -153,7 +153,7 @@ where
     /// Creates a new Quadtree with the requested anchor and depth.
     /// ```
     /// let q = quadtree_impl::Quadtree::<u32, u8>::new_with_anchor(/*anchor=*/ (2, 4),
-    ///                                                        /* depth=*/ 3);
+    ///                                                             /* depth=*/ 3);
     ///
     /// assert_eq!(q.depth(), 3);
     /// assert_eq!(q.anchor(), (2, 4));
