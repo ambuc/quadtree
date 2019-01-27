@@ -27,7 +27,7 @@ mod iterator_tests {
 
     #[test]
     fn iter_all() {
-        let mut q = mk_quadtree_for_iter_tests();
+        let q = mk_quadtree_for_iter_tests();
 
         debug_assert!(unordered_elements_are(
             q.iter(),
@@ -41,7 +41,7 @@ mod iterator_tests {
 
     #[test]
     fn iter_size_hint() {
-        let mut q = mk_quadtree_for_iter_tests();
+        let q = mk_quadtree_for_iter_tests();
 
         let mut iter = q.iter();
         debug_assert_eq!(iter.size_hint(), (3, Some(3)));
@@ -92,7 +92,7 @@ mod iterator_tests {
 
     #[test]
     fn iter_exact_size() {
-        let mut q = mk_quadtree_for_iter_tests();
+        let q = mk_quadtree_for_iter_tests();
         let mut iter = q.iter();
         debug_assert_eq!(iter.len(), 3);
         iter.next();
@@ -147,5 +147,12 @@ mod iterator_tests {
         }
 
         debug_assert!(unordered_elements_are(q.values(), vec![&11, &-24, &41]));
+    }
+
+    #[test]
+    fn into_iterator_ref() {
+        let q = mk_quadtree_for_iter_tests();
+        let v: Vec<(&((i32, i32), (i32, i32)), &i8)> = q.into_iter().collect();
+        debug_assert_eq!(v.len(), 3);
     }
 }

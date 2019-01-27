@@ -388,7 +388,7 @@ where
 
     /// Returns an iterator over all `(&((U, U), (U, U)), &V)` region/value pairs in the
     /// Quadtree.
-    pub fn iter(&mut self) -> Iter<U, V> {
+    pub fn iter(&self) -> Iter<U, V> {
         Iter::new(/*total_size=*/ self.len(), /*qt=*/ self)
     }
 
@@ -572,7 +572,35 @@ where
     }
 }
 
-// TODO(ambuc): Is it possible to collapse the .next() logic between this and IterMut?
+// Immutable iterator for the Quadtree, returning by-reference.
+impl<'a, U, V> IntoIterator for &'a Quadtree<U, V>
+where
+    U: num::PrimInt + std::fmt::Debug,
+    V: std::fmt::Debug,
+{
+    type Item = (&'a ((U, U), (U, U)), &'a V);
+    type IntoIter = Iter<'a, U, V>;
+
+    fn into_iter(self) -> Iter<'a, U, V> {
+        self.iter()
+    }
+}
+
+// Mutable iterator for the Quadtree, returning by-mutable-reference.
+impl<'a, U, V> IntoIterator for &'a mut Quadtree<U, V>
+where
+    U: num::PrimInt + std::fmt::Debug,
+    V: std::fmt::Debug,
+{
+    type Item = (&'a ((U, U), (U, U)), &'a mut V);
+    type IntoIter = IterMut<'a, U, V>;
+
+    fn into_iter(self) -> IterMut<'a, U, V> {
+        self.iter_mut()
+    }
+}
+
+// TODO(ambuc): Is it possible to collapse the .next() logic between this and IterMut and IntoIter?
 /// An iterator over all regions and values of a [`Quadtree`].
 ///
 /// This struct is created by the [`iter`] method on [`Quadtree`].
