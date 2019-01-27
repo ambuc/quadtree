@@ -69,7 +69,6 @@ mod point;
 
 use crate::area::{Area, AreaType};
 use crate::point::Point;
-use std::iter::FusedIterator;
 
 /// A data structure for storing and accessing data by x/y coordinates.
 /// (A [Quadtree](https://en.wikipedia.org/wiki/Quadtree).)
@@ -651,7 +650,7 @@ where
     }
 }
 
-impl<'a, U, V> FusedIterator for Iter<'a, U, V>
+impl<'a, U, V> std::iter::FusedIterator for Iter<'a, U, V>
 where
     U: num::PrimInt + std::fmt::Debug,
     V: std::fmt::Debug,
@@ -745,7 +744,7 @@ where
     }
 }
 
-impl<'a, U, V> FusedIterator for IterMut<'a, U, V>
+impl<'a, U, V> std::iter::FusedIterator for IterMut<'a, U, V>
 where
     U: num::PrimInt + std::fmt::Debug,
     V: std::fmt::Debug,
@@ -829,7 +828,7 @@ where
     }
 }
 
-impl<'a, U, V> FusedIterator for Query<'a, U, V>
+impl<'a, U, V> std::iter::FusedIterator for Query<'a, U, V>
 where
     U: num::PrimInt + std::fmt::Debug,
     V: std::fmt::Debug,
@@ -902,7 +901,7 @@ where
     }
 }
 
-impl<'a, U, V> FusedIterator for QueryMut<'a, U, V>
+impl<'a, U, V> std::iter::FusedIterator for QueryMut<'a, U, V>
 where
     U: num::PrimInt + std::fmt::Debug,
     V: std::fmt::Debug,
@@ -957,7 +956,7 @@ where
     }
 }
 
-impl<'a, U, V> FusedIterator for Regions<'a, U, V>
+impl<'a, U, V> std::iter::FusedIterator for Regions<'a, U, V>
 where
     U: num::PrimInt + std::fmt::Debug,
     V: std::fmt::Debug,
@@ -1012,7 +1011,7 @@ where
     }
 }
 
-impl<'a, U, V> FusedIterator for Values<'a, U, V>
+impl<'a, U, V> std::iter::FusedIterator for Values<'a, U, V>
 where
     U: num::PrimInt + std::fmt::Debug,
     V: std::fmt::Debug,
@@ -1077,7 +1076,7 @@ where
     }
 }
 
-impl<'a, U, V> FusedIterator for ValuesMut<'a, U, V>
+impl<'a, U, V> std::iter::FusedIterator for ValuesMut<'a, U, V>
 where
     U: num::PrimInt + std::fmt::Debug,
     V: std::fmt::Debug,
