@@ -899,10 +899,7 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        match self.inner.next() {
-            Some((k, _v)) => Some(k),
-            None => None,
-        }
+        self.inner.next().map_or(None, |(k, _v)| Some(k))
     }
 
     #[inline]
@@ -935,10 +932,7 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        match self.inner.next() {
-            Some((_k, v)) => Some(v),
-            None => None,
-        }
+        self.inner.next().map_or(None, |(_k, v)| Some(v))
     }
 
     #[inline]
@@ -980,10 +974,7 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        match self.inner.next() {
-            Some((_k, v)) => Some(v),
-            None => None,
-        }
+        self.inner.next().map_or(None, |(_k, v)| Some(v))
     }
 
     #[inline]
