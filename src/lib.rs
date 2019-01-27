@@ -561,7 +561,10 @@ impl<U, V> Extend<((U, U), V)> for Quadtree<U, V>
 where
     U: PrimInt,
 {
-    fn extend<T: IntoIterator<Item = ((U, U), V)>>(&mut self, iter: T) {
+    fn extend<T>(&mut self, iter: T)
+    where
+        T: IntoIterator<Item = ((U, U), V)>,
+    {
         for ((x, y), v) in iter {
             self.insert_pt((x, y), v);
         }
@@ -575,7 +578,10 @@ impl<U, V> Extend<(((U, U), (U, U)), V)> for Quadtree<U, V>
 where
     U: PrimInt,
 {
-    fn extend<T: IntoIterator<Item = (((U, U), (U, U)), V)>>(&mut self, iter: T) {
+    fn extend<T>(&mut self, iter: T)
+    where
+        T: IntoIterator<Item = (((U, U), (U, U)), V)>,
+    {
         for (((x, y), (w, h)), v) in iter {
             self.insert((x, y), (w, h), v);
         }
