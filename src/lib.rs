@@ -105,8 +105,7 @@ use crate::point::Point;
 #[derive(Clone, Debug)]
 pub struct Quadtree<U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     // The depth of the current cell in its tree. Zero means it's at the very bottom.
     depth: usize,
@@ -122,8 +121,7 @@ where
 
 impl<U, V> Quadtree<U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     // Constructors //
 
@@ -553,8 +551,7 @@ where
 /// fit.
 impl<U, V> Extend<((U, U), V)> for Quadtree<U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     fn extend<T: IntoIterator<Item = ((U, U), V)>>(&mut self, iter: T) {
         for ((x, y), v) in iter {
@@ -568,8 +565,7 @@ where
 /// points fit.
 impl<U, V> Extend<(((U, U), (U, U)), V)> for Quadtree<U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     fn extend<T: IntoIterator<Item = (((U, U), (U, U)), V)>>(&mut self, iter: T) {
         for (((x, y), (w, h)), v) in iter {
@@ -581,8 +577,7 @@ where
 // Immutable iterator for the Quadtree, returning by-reference.
 impl<'a, U, V> IntoIterator for &'a Quadtree<U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     type Item = (&'a ((U, U), (U, U)), &'a V);
     type IntoIter = Iter<'a, U, V>;
@@ -595,8 +590,7 @@ where
 // Mutable iterator for the Quadtree, returning by-mutable-reference.
 impl<'a, U, V> IntoIterator for &'a mut Quadtree<U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     type Item = (&'a ((U, U), (U, U)), &'a mut V);
     type IntoIter = IterMut<'a, U, V>;
@@ -616,8 +610,7 @@ where
 #[derive(Clone, Debug)]
 pub struct Iter<'a, U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     region_stack: Vec<(&'a Area<U>, &'a V)>,
     qt_stack: Vec<&'a Quadtree<U, V>>,
@@ -628,8 +621,7 @@ where
 
 impl<'a, U, V> Iter<'a, U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     fn new(qt: &'a Quadtree<U, V>) -> Iter<U, V> {
         Iter {
@@ -644,8 +636,7 @@ where
 
 impl<'a, U, V> Iterator for Iter<'a, U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     type Item = (&'a AreaType<U>, &'a V);
 
@@ -684,17 +675,11 @@ where
     }
 }
 
-impl<'a, U, V> std::iter::FusedIterator for Iter<'a, U, V>
-where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
-{
-}
+impl<'a, U, V> std::iter::FusedIterator for Iter<'a, U, V> where U: num::PrimInt {}
 
 impl<'a, U, V> ExactSizeIterator for Iter<'a, U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     fn len(&self) -> usize {
         self.total_size - self.consumed
@@ -710,8 +695,7 @@ where
 #[derive(Debug)]
 pub struct IterMut<'a, U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     region_stack: Vec<(&'a Area<U>, &'a mut V)>,
     qt_stack: Vec<&'a mut Quadtree<U, V>>,
@@ -722,8 +706,7 @@ where
 
 impl<'a, U, V> IterMut<'a, U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     fn new(qt: &'a mut Quadtree<U, V>) -> IterMut<U, V> {
         let len = qt.len();
@@ -739,8 +722,7 @@ where
 
 impl<'a, U, V> Iterator for IterMut<'a, U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     type Item = (&'a AreaType<U>, &'a mut V);
 
@@ -779,17 +761,11 @@ where
     }
 }
 
-impl<'a, U, V> std::iter::FusedIterator for IterMut<'a, U, V>
-where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
-{
-}
+impl<'a, U, V> std::iter::FusedIterator for IterMut<'a, U, V> where U: num::PrimInt {}
 
 impl<'a, U, V> ExactSizeIterator for IterMut<'a, U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     fn len(&self) -> usize {
         self.total_size - self.consumed
@@ -806,8 +782,7 @@ where
 #[derive(Clone, Debug)]
 pub struct Query<'a, U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     query_region: Area<U>,
     inner: Iter<'a, U, V>,
@@ -816,8 +791,7 @@ where
 
 impl<'a, U, V> Iterator for Query<'a, U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     type Item = (&'a AreaType<U>, &'a V);
 
@@ -849,12 +823,7 @@ where
     }
 }
 
-impl<'a, U, V> std::iter::FusedIterator for Query<'a, U, V>
-where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
-{
-}
+impl<'a, U, V> std::iter::FusedIterator for Query<'a, U, V> where U: num::PrimInt {}
 
 /// A mutable iterator over the regions and values of a [`Quadtree`].
 ///
@@ -865,8 +834,7 @@ where
 /// [`Quadtree`]: struct.Quadtree.html
 pub struct QueryMut<'a, U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     query_region: Area<U>,
     exhausted: bool,
@@ -875,8 +843,7 @@ where
 
 impl<'a, U, V> Iterator for QueryMut<'a, U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     type Item = (&'a AreaType<U>, &'a mut V);
 
@@ -908,12 +875,7 @@ where
     }
 }
 
-impl<'a, U, V> std::iter::FusedIterator for QueryMut<'a, U, V>
-where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
-{
-}
+impl<'a, U, V> std::iter::FusedIterator for QueryMut<'a, U, V> where U: num::PrimInt {}
 
 /// An iterator over the regions held within a [`Quadtree`].
 ///
@@ -924,16 +886,14 @@ where
 #[derive(Clone, Debug)]
 pub struct Regions<'a, U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     inner: Iter<'a, U, V>,
 }
 
 impl<'a, U, V> Iterator for Regions<'a, U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     type Item = (&'a AreaType<U>);
 
@@ -951,12 +911,7 @@ where
     }
 }
 
-impl<'a, U, V> std::iter::FusedIterator for Regions<'a, U, V>
-where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
-{
-}
+impl<'a, U, V> std::iter::FusedIterator for Regions<'a, U, V> where U: num::PrimInt {}
 
 /// An iterator over the values held within a [`Quadtree`].
 ///
@@ -967,16 +922,14 @@ where
 #[derive(Clone, Debug)]
 pub struct Values<'a, U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     inner: Iter<'a, U, V>,
 }
 
 impl<'a, U, V> Iterator for Values<'a, U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     type Item = (&'a V);
 
@@ -994,17 +947,11 @@ where
     }
 }
 
-impl<'a, U, V> std::iter::FusedIterator for Values<'a, U, V>
-where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
-{
-}
+impl<'a, U, V> std::iter::FusedIterator for Values<'a, U, V> where U: num::PrimInt {}
 
 impl<'a, U, V> ExactSizeIterator for Values<'a, U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     fn len(&self) -> usize {
         self.inner.total_size - self.inner.consumed
@@ -1020,16 +967,14 @@ where
 #[derive(Debug)]
 pub struct ValuesMut<'a, U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     inner: IterMut<'a, U, V>,
 }
 
 impl<'a, U, V> Iterator for ValuesMut<'a, U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     type Item = (&'a mut V);
 
@@ -1047,17 +992,11 @@ where
     }
 }
 
-impl<'a, U, V> std::iter::FusedIterator for ValuesMut<'a, U, V>
-where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
-{
-}
+impl<'a, U, V> std::iter::FusedIterator for ValuesMut<'a, U, V> where U: num::PrimInt {}
 
 impl<'a, U, V> ExactSizeIterator for ValuesMut<'a, U, V>
 where
-    U: num::PrimInt + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: num::PrimInt,
 {
     fn len(&self) -> usize {
         self.inner.total_size - self.inner.consumed

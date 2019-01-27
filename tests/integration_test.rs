@@ -197,7 +197,6 @@ mod string {
 // then query for the struct by location and extract some public field from it.
 #[test]
 fn quadtree_struct() {
-    #[derive(Debug)]
     struct Foo {
         pub baz: String,
     };
