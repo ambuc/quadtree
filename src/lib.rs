@@ -102,6 +102,14 @@ use crate::point::Point;
 ///   - TODO(ambuc): Implement `FromIterator<(K, V)>` for `Quadtree`.
 ///   - TODO(ambuc): Implement `Intoiterator` for `Quadtree`.
 /// - Other
+
+//   .d88b.  db    db  .d8b.  d8888b. d888888b d8888b. d88888b d88888b
+//  .8P  Y8. 88    88 d8' `8b 88  `8D `~~88~~' 88  `8D 88'     88'
+//  88    88 88    88 88ooo88 88   88    88    88oobY' 88ooooo 88ooooo
+//  88    88 88    88 88~~~88 88   88    88    88`8b   88~~~~~ 88~~~~~
+//  `8P  d8' 88b  d88 88   88 88  .8D    88    88 `88. 88.     88.
+//   `Y88'Y8 ~Y8888P' YP   YP Y8888D'    YP    88   YD Y88888P Y88888P
+
 #[derive(Clone, Debug)]
 pub struct Quadtree<U, V>
 where
@@ -598,6 +606,13 @@ where
     }
 }
 
+// d888888b d888888b d88888b d8888b.
+//   `88'   `~~88~~' 88'     88  `8D
+//    88       88    88ooooo 88oobY'
+//    88       88    88~~~~~ 88`8b
+//   .88.      88    88.     88 `88.
+// Y888888P    YP    Y88888P 88   YD
+
 // TODO(ambuc): Is it possible to collapse the .next() logic between this and IterMut and IntoIter?
 /// An iterator over all regions and values of a [`Quadtree`].
 ///
@@ -677,6 +692,13 @@ where
         self.remaining
     }
 }
+
+// d888888b d888888b d88888b d8888b. .88b  d88. db    db d888888b
+//   `88'   `~~88~~' 88'     88  `8D 88'YbdP`88 88    88 `~~88~~'
+//    88       88    88ooooo 88oobY' 88  88  88 88    88    88
+//    88       88    88~~~~~ 88`8b   88  88  88 88    88    88
+//   .88.      88    88.     88 `88. 88  88  88 88b  d88    88
+// Y888888P    YP    Y88888P 88   YD YP  YP  YP ~Y8888P'    YP
 
 /// A mutable iterator over all regions and values of a [`Quadtree`].
 ///
@@ -758,6 +780,13 @@ where
     }
 }
 
+//  .d88b.  db    db d88888b d8888b. db    db
+// .8P  Y8. 88    88 88'     88  `8D `8b  d8'
+// 88    88 88    88 88ooooo 88oobY'  `8bd8'
+// 88    88 88    88 88~~~~~ 88`8b      88
+// `8P  d8' 88b  d88 88.     88 `88.    88
+//  `Y88'Y8 ~Y8888P' Y88888P 88   YD    YP
+
 /// An iterator over the regions and values of a [`Quadtree`].
 ///
 /// This struct is created by the [`query`] or [`query_pt`] methods on [`Quadtree`].
@@ -801,6 +830,13 @@ where
 
 impl<'a, U, V> std::iter::FusedIterator for Query<'a, U, V> where U: num::PrimInt {}
 
+//   .d88b.  db    db d88888b d8888b. db    db .88b  d88. db    db d888888b
+//  .8P  Y8. 88    88 88'     88  `8D `8b  d8' 88'YbdP`88 88    88 `~~88~~'
+//  88    88 88    88 88ooooo 88oobY'  `8bd8'  88  88  88 88    88    88
+//  88    88 88    88 88~~~~~ 88`8b      88    88  88  88 88    88    88
+//  `8P  d8' 88b  d88 88.     88 `88.    88    88  88  88 88b  d88    88
+//   `Y88'Y8 ~Y8888P' Y88888P 88   YD    YP    YP  YP  YP ~Y8888P'    YP
+
 /// A mutable iterator over the regions and values of a [`Quadtree`].
 ///
 /// This struct is created by the [`query_mut`] or [`query_pt_mut`] methods on [`Quadtree`].
@@ -840,6 +876,13 @@ where
 }
 
 impl<'a, U, V> std::iter::FusedIterator for QueryMut<'a, U, V> where U: num::PrimInt {}
+
+// d8888b. d88888b  d888b  d888888b  .d88b.  d8b   db .d8888.
+// 88  `8D 88'     88' Y8b   `88'   .8P  Y8. 888o  88 88'  YP
+// 88oobY' 88ooooo 88         88    88    88 88V8o 88 `8bo.
+// 88`8b   88~~~~~ 88  ooo    88    88    88 88 V8o88   `Y8b.
+// 88 `88. 88.     88. ~8~   .88.   `8b  d8' 88  V888 db   8D
+// 88   YD Y88888P  Y888P  Y888888P  `Y88P'  VP   V8P `8888Y'
 
 /// An iterator over the regions held within a [`Quadtree`].
 ///
@@ -883,6 +926,13 @@ where
     }
 }
 
+// db    db  .d8b.  db      db    db d88888b .d8888.
+// 88    88 d8' `8b 88      88    88 88'     88'  YP
+// Y8    8P 88ooo88 88      88    88 88ooooo `8bo.
+// `8b  d8' 88~~~88 88      88    88 88~~~~~   `Y8b.
+//  `8bd8'  88   88 88booo. 88b  d88 88.     db   8D
+//    YP    YP   YP Y88888P ~Y8888P' Y88888P `8888Y'
+
 /// An iterator over the values held within a [`Quadtree`].
 ///
 /// This struct is created by the [`values`] method on [`Quadtree`].
@@ -924,6 +974,13 @@ where
         self.inner.len()
     }
 }
+
+// db    db  .d8b.  db      db    db d88888b .d8888. .88b  d88. db    db d888888b
+// 88    88 d8' `8b 88      88    88 88'     88'  YP 88'YbdP`88 88    88 `~~88~~'
+// Y8    8P 88ooo88 88      88    88 88ooooo `8bo.   88  88  88 88    88    88
+// `8b  d8' 88~~~88 88      88    88 88~~~~~   `Y8b. 88  88  88 88    88    88
+//  `8bd8'  88   88 88booo. 88b  d88 88.     db   8D 88  88  88 88b  d88    88
+//    YP    YP   YP Y88888P ~Y8888P' Y88888P `8888Y' YP  YP  YP ~Y8888P'    YP
 
 /// A mutable iterator over the values held within a [`Quadtree`].
 ///
