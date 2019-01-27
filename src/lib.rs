@@ -631,7 +631,7 @@ where
     U: num::PrimInt + std::fmt::Debug,
     V: std::fmt::Debug,
 {
-    pub fn new(qt: &'a Quadtree<U, V>) -> Iter<U, V> {
+    fn new(qt: &'a Quadtree<U, V>) -> Iter<U, V> {
         Iter {
             region_stack: vec![],
             qt_stack: vec![qt],
