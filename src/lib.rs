@@ -68,6 +68,7 @@ mod geometry;
 
 use crate::geometry::area::{Area, AreaType};
 use crate::geometry::point::{Point, PointType};
+use crate::geometry::quadrant::Quadrant;
 use num::PrimInt;
 use std::iter::FusedIterator;
 
@@ -463,7 +464,8 @@ where
 
         // For a subquadrant to totally contain the req. area, it must both (a) contain the req.
         // area's anchor and (b) contain the total area. We optimize by checking for (a) first.
-        let q_index: usize = self.center_pt().dir_towards(req.anchor());
+        let quadrant: Quadrant = self.center_pt().dir_towards(req.anchor());
+        let q_index: usize = quadrant as usize;
 
         // Attempt to insert the value into the subquadrant we think it might fit in,
         assert!(self.subquadrants.is_some()); // We should have Someified this in .split().

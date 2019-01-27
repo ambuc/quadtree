@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use crate::geometry::quadrant::Quadrant;
+
 // Transparent alias. In docs and user-facing APIs, this resolves to (U, U).
 pub type PointType<U> = (U, U);
 
@@ -98,15 +100,15 @@ where
     //         1 if north or northwest of self,
     //         2 if south or southeast of self,
     //      or 3 if west or southwest of self.
-    pub fn dir_towards(&self, other: Point<U>) -> usize {
+    pub fn dir_towards(&self, other: Point<U>) -> Quadrant {
         if other.x() > self.x() && other.y() <= self.y() {
-            0 // east, northeast
+            Quadrant::Northeast // 0 // east, northeast
         } else if other.x() <= self.x() && other.y() < self.y() {
-            1 // north, northwest
+            Quadrant::Northwest // 1 // north, northwest
         } else if other.x() < self.x() && other.y() >= self.y() {
-            3 // west, southwest
+            Quadrant::Southwest // 3 // west, southwest
         } else {
-            2 // south, southeast
+            Quadrant::Southeast // 2 // south, southeast
         }
     }
 }
@@ -181,74 +183,75 @@ mod tests {
 #[cfg(test)]
 mod quadrant_tests {
     use super::Point;
+    use crate::geometry::quadrant::Quadrant;
 
     #[test]
     fn dir_towards_in_quadrant_i() {
         let origin: Point<i8> = (2, 2).into();
 
-        debug_assert_eq!(origin.dir_towards((2, 1).into()), 1); // Due north
-        debug_assert_eq!(origin.dir_towards((3, 1).into()), 0); // Northeast
-        debug_assert_eq!(origin.dir_towards((3, 2).into()), 0); // Due east
-        debug_assert_eq!(origin.dir_towards((3, 3).into()), 2); // Southeast
-        debug_assert_eq!(origin.dir_towards((2, 3).into()), 2); // Due south
-        debug_assert_eq!(origin.dir_towards((1, 3).into()), 3); // Southwest
-        debug_assert_eq!(origin.dir_towards((1, 2).into()), 3); // Due west
-        debug_assert_eq!(origin.dir_towards((1, 1).into()), 1); // Northwest
+        debug_assert_eq!(origin.dir_towards((2, 1).into()), Quadrant::Northwest); // Due north
+        debug_assert_eq!(origin.dir_towards((3, 1).into()), Quadrant::Northeast); // Northeast
+        debug_assert_eq!(origin.dir_towards((3, 2).into()), Quadrant::Northeast); // Due east
+        debug_assert_eq!(origin.dir_towards((3, 3).into()), Quadrant::Southeast); // Southeast
+        debug_assert_eq!(origin.dir_towards((2, 3).into()), Quadrant::Southeast); // Due south
+        debug_assert_eq!(origin.dir_towards((1, 3).into()), Quadrant::Southwest); // Southwest
+        debug_assert_eq!(origin.dir_towards((1, 2).into()), Quadrant::Southwest); // Due west
+        debug_assert_eq!(origin.dir_towards((1, 1).into()), Quadrant::Northwest); // Northwest
     }
 
     #[test]
     fn dir_towards_in_quadrant_ii() {
         let origin: Point<i8> = (-2, 2).into();
 
-        debug_assert_eq!(origin.dir_towards((-2, 1).into()), 1); // Due north
-        debug_assert_eq!(origin.dir_towards((-1, 1).into()), 0); // Northeast
-        debug_assert_eq!(origin.dir_towards((-1, 2).into()), 0); // Due east
-        debug_assert_eq!(origin.dir_towards((-1, 3).into()), 2); // Southeast
-        debug_assert_eq!(origin.dir_towards((-2, 3).into()), 2); // Due south
-        debug_assert_eq!(origin.dir_towards((-3, 3).into()), 3); // Southwest
-        debug_assert_eq!(origin.dir_towards((-3, 2).into()), 3); // Due west
-        debug_assert_eq!(origin.dir_towards((-3, 1).into()), 1); // Northwest
+        debug_assert_eq!(origin.dir_towards((-2, 1).into()), Quadrant::Northwest); // Due north
+        debug_assert_eq!(origin.dir_towards((-1, 1).into()), Quadrant::Northeast); // Northeast
+        debug_assert_eq!(origin.dir_towards((-1, 2).into()), Quadrant::Northeast); // Due east
+        debug_assert_eq!(origin.dir_towards((-1, 3).into()), Quadrant::Southeast); // Southeast
+        debug_assert_eq!(origin.dir_towards((-2, 3).into()), Quadrant::Southeast); // Due south
+        debug_assert_eq!(origin.dir_towards((-3, 3).into()), Quadrant::Southwest); // Southwest
+        debug_assert_eq!(origin.dir_towards((-3, 2).into()), Quadrant::Southwest); // Due west
+        debug_assert_eq!(origin.dir_towards((-3, 1).into()), Quadrant::Northwest); // Northwest
     }
 
     #[test]
     fn dir_towards_in_quadrant_iii() {
         let origin: Point<i8> = (-2, -2).into();
 
-        debug_assert_eq!(origin.dir_towards((-2, -3).into()), 1); // Due north
-        debug_assert_eq!(origin.dir_towards((-1, -3).into()), 0); // Northeast
-        debug_assert_eq!(origin.dir_towards((-1, -2).into()), 0); // Due east
-        debug_assert_eq!(origin.dir_towards((-1, -1).into()), 2); // Southeast
-        debug_assert_eq!(origin.dir_towards((-2, -1).into()), 2); // Due south
-        debug_assert_eq!(origin.dir_towards((-3, -1).into()), 3); // Southwest
-        debug_assert_eq!(origin.dir_towards((-3, -2).into()), 3); // Due west
-        debug_assert_eq!(origin.dir_towards((-3, -3).into()), 1); // Northwest
+        debug_assert_eq!(origin.dir_towards((-2, -3).into()), Quadrant::Northwest); // Due north
+        debug_assert_eq!(origin.dir_towards((-1, -3).into()), Quadrant::Northeast); // Northeast
+        debug_assert_eq!(origin.dir_towards((-1, -2).into()), Quadrant::Northeast); // Due east
+        debug_assert_eq!(origin.dir_towards((-1, -1).into()), Quadrant::Southeast); // Southeast
+        debug_assert_eq!(origin.dir_towards((-2, -1).into()), Quadrant::Southeast); // Due south
+        debug_assert_eq!(origin.dir_towards((-3, -1).into()), Quadrant::Southwest); // Southwest
+        debug_assert_eq!(origin.dir_towards((-3, -2).into()), Quadrant::Southwest); // Due west
+        debug_assert_eq!(origin.dir_towards((-3, -3).into()), Quadrant::Northwest); // Northwest
     }
 
     #[test]
     fn dir_towards_in_quadrant_iv() {
         let origin: Point<i8> = (2, -2).into();
 
-        debug_assert_eq!(origin.dir_towards((2, -3).into()), 1); // Due north
-        debug_assert_eq!(origin.dir_towards((3, -3).into()), 0); // Northeast
-        debug_assert_eq!(origin.dir_towards((3, -2).into()), 0); // Due east
-        debug_assert_eq!(origin.dir_towards((3, -1).into()), 2); // Southeast
-        debug_assert_eq!(origin.dir_towards((2, -1).into()), 2); // Due south
-        debug_assert_eq!(origin.dir_towards((1, -1).into()), 3); // Southwest
-        debug_assert_eq!(origin.dir_towards((1, -2).into()), 3); // Due west
-        debug_assert_eq!(origin.dir_towards((1, -3).into()), 1); // Northwest
+        debug_assert_eq!(origin.dir_towards((2, -3).into()), Quadrant::Northwest); // Due north
+        debug_assert_eq!(origin.dir_towards((3, -3).into()), Quadrant::Northeast); // Northeast
+        debug_assert_eq!(origin.dir_towards((3, -2).into()), Quadrant::Northeast); // Due east
+        debug_assert_eq!(origin.dir_towards((3, -1).into()), Quadrant::Southeast); // Southeast
+        debug_assert_eq!(origin.dir_towards((2, -1).into()), Quadrant::Southeast); // Due south
+        debug_assert_eq!(origin.dir_towards((1, -1).into()), Quadrant::Southwest); // Southwest
+        debug_assert_eq!(origin.dir_towards((1, -2).into()), Quadrant::Southwest); // Due west
+        debug_assert_eq!(origin.dir_towards((1, -3).into()), Quadrant::Northwest); // Northwest
     }
 
     #[test]
     fn dir_towards_from_origin() {
         let origin: Point<i8> = (0, 0).into();
 
-        debug_assert_eq!(origin.dir_towards((0, -1).into()), 1); // Due north
-        debug_assert_eq!(origin.dir_towards((1, -1).into()), 0); // Northeast
-        debug_assert_eq!(origin.dir_towards((1, 0).into()), 0); // Due east
-        debug_assert_eq!(origin.dir_towards((1, 1).into()), 2); // Southeast
-        debug_assert_eq!(origin.dir_towards((0, 1).into()), 2); // Due south
-        debug_assert_eq!(origin.dir_towards((-1, 1).into()), 3); // Southwest
-        debug_assert_eq!(origin.dir_towards((-1, 0).into()), 3); // Due west
-        debug_assert_eq!(origin.dir_towards((-1, -1).into()), 1); // Northwest
+        debug_assert_eq!(origin.dir_towards((0, -1).into()), Quadrant::Northwest); // Due north
+        debug_assert_eq!(origin.dir_towards((1, -1).into()), Quadrant::Northeast); // Northeast
+        debug_assert_eq!(origin.dir_towards((1, 0).into()), Quadrant::Northeast); // Due east
+        debug_assert_eq!(origin.dir_towards((1, 1).into()), Quadrant::Southeast); // Southeast
+        debug_assert_eq!(origin.dir_towards((0, 1).into()), Quadrant::Southeast); // Due south
+        debug_assert_eq!(origin.dir_towards((-1, 1).into()), Quadrant::Southwest); // Southwest
+        debug_assert_eq!(origin.dir_towards((-1, 0).into()), Quadrant::Southwest); // Due west
+        debug_assert_eq!(origin.dir_towards((-1, -1).into()), Quadrant::Northwest); // Northwest
     }
 }
