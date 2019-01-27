@@ -102,15 +102,19 @@ where
         self.anchor().x() + self.width()
     }
     // // Coordinates
+    #[allow(dead_code)]
     pub fn tl_pt(&self) -> Point<U> {
         (self.left(), self.top()).into()
     }
+    #[allow(dead_code)]
     pub fn tr_pt(&self) -> Point<U> {
         (self.right(), self.top()).into()
     }
+    #[allow(dead_code)]
     pub fn bl_pt(&self) -> Point<U> {
         (self.left(), self.bottom()).into()
     }
+    #[allow(dead_code)]
     pub fn br_pt(&self) -> Point<U> {
         (self.right(), self.bottom()).into()
     }

@@ -448,7 +448,6 @@ where
         }
 
         if self.subquadrants.is_none() {
-            // self.split_with_regard_to_region(req);
             self.expand_subquadrants_by_center();
         }
 
@@ -468,50 +467,6 @@ where
         }
 
         true
-    }
-
-    // When inserting a region over an existing set of regions, quadrants might need to be split
-    // with regard to that region.
-    // +--+--+   +--+--+    +--+--+--+--+   +--+--+--+--+
-    // |XX   |   |XX|  |    |           |   |  |        |
-    // +     +-->+--+--+    +           +   +--+--+--+--+
-    // |     |   |  |  | ,  |   XXXXX   |-->|  |XXXXX|  |
-    // +--+--+   +--+--+    +           +   +  +--+--+--+
-    //                      |           |   |  |     |  |
-    //                      +--+--+--+--+   +--+--+--+--+
-    #[allow(dead_code)]
-    fn split_with_regard_to_region(&mut self, q: Area<U>) {
-        // There are some scenarios where we don't need to do anything.
-        if self.depth == 0 || self.region == q || !self.region.intersects(q) {
-            return;
-        }
-        // Otherwise we're going to have to affect our subquadrants. If we're lucky and they
-        // haven't been build yet, we get to shape how they're split.
-        if self.subquadrants.is_none() {
-            // Must contains at least one pt!;
-            if self.region.contains_pt(q.tl_pt()) {
-                self.expand_subquadrants_by_pt(q.tl_pt());
-                return;
-            } else if self.region.contains_pt(q.tr_pt()) {
-                self.expand_subquadrants_by_pt(q.tr_pt());
-                return;
-            } else if self.region.contains_pt(q.bl_pt()) {
-                self.expand_subquadrants_by_pt(q.bl_pt());
-                return;
-            } else if self.region.contains_pt(q.br_pt()) {
-                self.expand_subquadrants_by_pt(q.br_pt());
-                return;
-            } else {
-                panic!("You told me one of the pts was in my inner region!");
-            }
-        }
-
-        // Otherwise (if they're already split), just recurse.
-        assert!(self.subquadrants.is_some());
-        if let Some(sqs) = self.subquadrants.as_mut() {
-            sqs.iter_mut()
-                .for_each(|sq| sq.split_with_regard_to_region(q));
-        }
     }
 
     // +--+--+    +--+--+
