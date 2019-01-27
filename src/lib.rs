@@ -505,7 +505,6 @@ where
         Query {
             query_region: a,
             inner: Iter::new(self),
-            exhausted: false,
         }
     }
 
@@ -513,7 +512,6 @@ where
         QueryMut {
             query_region: a,
             inner: IterMut::new(self),
-            exhausted: false,
         }
     }
 
@@ -614,9 +612,7 @@ where
 {
     region_stack: Vec<(&'a Area<U>, &'a V)>,
     qt_stack: Vec<&'a Quadtree<U, V>>,
-    total_size: usize,
-    consumed: usize,
-    exhausted: bool,
+    remaining: usize,
 }
 
 impl<'a, U, V> Iter<'a, U, V>
@@ -627,9 +623,7 @@ where
         Iter {
             region_stack: vec![],
             qt_stack: vec![qt],
-            total_size: qt.len(),
-            consumed: 0,
-            exhausted: false,
+            remaining: qt.len(),
         }
     }
 }
@@ -644,7 +638,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         // Check the region_stack.
         if let Some((region, val)) = self.region_stack.pop() {
-            self.consumed += 1;
+            self.remaining -= 1;
             return Some((region.inner(), val));
         }
 
@@ -664,14 +658,12 @@ where
         }
 
         // Else there's nothing left to search.
-        self.exhausted = true;
         None
     }
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let definite_num = self.total_size - self.consumed;
-        (definite_num, Some(definite_num))
+        (self.remaining, Some(self.remaining))
     }
 }
 
@@ -682,7 +674,7 @@ where
     U: num::PrimInt,
 {
     fn len(&self) -> usize {
-        self.total_size - self.consumed
+        self.remaining
     }
 }
 
@@ -699,9 +691,7 @@ where
 {
     region_stack: Vec<(&'a Area<U>, &'a mut V)>,
     qt_stack: Vec<&'a mut Quadtree<U, V>>,
-    total_size: usize,
-    consumed: usize,
-    exhausted: bool,
+    remaining: usize,
 }
 
 impl<'a, U, V> IterMut<'a, U, V>
@@ -713,9 +703,7 @@ where
         IterMut {
             region_stack: vec![],
             qt_stack: vec![qt],
-            total_size: len,
-            consumed: 0,
-            exhausted: false,
+            remaining: len,
         }
     }
 }
@@ -730,7 +718,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         // Check the region_stack.
         if let Some((region, val)) = self.region_stack.pop() {
-            self.consumed += 1;
+            self.remaining -= 1;
             return Some((region.inner(), val));
         }
 
@@ -750,14 +738,12 @@ where
         }
 
         // Else there's nothing left to search.
-        self.exhausted = true;
         None
     }
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let definite_num = self.total_size - self.consumed;
-        (definite_num, Some(definite_num))
+        (self.remaining, Some(self.remaining))
     }
 }
 
@@ -768,7 +754,7 @@ where
     U: num::PrimInt,
 {
     fn len(&self) -> usize {
-        self.total_size - self.consumed
+        self.remaining
     }
 }
 
@@ -786,7 +772,6 @@ where
 {
     query_region: Area<U>,
     inner: Iter<'a, U, V>,
-    exhausted: bool,
 }
 
 impl<'a, U, V> Iterator for Query<'a, U, V>
@@ -805,21 +790,13 @@ where
                     self.next()
                 }
             }
-            None => {
-                self.exhausted = true;
-                None
-            }
+            None => None,
         }
     }
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        if self.exhausted {
-            (0, Some(0))
-        } else {
-            let (sh, _) = self.inner.size_hint();
-            (0, Some(sh))
-        }
+        self.inner.size_hint()
     }
 }
 
@@ -837,7 +814,6 @@ where
     U: num::PrimInt,
 {
     query_region: Area<U>,
-    exhausted: bool,
     inner: IterMut<'a, U, V>,
 }
 
@@ -857,21 +833,13 @@ where
                     self.next()
                 }
             }
-            None => {
-                self.exhausted = true;
-                None
-            }
+            None => None,
         }
     }
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        if self.exhausted {
-            (0, Some(0))
-        } else {
-            let (sh, _) = self.inner.size_hint();
-            (0, Some(sh))
-        }
+        self.inner.size_hint()
     }
 }
 
@@ -948,7 +916,7 @@ where
     U: num::PrimInt,
 {
     fn len(&self) -> usize {
-        self.inner.total_size - self.inner.consumed
+        self.inner.len()
     }
 }
 
@@ -990,6 +958,6 @@ where
     U: num::PrimInt,
 {
     fn len(&self) -> usize {
-        self.inner.total_size - self.inner.consumed
+        self.inner.len()
     }
 }

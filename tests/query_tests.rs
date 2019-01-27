@@ -78,22 +78,18 @@ mod query_tests {
 
         // Queries which turn up empty:
         let mut empty1 = q.query((1, 1), (1, 1));
-        debug_assert_eq!(empty1.size_hint(), (0, Some(2)));
         debug_assert_eq!(empty1.next(), None);
         debug_assert_eq!(empty1.size_hint(), (0, Some(0)));
 
         let mut empty2 = q.query((0, 0), (2, 2));
-        debug_assert_eq!(empty2.size_hint(), (0, Some(2)));
         debug_assert_eq!(empty2.next(), None);
         debug_assert_eq!(empty2.size_hint(), (0, Some(0)));
 
         let mut empty3 = q.query((0, 0), (6, 2));
-        debug_assert_eq!(empty3.size_hint(), (0, Some(2)));
         debug_assert_eq!(empty3.next(), None);
         debug_assert_eq!(empty3.size_hint(), (0, Some(0)));
 
         let mut empty4 = q.query((0, 0), (2, 6));
-        debug_assert_eq!(empty4.size_hint(), (0, Some(2)));
         debug_assert_eq!(empty4.next(), None);
         debug_assert_eq!(empty4.size_hint(), (0, Some(0)));
 
@@ -189,7 +185,6 @@ mod query_tests {
         }
         // And verify.
         let mut tmp_iter_1 = q.query((0, 0), (1, 1));
-        debug_assert_eq!(tmp_iter_1.size_hint(), (0, Some(1)));
         debug_assert_eq!(tmp_iter_1.next(), Some((&((0, 0), (1, 1)), &50)));
         debug_assert_eq!(tmp_iter_1.size_hint(), (0, Some(0)));
         debug_assert_eq!(tmp_iter_1.next(), None);
@@ -203,9 +198,7 @@ mod query_tests {
         }
         // And verify.
         let mut tmp_iter_2 = q.query((2, 2), (1, 1));
-        debug_assert_eq!(tmp_iter_2.size_hint(), (0, Some(2)));
         debug_assert_eq!(tmp_iter_2.next(), Some((&((2, 2), (3, 3)), &18)));
-        debug_assert_eq!(tmp_iter_2.size_hint(), (0, Some(1)));
         debug_assert_eq!(tmp_iter_2.next(), None);
         debug_assert_eq!(tmp_iter_2.size_hint(), (0, Some(0)));
 
