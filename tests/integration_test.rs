@@ -197,6 +197,7 @@ mod string {
 // then query for the struct by location and extract some public field from it.
 #[test]
 fn quadtree_struct() {
+    #[derive(Debug)]
     struct Foo {
         pub baz: String,
     };
@@ -248,4 +249,11 @@ mod extend {
     }
 }
 
-// Test .iter(), .iter_mut().
+#[test]
+fn debug() {
+    let mut q = Quadtree::<u8, f64>::new(2);
+    q.insert((0, 0), (1, 1), 1.00);
+    q.insert((1, 1), (1, 1), 1.00);
+    q.insert((3, 3), (2, 2), 1.00);
+    dbg!(&q);
+}
