@@ -874,6 +874,15 @@ where
 
 impl<'a, U, V> std::iter::FusedIterator for Regions<'a, U, V> where U: num::PrimInt {}
 
+impl<'a, U, V> ExactSizeIterator for Regions<'a, U, V>
+where
+    U: num::PrimInt,
+{
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
+}
+
 /// An iterator over the values held within a [`Quadtree`].
 ///
 /// This struct is created by the [`values`] method on [`Quadtree`].
