@@ -254,6 +254,5 @@ fn debug() {
     let mut q = Quadtree::<u8, f64>::new(2);
     q.insert((0, 0), (1, 1), 1.00);
     q.insert((1, 1), (1, 1), 1.00);
-    q.insert((3, 3), (2, 2), 1.00);
     dbg!(&q);
 }

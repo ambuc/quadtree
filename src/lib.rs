@@ -447,11 +447,15 @@ where
             return true;
         }
 
-        self.split_with_regard_to_region(req);
+        if self.subquadrants.is_none() {
+            // self.split_with_regard_to_region(req);
+            self.expand_subquadrants_by_center();
+        }
 
         // For a subquadrant to totally contain the req. area, it must both (a) contain the req.
         // area's anchor and (b) contain the total area. We optimize by checking for (a) first.
         let q_index: usize = self.center_pt().dir_towards(req.anchor());
+        dbg!(q_index);
 
         // Attempt to insert the value into the subquadrant we think it might fit in,
         assert!(self.subquadrants.is_some()); // We should have Someified this in .split().
@@ -475,6 +479,7 @@ where
     // +--+--+   +--+--+    +           +   +  +--+--+--+
     //                      |           |   |  |     |  |
     //                      +--+--+--+--+   +--+--+--+--+
+    #[allow(dead_code)]
     fn split_with_regard_to_region(&mut self, q: Area<U>) {
         // There are some scenarios where we don't need to do anything.
         if self.depth == 0 || self.region == q || !self.region.intersects(q) {
@@ -514,7 +519,6 @@ where
     // +     + => +--+--+
     // |     |    |  |  |
     // +--+--+    +--+--+
-    #[allow(dead_code)]
     fn expand_subquadrants_by_center(&mut self) {
         self.expand_subquadrants_by_pt(self.center_pt());
     }
@@ -527,10 +531,10 @@ where
     fn expand_subquadrants_by_pt(&mut self, p: Point<U>) {
         assert!(self.region.contains_pt(p));
 
-        let anchor_ne = self.anchor();
-        let anchor_nw = (p.x(), self.anchor_pt().y());
-        let anchor_se = (self.anchor_pt().x(), p.y());
-        let anchor_sw = p.into();
+        let anchor_nw = self.anchor();
+        let anchor_ne = (p.x(), self.anchor_pt().y());
+        let anchor_sw = (self.anchor_pt().x(), p.y());
+        let anchor_se = p.into();
 
         self.subquadrants = Some([
             Box::new(Quadtree::new_with_anchor(anchor_ne, self.depth - 1)),
