@@ -12,10 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Transparent alias. In docs and user-facing APIs, this resolves to (U, U).
+pub type PointType<U> = (U, U);
+
 // Lightweight data type to represent a point. Should be passed by value.
 #[derive(PartialEq, Clone, Copy)]
 pub struct Point<U> {
-    inner: (U, U),
+    inner: PointType<U>,
 }
 
 impl<U> std::fmt::Debug for Point<U>
@@ -27,20 +30,20 @@ where
     }
 }
 
-impl<U> From<(U, U)> for Point<U>
+impl<U> From<PointType<U>> for Point<U>
 where
     U: num::PrimInt,
 {
-    fn from(xy: (U, U)) -> Self {
+    fn from(xy: PointType<U>) -> Self {
         Point { inner: xy }
     }
 }
 
-impl<U> Into<(U, U)> for Point<U>
+impl<U> Into<PointType<U>> for Point<U>
 where
     U: num::PrimInt,
 {
-    fn into(self) -> (U, U) {
+    fn into(self) -> PointType<U> {
         self.inner
     }
 }

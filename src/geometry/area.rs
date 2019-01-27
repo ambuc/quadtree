@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::geometry::point::Point;
+use crate::geometry::point::{Point, PointType};
 
-pub type AreaType<U> = ((U, U), (U, U));
+// Transparent alias. In docs and user-facing APIs, this resolves to ((U, U), (U, U)).
+pub type AreaType<U> = (PointType<U>, (U, U));
 
 // Lightweight data type to represent a region.
 // The top-left anchor may be positive or negative in either coordinate.
@@ -95,7 +96,7 @@ where
     pub fn anchor(&self) -> Point<U> {
         self.inner.0.into()
     }
-    fn dimensions(&self) -> (U, U) {
+    fn dimensions(&self) -> PointType<U> {
         self.inner.1
     }
     // Properties

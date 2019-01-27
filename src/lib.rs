@@ -67,7 +67,7 @@ extern crate num;
 mod geometry;
 
 use crate::geometry::area::{Area, AreaType};
-use crate::geometry::point::Point;
+use crate::geometry::point::{Point, PointType};
 use num::PrimInt;
 use std::iter::FusedIterator;
 
@@ -159,7 +159,7 @@ where
     /// assert_eq!(q.width(), 8);
     /// assert_eq!(q.height(), 8);
     /// ```
-    pub fn new_with_anchor(anchor: (U, U), depth: usize) -> Quadtree<U, V> {
+    pub fn new_with_anchor(anchor: PointType<U>, depth: usize) -> Quadtree<U, V> {
         let width: U = Self::two().pow(depth as u32);
         let height: U = width;
         Self::new_with_area((anchor, (width, height)).into(), depth)
@@ -168,7 +168,7 @@ where
     // Accessors //
 
     /// The coordinate of the top-left corner of the represented region.
-    pub fn anchor(&self) -> (U, U) {
+    pub fn anchor(&self) -> PointType<U> {
         self.region.anchor().into()
     }
 
@@ -265,7 +265,7 @@ where
     /// // 2+--*******--+
     /// assert!(!q.contains((0, 0), (1, 1)));
     /// ```
-    pub fn contains(&self, anchor: (U, U), size: (U, U)) -> bool {
+    pub fn contains(&self, anchor: PointType<U>, size: (U, U)) -> bool {
         self.contains_region((anchor, size).into())
     }
 
@@ -284,7 +284,7 @@ where
     /// // but returns false when it doesn't.
     /// assert!(!q.insert((0, 0), (5, 4), 27500));
     /// ```
-    pub fn insert(&mut self, anchor: (U, U), size: (U, U), val: V) -> bool {
+    pub fn insert(&mut self, anchor: PointType<U>, size: (U, U), val: V) -> bool {
         self.insert_region((anchor, size).into(), val)
     }
 
@@ -302,7 +302,7 @@ where
     /// ```
     ///
     /// [`.insert(_, (1, 1), _)`]: struct.Quadtree.html#method.insert
-    pub fn insert_pt(&mut self, anchor: (U, U), val: V) -> bool {
+    pub fn insert_pt(&mut self, anchor: PointType<U>, val: V) -> bool {
         self.insert_region((anchor, Self::default_region_size()).into(), val)
     }
 
@@ -329,7 +329,7 @@ where
     /// // It's unclear what order the regions should return in, but there will be two of them.
     /// assert_eq!(query_b.count(), 2);
     /// ```
-    pub fn query(&self, anchor: (U, U), size: (U, U)) -> Query<U, V> {
+    pub fn query(&self, anchor: PointType<U>, size: (U, U)) -> Query<U, V> {
         assert!(!size.0.is_zero());
         assert!(!size.1.is_zero());
         self.query_by_area((anchor, size).into())
@@ -342,7 +342,7 @@ where
     ///
     /// [`Query`]: struct.Query.html
     /// [`.query(anchor, (1, 1))`]: struct.Quadtree.html#method.query
-    pub fn query_pt(&self, anchor: (U, U)) -> Query<U, V> {
+    pub fn query_pt(&self, anchor: PointType<U>) -> Query<U, V> {
         self.query_by_area((anchor, Self::default_region_size()).into())
     }
 
@@ -371,7 +371,7 @@ where
     /// ```
     ///
     /// [`QueryMut`]: struct.QueryMut.html
-    pub fn query_mut(&mut self, anchor: (U, U), size: (U, U)) -> QueryMut<U, V> {
+    pub fn query_mut(&mut self, anchor: PointType<U>, size: (U, U)) -> QueryMut<U, V> {
         assert!(!size.0.is_zero());
         assert!(!size.1.is_zero());
         self.query_mut_by_area((anchor, size).into())
@@ -383,7 +383,7 @@ where
     /// Alias for [`.query(anchor, (1, 1))`].
     ///
     /// [`.query(anchor, (1, 1))`]: struct.Quadtree.html#method.query
-    pub fn query_pt_mut(&mut self, anchor: (U, U)) -> QueryMut<U, V> {
+    pub fn query_pt_mut(&mut self, anchor: PointType<U>) -> QueryMut<U, V> {
         self.query_mut_by_area((anchor, Self::default_region_size()).into())
     }
 
@@ -538,7 +538,7 @@ where
     }
 
     // Strongly-typed alias for (zero(), zero()).
-    fn default_anchor() -> (U, U) {
+    fn default_anchor() -> PointType<U> {
         (U::zero(), U::zero())
     }
 
@@ -556,13 +556,13 @@ where
 /// `Extend<((U, U), V)>` will silently drop values whose coordinates do not fit in the region
 /// represented by the Quadtree. It is the responsibility of the callsite to ensure these points
 /// fit.
-impl<U, V> Extend<((U, U), V)> for Quadtree<U, V>
+impl<U, V> Extend<(PointType<U>, V)> for Quadtree<U, V>
 where
     U: PrimInt,
 {
     fn extend<T>(&mut self, iter: T)
     where
-        T: IntoIterator<Item = ((U, U), V)>,
+        T: IntoIterator<Item = (PointType<U>, V)>,
     {
         for (anchor, v) in iter {
             self.insert_pt(anchor, v);
@@ -573,13 +573,13 @@ where
 /// `Extend<(((U, U), (U, U), V)>` will silently drop values whose coordinates do not fit in the
 /// region represented by the Quadtree. It is the responsibility of the callsite to ensure these
 /// points fit.
-impl<U, V> Extend<(((U, U), (U, U)), V)> for Quadtree<U, V>
+impl<U, V> Extend<(AreaType<U>, V)> for Quadtree<U, V>
 where
     U: PrimInt,
 {
     fn extend<T>(&mut self, iter: T)
     where
-        T: IntoIterator<Item = (((U, U), (U, U)), V)>,
+        T: IntoIterator<Item = (AreaType<U>, V)>,
     {
         for ((anchor, dimensions), v) in iter {
             self.insert(anchor, dimensions, v);
@@ -592,7 +592,7 @@ impl<'a, U, V> IntoIterator for &'a Quadtree<U, V>
 where
     U: PrimInt,
 {
-    type Item = (&'a ((U, U), (U, U)), &'a V);
+    type Item = (&'a AreaType<U>, &'a V);
     type IntoIter = Iter<'a, U, V>;
 
     fn into_iter(self) -> Iter<'a, U, V> {
@@ -605,7 +605,7 @@ impl<'a, U, V> IntoIterator for &'a mut Quadtree<U, V>
 where
     U: PrimInt,
 {
-    type Item = (&'a ((U, U), (U, U)), &'a mut V);
+    type Item = (&'a AreaType<U>, &'a mut V);
     type IntoIter = IterMut<'a, U, V>;
 
     fn into_iter(self) -> IterMut<'a, U, V> {
