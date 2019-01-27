@@ -64,11 +64,10 @@
 
 extern crate num;
 
-mod area;
-mod point;
+mod geometry;
 
-use crate::area::{Area, AreaType};
-use crate::point::Point;
+use crate::geometry::area::{Area, AreaType};
+use crate::geometry::point::Point;
 use num::PrimInt;
 use std::iter::FusedIterator;
 
