@@ -99,7 +99,6 @@ use std::iter::FusedIterator;
 ///   - TODO(ambuc): Implement `.delete_by(anchor, size, fn)`.
 ///   - TODO(ambuc): Implement `.retain(anchor, size, fn)`.
 /// - Traits
-///   - TODO(ambuc): Implement `Eq` for `Quadtree`.
 ///   - TODO(ambuc): Implement `FromIterator<(K, V)>` for `Quadtree`.
 ///   - TODO(ambuc): Implement `Intoiterator` for `Quadtree`.
 /// - Other
@@ -111,7 +110,7 @@ use std::iter::FusedIterator;
 //  `8P  d8' 88b  d88 88   88 88  .8D    88    88 `88. 88.     88.
 //   `Y88'Y8 ~Y8888P' YP   YP Y8888D'    YP    88   YD Y88888P Y88888P
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Quadtree<U, V>
 where
     U: PrimInt,
