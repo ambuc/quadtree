@@ -69,6 +69,8 @@ mod point;
 
 use crate::area::{Area, AreaType};
 use crate::point::Point;
+use num::PrimInt;
+use std::iter::FusedIterator;
 
 /// A data structure for storing and accessing data by x/y coordinates.
 /// (A [Quadtree](https://en.wikipedia.org/wiki/Quadtree).)
@@ -113,7 +115,7 @@ use crate::point::Point;
 #[derive(Clone, Debug)]
 pub struct Quadtree<U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     // The depth of the current cell in its tree. Zero means it's at the very bottom.
     depth: usize,
@@ -129,7 +131,7 @@ where
 
 impl<U, V> Quadtree<U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     // Constructors //
 
@@ -557,7 +559,7 @@ where
 /// fit.
 impl<U, V> Extend<((U, U), V)> for Quadtree<U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     fn extend<T: IntoIterator<Item = ((U, U), V)>>(&mut self, iter: T) {
         for ((x, y), v) in iter {
@@ -571,7 +573,7 @@ where
 /// points fit.
 impl<U, V> Extend<(((U, U), (U, U)), V)> for Quadtree<U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     fn extend<T: IntoIterator<Item = (((U, U), (U, U)), V)>>(&mut self, iter: T) {
         for (((x, y), (w, h)), v) in iter {
@@ -583,7 +585,7 @@ where
 // Immutable iterator for the Quadtree, returning by-reference.
 impl<'a, U, V> IntoIterator for &'a Quadtree<U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     type Item = (&'a ((U, U), (U, U)), &'a V);
     type IntoIter = Iter<'a, U, V>;
@@ -596,7 +598,7 @@ where
 // Mutable iterator for the Quadtree, returning by-mutable-reference.
 impl<'a, U, V> IntoIterator for &'a mut Quadtree<U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     type Item = (&'a ((U, U), (U, U)), &'a mut V);
     type IntoIter = IterMut<'a, U, V>;
@@ -623,7 +625,7 @@ where
 #[derive(Clone, Debug)]
 pub struct Iter<'a, U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     region_stack: Vec<(&'a Area<U>, &'a V)>,
     qt_stack: Vec<&'a Quadtree<U, V>>,
@@ -632,7 +634,7 @@ where
 
 impl<'a, U, V> Iter<'a, U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     fn new(qt: &'a Quadtree<U, V>) -> Iter<U, V> {
         Iter {
@@ -645,7 +647,7 @@ where
 
 impl<'a, U, V> Iterator for Iter<'a, U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     type Item = (&'a AreaType<U>, &'a V);
 
@@ -682,11 +684,11 @@ where
     }
 }
 
-impl<'a, U, V> std::iter::FusedIterator for Iter<'a, U, V> where U: num::PrimInt {}
+impl<'a, U, V> FusedIterator for Iter<'a, U, V> where U: PrimInt {}
 
 impl<'a, U, V> ExactSizeIterator for Iter<'a, U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     fn len(&self) -> usize {
         self.remaining
@@ -709,7 +711,7 @@ where
 #[derive(Debug)]
 pub struct IterMut<'a, U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     region_stack: Vec<(&'a Area<U>, &'a mut V)>,
     qt_stack: Vec<&'a mut Quadtree<U, V>>,
@@ -718,7 +720,7 @@ where
 
 impl<'a, U, V> IterMut<'a, U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     fn new(qt: &'a mut Quadtree<U, V>) -> IterMut<U, V> {
         let len = qt.len();
@@ -732,7 +734,7 @@ where
 
 impl<'a, U, V> Iterator for IterMut<'a, U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     type Item = (&'a AreaType<U>, &'a mut V);
 
@@ -769,11 +771,11 @@ where
     }
 }
 
-impl<'a, U, V> std::iter::FusedIterator for IterMut<'a, U, V> where U: num::PrimInt {}
+impl<'a, U, V> FusedIterator for IterMut<'a, U, V> where U: PrimInt {}
 
 impl<'a, U, V> ExactSizeIterator for IterMut<'a, U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     fn len(&self) -> usize {
         self.remaining
@@ -799,7 +801,7 @@ where
 #[derive(Clone, Debug)]
 pub struct Query<'a, U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     query_region: Area<U>,
     inner: Iter<'a, U, V>,
@@ -807,7 +809,7 @@ where
 
 impl<'a, U, V> Iterator for Query<'a, U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     type Item = (&'a AreaType<U>, &'a V);
 
@@ -828,7 +830,7 @@ where
     }
 }
 
-impl<'a, U, V> std::iter::FusedIterator for Query<'a, U, V> where U: num::PrimInt {}
+impl<'a, U, V> FusedIterator for Query<'a, U, V> where U: PrimInt {}
 
 //   .d88b.  db    db d88888b d8888b. db    db .88b  d88. db    db d888888b
 //  .8P  Y8. 88    88 88'     88  `8D `8b  d8' 88'YbdP`88 88    88 `~~88~~'
@@ -846,7 +848,7 @@ impl<'a, U, V> std::iter::FusedIterator for Query<'a, U, V> where U: num::PrimIn
 /// [`Quadtree`]: struct.Quadtree.html
 pub struct QueryMut<'a, U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     query_region: Area<U>,
     inner: IterMut<'a, U, V>,
@@ -854,7 +856,7 @@ where
 
 impl<'a, U, V> Iterator for QueryMut<'a, U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     type Item = (&'a AreaType<U>, &'a mut V);
 
@@ -875,7 +877,7 @@ where
     }
 }
 
-impl<'a, U, V> std::iter::FusedIterator for QueryMut<'a, U, V> where U: num::PrimInt {}
+impl<'a, U, V> FusedIterator for QueryMut<'a, U, V> where U: PrimInt {}
 
 // d8888b. d88888b  d888b  d888888b  .d88b.  d8b   db .d8888.
 // 88  `8D 88'     88' Y8b   `88'   .8P  Y8. 888o  88 88'  YP
@@ -893,14 +895,14 @@ impl<'a, U, V> std::iter::FusedIterator for QueryMut<'a, U, V> where U: num::Pri
 #[derive(Clone, Debug)]
 pub struct Regions<'a, U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     inner: Iter<'a, U, V>,
 }
 
 impl<'a, U, V> Iterator for Regions<'a, U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     type Item = (&'a AreaType<U>);
 
@@ -915,11 +917,11 @@ where
     }
 }
 
-impl<'a, U, V> std::iter::FusedIterator for Regions<'a, U, V> where U: num::PrimInt {}
+impl<'a, U, V> FusedIterator for Regions<'a, U, V> where U: PrimInt {}
 
 impl<'a, U, V> ExactSizeIterator for Regions<'a, U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     fn len(&self) -> usize {
         self.inner.len()
@@ -942,14 +944,14 @@ where
 #[derive(Clone, Debug)]
 pub struct Values<'a, U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     inner: Iter<'a, U, V>,
 }
 
 impl<'a, U, V> Iterator for Values<'a, U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     type Item = (&'a V);
 
@@ -964,11 +966,11 @@ where
     }
 }
 
-impl<'a, U, V> std::iter::FusedIterator for Values<'a, U, V> where U: num::PrimInt {}
+impl<'a, U, V> FusedIterator for Values<'a, U, V> where U: PrimInt {}
 
 impl<'a, U, V> ExactSizeIterator for Values<'a, U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     fn len(&self) -> usize {
         self.inner.len()
@@ -991,14 +993,14 @@ where
 #[derive(Debug)]
 pub struct ValuesMut<'a, U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     inner: IterMut<'a, U, V>,
 }
 
 impl<'a, U, V> Iterator for ValuesMut<'a, U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     type Item = (&'a mut V);
 
@@ -1013,11 +1015,11 @@ where
     }
 }
 
-impl<'a, U, V> std::iter::FusedIterator for ValuesMut<'a, U, V> where U: num::PrimInt {}
+impl<'a, U, V> FusedIterator for ValuesMut<'a, U, V> where U: PrimInt {}
 
 impl<'a, U, V> ExactSizeIterator for ValuesMut<'a, U, V>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     fn len(&self) -> usize {
         self.inner.len()
