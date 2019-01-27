@@ -765,6 +765,8 @@ where
 /// [`query`]: struct.Quadtree.html#method.query
 /// [`query_pt`]: struct.Quadtree.html#method.query_pt
 /// [`Quadtree`]: struct.Quadtree.html
+// TODO(ambuc): This is pretty inefficient at the moment -- it starts at the top level and checks
+// everything. This has to be fixed before v1.0.0. (Same for QueryMut.)
 #[derive(Clone, Debug)]
 pub struct Query<'a, U, V>
 where
