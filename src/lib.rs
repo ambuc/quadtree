@@ -73,6 +73,7 @@ use crate::geometry::point::PointType;
 use crate::types::{IntoIter, Iter, IterMut, Query, QueryMut, Regions, Values, ValuesMut};
 use num::PrimInt;
 use qtinner::QTInner;
+use uuid::Uuid;
 
 //   .d88b.  db    db  .d8b.  d8888b. d888888b d8888b. d88888b d88888b
 //  .8P  Y8. 88    88 d8' `8b 88  `8D `~~88~~' 88  `8D 88'     88'
@@ -117,6 +118,7 @@ where
     U: PrimInt,
 {
     inner: QTInner<U, V>,
+    store: std::collections::HashMap<Uuid, (U, V)>,
 }
 
 impl<U, V> Quadtree<U, V>
@@ -139,6 +141,7 @@ where
     pub fn new(depth: usize) -> Quadtree<U, V> {
         Quadtree {
             inner: QTInner::new(depth),
+            store: std::collections::HashMap::new(),
         }
     }
 
@@ -155,6 +158,7 @@ where
     pub fn new_with_anchor(anchor: PointType<U>, depth: usize) -> Quadtree<U, V> {
         Quadtree {
             inner: QTInner::new_with_anchor(anchor, depth),
+            store: std::collections::HashMap::new(),
         }
     }
 
