@@ -49,5 +49,33 @@
      +           +--+--+--+--+--+--+       +     +     +--+--+--+--+--+--+
      |           |    4.3    | 4.4 |       |     |     |    4.3    | 4.4 |
      +--+--+--+--+--+--+--+--+--+--+       +--+--+--+--+--+--+--+--+--+--+
+     TODO(ambuc): These are useful diagrams. What if I wrote a util to generate
+     them for small quadtree sizes?
 
      ```
+
+Rather than manage references and lifetimes up and down the tree, we 
+ - assume a relatively low overlap cardinality (i.e. two, rarely three items
+   overlapping)
+ - assume a relatively small size per object s.t. O(IxJ) insert operations is
+   bad but acceptable
+ - what if you used hash? and expected that items implemented
+   hash in such a way that mutations you perform to them do not affect their
+   hash? (a constant uuid)
+For the example above:
+ - root
+   [ 409 => Item { value: "\", region: (1,1)->2x2 }
+   , 778 => Item { value: "/", region: (2,2)->2x2 }
+   ]
+   - 1
+     * 1.4 #409
+   - 2
+     * 2.3 #409
+   - 3
+     * 3.2 #409
+   - 4
+     * 4.1 #778
+       * 4.1.1 #409
+     * 4.2
+     * 4.3
+     * 4.4
