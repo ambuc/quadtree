@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+mod util; // For unordered_elements_are.
+
 use quadtree_impl::Quadtree;
 
 mod new {
@@ -251,6 +253,7 @@ mod extend {
 }
 
 #[test]
+#[ignore]
 fn debug() {
     let mut q = Quadtree::<u8, f64>::new(2);
     q.insert((0, 0), (2, 2), 1.35);
@@ -258,4 +261,18 @@ fn debug() {
     q.insert((1, 1), (2, 2), 3.69);
     q.insert((2, 2), (2, 2), 4.812);
     dbg!(&q);
+}
+
+#[test]
+#[ignore]
+fn test_print_quadtree() {
+    use crate::util::print_quadtree;
+
+    let mut q = quadtree_impl::Quadtree::<u8, f64>::new(3);
+    q.insert((0, 0), (2, 2), 1.35);
+    q.insert((2, 3), (1, 1), 2.46);
+    q.insert((1, 1), (2, 2), 3.69);
+    q.insert((2, 2), (4, 4), 4.812);
+    q.insert((0, 4), (2, 3), 4.812);
+    print_quadtree(&q);
 }

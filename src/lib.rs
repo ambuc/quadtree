@@ -72,7 +72,10 @@ use crate::geometry::area::{Area, AreaType};
 use crate::geometry::point::PointType;
 use crate::qtinner::QTInner;
 use crate::uuid_iter::UuidIter;
-use num::PrimInt;
+use num::{
+    cast::{FromPrimitive, ToPrimitive},
+    PrimInt,
+};
 use std::collections::HashMap;
 use std::iter::FusedIterator;
 use uuid::Uuid;
@@ -115,7 +118,7 @@ use uuid::Uuid;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Quadtree<U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + std::fmt::Debug,
 {
     depth: usize,
     inner: QTInner<U>,
@@ -124,7 +127,7 @@ where
 
 impl<U, V> Quadtree<U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + std::fmt::Debug,
 {
     // Constructors //
 
@@ -173,13 +176,13 @@ where
     }
 
     /// The width of the represented region.
-    pub fn width(&self) -> U {
-        self.inner.region.width()
+    pub fn width(&self) -> usize {
+        self.inner.region.width().to_usize().unwrap()
     }
 
     /// The height of the represented region.
-    pub fn height(&self) -> U {
-        self.inner.region.height()
+    pub fn height(&self) -> usize {
+        self.inner.region.height().to_usize().unwrap()
     }
 
     /// The depth of the quadtree.
@@ -329,7 +332,7 @@ where
     /// ```
     pub fn query(&self, anchor: PointType<U>, size: (U, U)) -> Query<U, V>
     where
-        U: std::fmt::Debug,
+        U: std::fmt::Debug + FromPrimitive,
     {
         let a = (anchor, size).into();
         Query {
@@ -349,7 +352,7 @@ where
     /// [`.query(anchor, (1, 1))`]: struct.Quadtree.html#method.query
     pub fn query_pt(&self, anchor: PointType<U>) -> Query<U, V>
     where
-        U: std::fmt::Debug,
+        U: std::fmt::Debug + FromPrimitive,
     {
         let a = (anchor, Self::default_region_size()).into();
         Query {
@@ -415,19 +418,28 @@ where
 
     /// Returns an iterator over all `(&((U, U), (U, U)), &V)` region/value pairs in the
     /// Quadtree.
-    pub fn iter(&self) -> Iter<U, V> {
+    pub fn iter(&self) -> Iter<U, V>
+    where
+        U: FromPrimitive,
+    {
         Iter::new(&self.inner, &self.store)
     }
 
     /// Returns an iterator over all `&'a ((U, U), (U, U))` regions in the Quadtree.
-    pub fn regions(&self) -> Regions<U, V> {
+    pub fn regions(&self) -> Regions<U, V>
+    where
+        U: FromPrimitive,
+    {
         Regions {
             inner: Iter::new(&self.inner, &self.store),
         }
     }
 
     /// Returns an iterator over all `&'a V` values in the Quadtree.
-    pub fn values(&self) -> Values<U, V> {
+    pub fn values(&self) -> Values<U, V>
+    where
+        U: FromPrimitive,
+    {
         Values {
             inner: Iter::new(&self.inner, &self.store),
         }
@@ -459,7 +471,7 @@ where
 #[derive(Clone, Debug)]
 pub struct Iter<'a, U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug,
 {
     store: &'a HashMap<Uuid, (Area<U>, V)>,
     uuid_iter: UuidIter<'a, U>,
@@ -467,7 +479,7 @@ where
 
 impl<'a, U, V> Iter<'a, U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug,
 {
     pub(crate) fn new(
         qt: &'a QTInner<U>,
@@ -482,7 +494,7 @@ where
 
 impl<'a, U, V> Iterator for Iter<'a, U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug,
 {
     type Item = (&'a AreaType<U>, &'a V);
 
@@ -506,11 +518,14 @@ where
     }
 }
 
-impl<'a, U, V> FusedIterator for Iter<'a, U, V> where U: PrimInt + std::fmt::Debug {}
+impl<'a, U, V> FusedIterator for Iter<'a, U, V> where
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug
+{
+}
 
 impl<'a, U, V> ExactSizeIterator for Iter<'a, U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug,
 {
     fn len(&self) -> usize {
         self.uuid_iter.len()
@@ -534,7 +549,7 @@ where
 #[derive(Clone, Debug)]
 pub struct Query<'a, U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug,
 {
     pub(crate) query_region: Area<U>,
     pub(crate) uuid_iter: UuidIter<'a, U>,
@@ -544,7 +559,7 @@ where
 
 impl<'a, U, V: 'a> Iterator for Query<'a, U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug,
 {
     type Item = (&'a AreaType<U>, &'a V);
 
@@ -570,7 +585,10 @@ where
     }
 }
 
-impl<'a, U, V: 'a> FusedIterator for Query<'a, U, V> where U: PrimInt + std::fmt::Debug {}
+impl<'a, U, V: 'a> FusedIterator for Query<'a, U, V> where
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug
+{
+}
 
 // d8888b. d88888b  d888b  d888888b  .d88b.  d8b   db .d8888.
 // 88  `8D 88'     88' Y8b   `88'   .8P  Y8. 888o  88 88'  YP
@@ -588,14 +606,14 @@ impl<'a, U, V: 'a> FusedIterator for Query<'a, U, V> where U: PrimInt + std::fmt
 #[derive(Clone, Debug)]
 pub struct Regions<'a, U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug,
 {
     pub(crate) inner: Iter<'a, U, V>,
 }
 
 impl<'a, U, V> Iterator for Regions<'a, U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug,
 {
     type Item = (&'a AreaType<U>);
 
@@ -610,11 +628,14 @@ where
     }
 }
 
-impl<'a, U, V> FusedIterator for Regions<'a, U, V> where U: PrimInt + std::fmt::Debug {}
+impl<'a, U, V> FusedIterator for Regions<'a, U, V> where
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug
+{
+}
 
 impl<'a, U, V> ExactSizeIterator for Regions<'a, U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug,
 {
     fn len(&self) -> usize {
         self.inner.len()
@@ -637,14 +658,14 @@ where
 #[derive(Clone, Debug)]
 pub struct Values<'a, U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug,
 {
     pub(crate) inner: Iter<'a, U, V>,
 }
 
 impl<'a, U, V> Iterator for Values<'a, U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug,
 {
     type Item = (&'a V);
 
@@ -659,11 +680,14 @@ where
     }
 }
 
-impl<'a, U, V> FusedIterator for Values<'a, U, V> where U: PrimInt + std::fmt::Debug {}
+impl<'a, U, V> FusedIterator for Values<'a, U, V> where
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug
+{
+}
 
 impl<'a, U, V> ExactSizeIterator for Values<'a, U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug,
 {
     fn len(&self) -> usize {
         self.inner.len()
@@ -687,7 +711,7 @@ where
 #[derive(Clone, Debug)]
 pub struct IntoIter<U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug,
 {
     uuid_stack: Vec<Uuid>,
     qt_stack: Vec<QTInner<U>>,
@@ -697,7 +721,7 @@ where
 
 impl<U, V> IntoIter<U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug,
 {
     pub(crate) fn new(qt: QTInner<U>, store: HashMap<Uuid, (Area<U>, V)>) -> IntoIter<U, V> {
         let len = qt.len();
@@ -712,7 +736,7 @@ where
 
 impl<U, V> Iterator for IntoIter<U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug,
 {
     type Item = (AreaType<U>, V);
 
@@ -758,7 +782,7 @@ where
 
 impl<U, V> ExactSizeIterator for IntoIter<U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug,
 {
     #[inline]
     fn len(&self) -> usize {
@@ -766,14 +790,17 @@ where
     }
 }
 
-impl<U, V> FusedIterator for IntoIter<U, V> where U: PrimInt + std::fmt::Debug {}
+impl<U, V> FusedIterator for IntoIter<U, V> where
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug
+{
+}
 
 /// `Extend<((U, U), V)>` will silently drop values whose coordinates do not fit in the region
 /// represented by the Quadtree. It is the responsibility of the callsite to ensure these points
 /// fit.
 impl<U, V> Extend<(PointType<U>, V)> for Quadtree<U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug,
 {
     fn extend<T>(&mut self, iter: T)
     where
@@ -790,7 +817,7 @@ where
 /// points fit.
 impl<U, V> Extend<(AreaType<U>, V)> for Quadtree<U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug,
 {
     fn extend<T>(&mut self, iter: T)
     where
@@ -805,7 +832,7 @@ where
 // Immutable iterator for the Quadtree, returning by-reference.
 impl<'a, U, V> IntoIterator for &'a Quadtree<U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug,
 {
     type Item = (&'a AreaType<U>, &'a V);
     type IntoIter = Iter<'a, U, V>;
@@ -817,7 +844,7 @@ where
 
 impl<U, V> IntoIterator for Quadtree<U, V>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + ToPrimitive + FromPrimitive + std::fmt::Debug,
 {
     type Item = (AreaType<U>, V);
     type IntoIter = IntoIter<U, V>;
