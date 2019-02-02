@@ -38,7 +38,6 @@ use uuid::Uuid;
 pub struct Iter<'a, U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     uuid_stack: Vec<Uuid>,
     qt_stack: Vec<&'a QTInner<U>>,
@@ -49,7 +48,6 @@ where
 impl<'a, U, V> Iter<'a, U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     pub(crate) fn new(
         qt: &'a QTInner<U>,
@@ -67,7 +65,6 @@ where
 impl<'a, U, V> Iterator for Iter<'a, U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     type Item = (&'a AreaType<U>, &'a V);
 
@@ -105,17 +102,11 @@ where
     }
 }
 
-impl<'a, U, V> FusedIterator for Iter<'a, U, V>
-where
-    U: PrimInt,
-    V: Clone,
-{
-}
+impl<'a, U, V> FusedIterator for Iter<'a, U, V> where U: PrimInt {}
 
 impl<'a, U, V> ExactSizeIterator for Iter<'a, U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     fn len(&self) -> usize {
         self.remaining
@@ -139,7 +130,6 @@ where
 // pub struct IterMut<'a, U, V>
 // where
 //     U: PrimInt,
-//     V: Clone,
 // {
 //     uuid_stack: Vec<Uuid>,
 //     qt_stack: Vec<&'a mut QTInner<U>>,
@@ -150,7 +140,6 @@ where
 // impl<'a, U, V> IterMut<'a, U, V>
 // where
 //     U: PrimInt,
-//     V: Clone,
 // {
 //     pub(crate) fn new(
 //         qt: &'a mut QTInner<U>,
@@ -179,7 +168,6 @@ where
 // impl<'a, U, V> Iterator for IterMut<'a, U, V>
 // where
 //     U: PrimInt,
-//     V: Clone,
 // {
 //     type Item = (&'a AreaType<U>, &'a mut V);
 //
@@ -219,14 +207,12 @@ where
 // impl<'a, U, V> FusedIterator for IterMut<'a, U, V>
 // where
 //     U: PrimInt,
-//     V: Clone,
 // {
 // }
 //
 // impl<'a, U, V> ExactSizeIterator for IterMut<'a, U, V>
 // where
 //     U: PrimInt,
-//     V: Clone,
 // {
 //     fn len(&self) -> usize {
 //         self.remaining
@@ -250,7 +236,6 @@ where
 pub struct IntoIter<U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     uuid_stack: Vec<Uuid>,
     qt_stack: Vec<QTInner<U>>,
@@ -261,7 +246,6 @@ where
 impl<U, V> IntoIter<U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     pub(crate) fn new(qt: QTInner<U>, store: HashMap<Uuid, (Area<U>, V)>) -> IntoIter<U, V> {
         let len = qt.len();
@@ -277,7 +261,6 @@ where
 impl<U, V> Iterator for IntoIter<U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     type Item = (AreaType<U>, V);
 
@@ -317,7 +300,6 @@ where
 impl<U, V> ExactSizeIterator for IntoIter<U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     #[inline]
     fn len(&self) -> usize {
@@ -325,12 +307,7 @@ where
     }
 }
 
-impl<U, V> FusedIterator for IntoIter<U, V>
-where
-    U: PrimInt,
-    V: Clone,
-{
-}
+impl<U, V> FusedIterator for IntoIter<U, V> where U: PrimInt {}
 
 //  .d88b.  db    db d88888b d8888b. db    db
 // .8P  Y8. 88    88 88'     88  `8D `8b  d8'
@@ -352,7 +329,6 @@ where
 pub struct Query<'a, U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     pub(crate) query_region: Area<U>,
     pub(crate) inner: Iter<'a, U, V>,
@@ -361,7 +337,6 @@ where
 impl<'a, U, V> Iterator for Query<'a, U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     type Item = (&'a AreaType<U>, &'a V);
 
@@ -382,12 +357,7 @@ where
     }
 }
 
-impl<'a, U, V> FusedIterator for Query<'a, U, V>
-where
-    U: PrimInt,
-    V: Clone,
-{
-}
+impl<'a, U, V> FusedIterator for Query<'a, U, V> where U: PrimInt {}
 
 // //   .d88b.  db    db d88888b d8888b. db    db .88b  d88. db    db d888888b
 // //  .8P  Y8. 88    88 88'     88  `8D `8b  d8' 88'YbdP`88 88    88 `~~88~~'
@@ -406,7 +376,6 @@ where
 // pub struct QueryMut<'a, U, V>
 // where
 //     U: PrimInt,
-//     V: Clone,
 // {
 //     pub(crate) query_region: Area<U>,
 //     pub(crate) inner: IterMut<'a, U, V>,
@@ -415,7 +384,6 @@ where
 // impl<'a, U, V> Iterator for QueryMut<'a, U, V>
 // where
 //     U: PrimInt,
-//     V: Clone,
 // {
 //     type Item = (&'a AreaType<U>, &'a mut V);
 //
@@ -439,7 +407,6 @@ where
 // impl<'a, U, V> FusedIterator for QueryMut<'a, U, V>
 // where
 //     U: PrimInt,
-//     V: Clone,
 // {
 // }
 
@@ -460,7 +427,6 @@ where
 pub struct Regions<'a, U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     pub(crate) inner: Iter<'a, U, V>,
 }
@@ -468,7 +434,6 @@ where
 impl<'a, U, V> Iterator for Regions<'a, U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     type Item = (&'a AreaType<U>);
 
@@ -483,17 +448,11 @@ where
     }
 }
 
-impl<'a, U, V> FusedIterator for Regions<'a, U, V>
-where
-    U: PrimInt,
-    V: Clone,
-{
-}
+impl<'a, U, V> FusedIterator for Regions<'a, U, V> where U: PrimInt {}
 
 impl<'a, U, V> ExactSizeIterator for Regions<'a, U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     fn len(&self) -> usize {
         self.inner.len()
@@ -517,7 +476,6 @@ where
 pub struct Values<'a, U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     pub(crate) inner: Iter<'a, U, V>,
 }
@@ -525,7 +483,6 @@ where
 impl<'a, U, V> Iterator for Values<'a, U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     type Item = (&'a V);
 
@@ -540,17 +497,11 @@ where
     }
 }
 
-impl<'a, U, V> FusedIterator for Values<'a, U, V>
-where
-    U: PrimInt,
-    V: Clone,
-{
-}
+impl<'a, U, V> FusedIterator for Values<'a, U, V> where U: PrimInt {}
 
 impl<'a, U, V> ExactSizeIterator for Values<'a, U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     fn len(&self) -> usize {
         self.inner.len()
@@ -574,7 +525,6 @@ where
 // pub struct ValuesMut<'a, U, V>
 // where
 //     U: PrimInt,
-//     V: Clone,
 // {
 //     pub(crate) inner: IterMut<'a, U, V>,
 // }
@@ -582,7 +532,6 @@ where
 // impl<'a, U, V> Iterator for ValuesMut<'a, U, V>
 // where
 //     U: PrimInt,
-//     V: Clone,
 // {
 //     type Item = (&'a mut V);
 //
@@ -600,14 +549,12 @@ where
 // impl<'a, U, V> FusedIterator for ValuesMut<'a, U, V>
 // where
 //     U: PrimInt,
-//     V: Clone,
 // {
 // }
 //
 // impl<'a, U, V> ExactSizeIterator for ValuesMut<'a, U, V>
 // where
 //     U: PrimInt,
-//     V: Clone,
 // {
 //     fn len(&self) -> usize {
 //         self.inner.len()

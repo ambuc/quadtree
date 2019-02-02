@@ -96,11 +96,8 @@ where
         size: (U, U),
         val: V,
         store: &mut HashMap<Uuid, (Area<U>, V)>,
-    ) -> bool
-    where
-        V: Clone,
-    {
-        self.insert_region((anchor, size).into(), val, store)
+    ) -> bool {
+        self.insert_val_at_region((anchor, size).into(), val, store)
     }
 
     pub fn insert_pt<V>(
@@ -108,11 +105,8 @@ where
         anchor: PointType<U>,
         val: V,
         store: &mut HashMap<Uuid, (Area<U>, V)>,
-    ) -> bool
-    where
-        V: Clone,
-    {
-        self.insert_region((anchor, Self::default_region_size()).into(), val, store)
+    ) -> bool {
+        self.insert_val_at_region((anchor, Self::default_region_size()).into(), val, store)
     }
 
     pub fn query<'a, V>(
@@ -120,10 +114,7 @@ where
         anchor: PointType<U>,
         size: (U, U),
         store: &'a HashMap<Uuid, (Area<U>, V)>,
-    ) -> Query<'a, U, V>
-    where
-        V: Clone,
-    {
+    ) -> Query<'a, U, V> {
         assert!(!size.0.is_zero());
         assert!(!size.1.is_zero());
         self.query_by_area((anchor, size).into(), store)
@@ -133,10 +124,7 @@ where
         &'a self,
         anchor: PointType<U>,
         store: &'a HashMap<Uuid, (Area<U>, V)>,
-    ) -> Query<'a, U, V>
-    where
-        V: Clone,
-    {
+    ) -> Query<'a, U, V> {
         self.query_by_area((anchor, Self::default_region_size()).into(), store)
     }
 
@@ -164,10 +152,7 @@ where
         self.subquadrants = None;
     }
 
-    pub fn iter<'a, V>(&'a self, store: &'a HashMap<Uuid, (Area<U>, V)>) -> Iter<'a, U, V>
-    where
-        V: Clone,
-    {
+    pub fn iter<'a, V>(&'a self, store: &'a HashMap<Uuid, (Area<U>, V)>) -> Iter<'a, U, V> {
         Iter::new(self, store)
     }
 
@@ -189,22 +174,30 @@ where
 
     // Attempts to insert the value at the requested region. Returns false if the region was too
     // large.
-    fn insert_region<V>(
+    fn insert_val_at_region<V>(
         &mut self,
         req: Area<U>,
         val: V,
         store: &mut HashMap<Uuid, (Area<U>, V)>,
-    ) -> bool
-    where
-        V: Clone,
-    {
+    ) -> bool {
+        let uuid = Uuid::new_v4();
+        store.insert(uuid, (req, val));
+
+        self.insert_uuid_at_region(req, uuid, store)
+    }
+
+    // Attempts to insert the value at the requested region. Returns false if the region was too
+    // large.
+    fn insert_uuid_at_region<V>(
+        &mut self,
+        req: Area<U>,
+        uuid: Uuid,
+        store: &mut HashMap<Uuid, (Area<U>, V)>,
+    ) -> bool {
         // If the requested region is larger than the region this cell represents, return false.
         if !self.region.contains(req) {
             return false;
         }
-
-        let uuid = Uuid::new_v4();
-        store.insert(uuid, (req, val.clone()));
 
         // If we're at the bottom depth, it had better fit.
         if self.depth == 0 {
@@ -226,11 +219,11 @@ where
         // area's anchor and (b) contain the total area. We optimize by checking for (a) first.
         let q_index = (self.center_pt().dir_towards(req.anchor())) as usize;
 
-        // Attempt to insert the value into the subquadrant we think it might fit in,
+        // Attempt to insert the uuid into the subquadrant we think it might fit in,
         assert!(self.subquadrants.is_some()); // We should have Someified this in .split().
         if let Some(sqs) = self.subquadrants.as_mut() {
             if sqs[q_index].contains_region(req) {
-                sqs[q_index].insert_region(req, val, store);
+                sqs[q_index].insert_uuid_at_region(req, uuid, store);
             } else {
                 self.kept_uuids.push(uuid);
             }
@@ -274,10 +267,22 @@ where
         &'a self,
         a: Area<U>,
         store: &'a HashMap<Uuid, (Area<U>, V)>,
-    ) -> Query<'a, U, V>
-    where
-        V: Clone,
-    {
+    ) -> Query<'a, U, V> {
+        // TODO(ambuc): This is a great optimization but it's ugly.
+        if let Some(sqs) = &self.subquadrants {
+            if a.contains(sqs[0].region) {
+                return sqs[0].query_by_area(a, store);
+            }
+            if a.contains(sqs[1].region) {
+                return sqs[1].query_by_area(a, store);
+            }
+            if a.contains(sqs[2].region) {
+                return sqs[2].query_by_area(a, store);
+            }
+            if a.contains(sqs[3].region) {
+                return sqs[3].query_by_area(a, store);
+            }
+        }
         Query {
             query_region: a,
             inner: Iter::new(self, store),

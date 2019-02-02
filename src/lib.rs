@@ -117,7 +117,6 @@ use uuid::Uuid;
 pub struct Quadtree<U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     inner: QTInner<U>,
     store: std::collections::HashMap<Uuid, (Area<U>, V)>,
@@ -126,7 +125,6 @@ where
 impl<U, V> Quadtree<U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     // Constructors //
 
@@ -420,7 +418,6 @@ where
 impl<U, V> Extend<(PointType<U>, V)> for Quadtree<U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     fn extend<T>(&mut self, iter: T)
     where
@@ -438,7 +435,6 @@ where
 impl<U, V> Extend<(AreaType<U>, V)> for Quadtree<U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     fn extend<T>(&mut self, iter: T)
     where
@@ -454,7 +450,6 @@ where
 impl<'a, U, V> IntoIterator for &'a Quadtree<U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     type Item = (&'a AreaType<U>, &'a V);
     type IntoIter = Iter<'a, U, V>;
@@ -468,7 +463,6 @@ where
 // impl<'a, U, V> IntoIterator for &'a mut Quadtree<U, V>
 // where
 //     U: PrimInt,
-//     V: Clone,
 // {
 //     type Item = (&'a AreaType<U>, &'a mut V);
 //     type IntoIter = IterMut<'a, U, V>;
@@ -481,7 +475,6 @@ where
 impl<U, V> IntoIterator for Quadtree<U, V>
 where
     U: PrimInt,
-    V: Clone,
 {
     type Item = (AreaType<U>, V);
     type IntoIter = IntoIter<U, V>;
