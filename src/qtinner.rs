@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::geometry::area::{Area, AreaType};
+use crate::geometry::area::Area;
 use crate::geometry::point::{Point, PointType};
-use crate::types::{IntoIter, Iter, Query};
-// use crate::types::{IntoIter, Iter, IterMut, Query, QueryMut};
+use crate::types::{Iter, Query};
+// use crate::types::{Iter, IterMut, Query, QueryMut};
 use num::PrimInt;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -26,7 +26,7 @@ where
     U: PrimInt,
 {
     // The depth of the current cell in its tree. Zero means it's at the very bottom.
-    depth: usize,
+    pub(crate) depth: usize,
 
     // The region  of the current cell.
     pub(crate) region: Area<U>,
@@ -54,22 +54,6 @@ where
         Self::new_with_area((anchor, (width, height)).into(), depth)
     }
 
-    pub fn anchor(&self) -> PointType<U> {
-        self.region.anchor().into()
-    }
-
-    pub fn width(&self) -> U {
-        self.region.width()
-    }
-
-    pub fn height(&self) -> U {
-        self.region.height()
-    }
-
-    pub fn depth(&self) -> usize {
-        self.depth
-    }
-
     pub fn len(&self) -> usize {
         self.kept_uuids.len()
             + self
@@ -84,10 +68,6 @@ where
                 .subquadrants
                 .as_ref()
                 .map_or(true, |a| a.iter().all(|q| q.is_empty()))
-    }
-
-    pub fn contains(&self, anchor: PointType<U>, size: (U, U)) -> bool {
-        self.contains_region((anchor, size).into())
     }
 
     pub fn insert<V>(
@@ -250,10 +230,10 @@ where
     fn expand_subquadrants_by_pt(&mut self, p: Point<U>) {
         assert!(self.region.contains_pt(p));
 
-        let anchor_nw = self.anchor();
-        let anchor_ne = (p.x(), self.anchor_pt().y());
-        let anchor_sw = (self.anchor_pt().x(), p.y());
-        let anchor_se = p.into();
+        let anchor_nw: (U, U) = self.region.anchor().into();
+        let anchor_ne: (U, U) = (p.x(), self.anchor_pt().y());
+        let anchor_sw: (U, U) = (self.anchor_pt().x(), p.y());
+        let anchor_se: (U, U) = p.into();
 
         self.subquadrants = Some([
             Box::new(Self::new_with_anchor(anchor_ne, self.depth - 1)),
@@ -310,7 +290,10 @@ where
 
     fn center_pt(&self) -> Point<U> {
         self.anchor_pt()
-            + Point::<U>::from((self.width() / Self::two(), self.height() / Self::two()))
+            + Point::<U>::from((
+                self.region.width() / Self::two(),
+                self.region.height() / Self::two(),
+            ))
     }
 
     // Strongly-typed alias for (zero(), zero()).

@@ -167,17 +167,17 @@ where
 
     /// The coordinate of the top-left corner of the represented region.
     pub fn anchor(&self) -> PointType<U> {
-        self.inner.anchor()
+        self.inner.region.anchor().into()
     }
 
     /// The width of the represented region.
     pub fn width(&self) -> U {
-        self.inner.width()
+        self.inner.region.width()
     }
 
     /// The height of the represented region.
     pub fn height(&self) -> U {
-        self.inner.height()
+        self.inner.region.height()
     }
 
     /// The depth of the quadtree.
@@ -187,7 +187,7 @@ where
     ///
     /// Thus both the width and height of a quadtree with depth `n` are `2^n`.
     pub fn depth(&self) -> usize {
-        self.inner.depth()
+        self.inner.depth
     }
 
     /// Returns the number of elements in the quadtree.
@@ -256,7 +256,7 @@ where
     /// assert!(!q.contains((0, 0), (1, 1)));
     /// ```
     pub fn contains(&self, anchor: PointType<U>, size: (U, U)) -> bool {
-        self.inner.contains(anchor, size)
+        self.inner.region.contains((anchor, size).into())
     }
 
     /// Attempts to insert the value at the requested anchor and size. Returns false if the region
