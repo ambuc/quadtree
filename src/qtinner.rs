@@ -18,7 +18,7 @@ use num::PrimInt;
 use std::collections::HashMap;
 use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) struct QTInner<U>
 where
     U: PrimInt + std::fmt::Debug,
@@ -36,6 +36,25 @@ where
     // The subquadrants under this cell. [ne, nw, se, sw]. If there are no subquadrants, this
     // entire list could be None.
     pub(crate) subquadrants: Option<[Box<QTInner<U>>; 4]>,
+}
+
+impl<U> std::fmt::Debug for QTInner<U>
+where
+    U: PrimInt + std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        if self.subquadrants.is_some() {
+            write!(
+                f,
+                "{:?} :: {:?} {:#?}",
+                self.region,
+                self.kept_uuids,
+                self.subquadrants.as_ref().unwrap()
+            )
+        } else {
+            write!(f, "{:?} :: {:?}", self.region, self.kept_uuids,)
+        }
+    }
 }
 
 impl<U> QTInner<U>

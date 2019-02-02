@@ -253,7 +253,9 @@ mod extend {
 #[test]
 fn debug() {
     let mut q = Quadtree::<u8, f64>::new(2);
-    q.insert((0, 0), (1, 1), 1.00);
-    q.insert((1, 1), (1, 1), 1.00);
+    q.insert((0, 0), (2, 2), 1.35);
+    q.insert((1, 1), (1, 1), 2.46);
+    q.insert((1, 1), (2, 2), 3.69);
+    q.insert((2, 2), (2, 2), 4.812);
     dbg!(&q);
 }
