@@ -104,8 +104,6 @@ use uuid::Uuid;
 ///
 /// Points have dimensions `(1, 1)`.
 ///
-/// ## TODOs:
-/// - Methods
 ///   - TODO(ambuc): In lieu of mutable getters, expose the held UUID and allow specific lookups
 ///   - TODO(ambuc): Size hints in iterators
 ///   - TODO(ambuc): Implement strictly inclusive getters.
@@ -113,9 +111,7 @@ use uuid::Uuid;
 ///   - TODO(ambuc): Implement `.delete(anchor, size)`.
 ///   - TODO(ambuc): Implement `.delete_by(anchor, size, fn)`.
 ///   - TODO(ambuc): Implement `.retain(anchor, size, fn)`.
-/// - Traits
 ///   - TODO(ambuc): Implement `FromIterator<(K, V)>` for `Quadtree`.
-/// - Other
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Quadtree<U, V>
 where
@@ -208,7 +204,6 @@ where
     /// assert_eq!(q.len(), 2);
     /// ```
     pub fn len(&self) -> usize {
-        // self.inner.len()
         self.store.len()
     }
 
@@ -365,6 +360,8 @@ where
         }
     }
 
+    /// Accepts a modification lambda of type `Fn(&mut V) + Copy` and applies it to all elements in
+    /// the Quadtree.
     pub fn modify_all<F>(&mut self, f: F)
     where
         F: Fn(&mut V) + Copy,
@@ -372,12 +369,25 @@ where
         self.modify_region(|_| true, f);
     }
 
+    /// Accepts a modification lambda of type `Fn(&mut V) + Copy` and applies it to all elements in
+    /// the Quadtree intersecting the described region.
     pub fn modify<F>(&mut self, anchor: PointType<U>, size: (U, U), f: F)
     where
         U: std::fmt::Debug,
         F: Fn(&mut V) + Copy,
     {
         let query_region = (anchor, size).into();
+        self.modify_region(|a| a.intersects(query_region), f);
+    }
+
+    /// Accepts a modification lambda of type `Fn(&mut V) + Copy` and applies it to all elements in
+    /// the Quadtree overlapping the given point.
+    pub fn modify_pt<F>(&mut self, anchor: PointType<U>, f: F)
+    where
+        U: std::fmt::Debug,
+        F: Fn(&mut V) + Copy,
+    {
+        let query_region = (anchor, Self::default_region_size()).into();
         self.modify_region(|a| a.intersects(query_region), f);
     }
 
