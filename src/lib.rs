@@ -482,8 +482,8 @@ where
 ///
 /// This struct is created by the [`iter`] method on [`Quadtree`].
 ///
-/// [`iter`]: ../struct.Quadtree.html#method.iter
-/// [`Quadtree`]: ../struct.Quadtree.html
+/// [`iter`]: struct.Quadtree.html#method.iter
+/// [`Quadtree`]: struct.Quadtree.html
 #[derive(Clone, Debug)]
 pub struct Iter<'a, U, V>
 where
@@ -572,10 +572,11 @@ where
 
 /// A consuming iterator over all region/value pairs held in a [`Quadtree`].
 ///
-/// TODO(ambuc): How is this created? `.into_iter()`? Find the right URL for it, if it's part of
-/// IntoIterator.
+/// This struct is created by the `into_iter()` method on the [`IntoIterator`] trait.
 ///
-/// [`Quadtree`]: ../struct.Quadtree.html
+/// [`IntoIterator`]: struct.Quadtree.html#impl-IntoIterator
+///
+/// [`Quadtree`]: struct.Quadtree.html
 #[derive(Clone, Debug)]
 pub struct IntoIter<U, V>
 where
@@ -664,9 +665,9 @@ impl<U, V> FusedIterator for IntoIter<U, V> where U: PrimInt {}
 ///
 /// This struct is created by the [`query`] or [`query_pt`] methods on [`Quadtree`].
 ///
-/// [`query`]: ../struct.Quadtree.html#method.query
-/// [`query_pt`]: ../struct.Quadtree.html#method.query_pt
-/// [`Quadtree`]: ../struct.Quadtree.html
+/// [`query`]: struct.Quadtree.html#method.query
+/// [`query_pt`]: struct.Quadtree.html#method.query_pt
+/// [`Quadtree`]: struct.Quadtree.html
 #[derive(Clone, Debug)]
 pub struct Query<'a, U, V>
 where
@@ -712,8 +713,8 @@ impl<'a, U, V> FusedIterator for Query<'a, U, V> where U: PrimInt {}
 ///
 /// This struct is created by the [`regions`] method on [`Quadtree`].
 ///
-/// [`regions`]: ../struct.Quadtree.html#method.regions
-/// [`Quadtree`]: ../struct.Quadtree.html
+/// [`regions`]: struct.Quadtree.html#method.regions
+/// [`Quadtree`]: struct.Quadtree.html
 #[derive(Clone, Debug)]
 pub struct Regions<'a, U, V>
 where
@@ -761,8 +762,8 @@ where
 ///
 /// This struct is created by the [`values`] method on [`Quadtree`].
 ///
-/// [`values`]: ../struct.Quadtree.html#method.values
-/// [`Quadtree`]: ../struct.Quadtree.html
+/// [`values`]: struct.Quadtree.html#method.values
+/// [`Quadtree`]: struct.Quadtree.html
 #[derive(Clone, Debug)]
 pub struct Values<'a, U, V>
 where

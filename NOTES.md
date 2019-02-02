@@ -12,8 +12,6 @@
    - Right now we store each region at the lowest possible leaf which totally
      contains it. But we store multiple regions in a vector (bad), and filter
      through them at return time (bad).
-   - TODO(ambuc): There should be a way to totally divide the grid around each
-     inserted region.
 
      ```
      +--+--+--+--+--+--+--+--+--+--+       +--+--+--+--+--+--+--+--+--+--+
