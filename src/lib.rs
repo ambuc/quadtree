@@ -489,7 +489,7 @@ pub struct Iter<'a, U, V>
 where
     U: PrimInt,
 {
-    uuid_stack: Vec<Uuid>,
+    uuid_stack: Vec<&'a Uuid>,
     qt_stack: Vec<&'a QTInner<U>>,
     remaining: usize,
     store: &'a HashMap<Uuid, (Area<U>, V)>,
@@ -520,30 +520,32 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
+        use std::ops::Deref;
+
         // Check the uuid_stack.
         if let Some(uuid) = self.uuid_stack.pop() {
             self.remaining -= 1;
-            let result = self.store.get(&uuid).unwrap();
-            return Some((&result.0.inner(), &result.1));
+            let (region, value) = self
+                .store
+                .get(&uuid)
+                .expect("Shouldn't have a uuid in the tree which isn't in the store.");
+            return Some((&region.inner(), &value));
         }
 
         // Then check the qt_stack.
         if let Some(qt) = self.qt_stack.pop() {
             // Push my regions onto the region stack
-            for uuid in qt.kept_uuids.iter() {
-                self.uuid_stack.push(uuid.clone());
-            }
+            self.uuid_stack.extend(&qt.kept_uuids);
+
             // Push my subquadrants onto the qt_stack too.
             if let Some(sqs) = qt.subquadrants.as_ref() {
-                for sq in sqs.iter() {
-                    self.qt_stack.push(sq);
-                }
+                self.qt_stack.extend(sqs.iter().map(|x| x.deref()));
             }
             return self.next();
         }
 
         // Else there's nothing left to search.
-        None
+        return None;
     }
 
     #[inline]
@@ -614,15 +616,20 @@ where
         // Check the uuid_stack.
         if let Some(uuid) = self.uuid_stack.pop() {
             self.remaining -= 1;
-            let (_uuid, kv) = self.store.remove_entry(&uuid).unwrap();
-            return Some((*kv.0.inner(), kv.1));
+
+            let (_uuid, (region, value)) = self
+                .store
+                .remove_entry(&uuid)
+                .expect("Shouldn't have a uuid in the tree which isn't in the store.");
+
+            return Some((*region.inner(), value));
         }
+
         // Then check the qt_stack.
         if let Some(qt) = self.qt_stack.pop() {
             // Push my regions onto the region stack
-            for uuid in qt.kept_uuids.into_iter() {
-                self.uuid_stack.push(uuid.clone());
-            }
+            self.uuid_stack.extend(qt.kept_uuids);
+
             // Push my subquadrants onto the qt_stack too.
             if let Some([a, b, c, d]) = qt.subquadrants {
                 self.qt_stack.push(*a);
@@ -630,12 +637,14 @@ where
                 self.qt_stack.push(*c);
                 self.qt_stack.push(*d);
             }
+
             return self.next();
         }
 
         // Else there's nothing left to search.
-        None
+        return None;
     }
+
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         (self.remaining, Some(self.remaining))
