@@ -178,19 +178,19 @@ mod string {
         assert_eq!(iter.next().map_or("", |(_, v)| v), "foo_bar_baz");
     }
 
-    #[test]
-    fn quadtree_mut_string() {
-        let mut q = Quadtree::<u32, String>::new(4);
-        debug_assert!(q.insert((0, 0), (1, 1), "hello ".to_string()));
-        for (_, v) in q.query_mut((0, 0), (1, 1)) {
-            *v += "world";
-        }
+    // #[test]
+    // fn quadtree_mut_string() {
+    //     let mut q = Quadtree::<u32, String>::new(4);
+    //     debug_assert!(q.insert((0, 0), (1, 1), "hello ".to_string()));
+    //     for (_, v) in q.query_mut((0, 0), (1, 1)) {
+    //         *v += "world";
+    //     }
 
-        assert_eq!(
-            q.query((0, 0), (1, 1)).next().map_or("", |(_, v)| v),
-            "hello world"
-        );
-    }
+    //     assert_eq!(
+    //         q.query((0, 0), (1, 1)).next().map_or("", |(_, v)| v),
+    //         "hello world"
+    //     );
+    // }
 }
 
 // Test creating a complex struct (containing a string), embed that struct in the Quadtree, and
@@ -217,39 +217,39 @@ fn quadtree_struct() {
     );
 }
 
-// // Since we implement Extend<((U, U), V)> for Quadtree<U, V>, test out .extend()ing with a real
-// // iterator.
-// mod extend {
-//     use super::*;
-//
-//     #[test]
-//     fn extend_with_just_points() {
-//         let mut q = Quadtree::<u32, i8>::new(4);
-//         assert!(q.is_empty());
-//
-//         q.extend(vec![((0, 0), 0), ((2, 3), 5)]);
-//
-//         debug_assert_eq!(q.len(), 2);
-//
-//         debug_assert_eq!(q.query_pt((0, 0)).next(), Some((&((0, 0), (1, 1)), &0)));
-//         debug_assert_eq!(q.query_pt((2, 3)).next(), Some((&((2, 3), (1, 1)), &5)));
-//     }
-//
-//     #[test]
-//     fn extend_with_points_and_regions() {
-//         let mut q = Quadtree::<u32, i8>::new(4);
-//         assert!(q.is_empty());
-//
-//         q.extend(vec![(((0, 0), (1, 2)), 0), (((2, 3), (3, 4)), 5)]);
-//
-//         debug_assert_eq!(q.len(), 2);
-//
-//         dbg!(&q);
-//
-//         debug_assert_eq!(q.query_pt((0, 0)).next(), Some((&((0, 0), (1, 2)), &0)));
-//         debug_assert_eq!(q.query_pt((2, 3)).next(), Some((&((2, 3), (3, 4)), &5)));
-//     }
-// }
+// Since we implement Extend<((U, U), V)> for Quadtree<U, V>, test out .extend()ing with a real
+// iterator.
+mod extend {
+    use super::*;
+
+    #[test]
+    fn extend_with_just_points() {
+        let mut q = Quadtree::<u32, i8>::new(4);
+        assert!(q.is_empty());
+
+        q.extend(vec![((0, 0), 0), ((2, 3), 5)]);
+
+        debug_assert_eq!(q.len(), 2);
+
+        debug_assert_eq!(q.query_pt((0, 0)).next(), Some((&((0, 0), (1, 1)), &0)));
+        debug_assert_eq!(q.query_pt((2, 3)).next(), Some((&((2, 3), (1, 1)), &5)));
+    }
+
+    #[test]
+    fn extend_with_points_and_regions() {
+        let mut q = Quadtree::<u32, i8>::new(4);
+        assert!(q.is_empty());
+
+        q.extend(vec![(((0, 0), (1, 2)), 0), (((2, 3), (3, 4)), 5)]);
+
+        debug_assert_eq!(q.len(), 2);
+
+        dbg!(&q);
+
+        debug_assert_eq!(q.query_pt((0, 0)).next(), Some((&((0, 0), (1, 2)), &0)));
+        debug_assert_eq!(q.query_pt((2, 3)).next(), Some((&((2, 3), (3, 4)), &5)));
+    }
+}
 
 #[test]
 fn debug() {
