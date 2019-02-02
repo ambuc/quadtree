@@ -39,21 +39,7 @@ mod iterator_tests {
         ));
     }
 
-    #[test]
-    fn iter_size_hint() {
-        let q = mk_quadtree_for_iter_tests();
-
-        let mut iter = q.iter();
-        debug_assert_eq!(iter.size_hint(), (3, Some(3)));
-        iter.next();
-        debug_assert_eq!(iter.size_hint(), (2, Some(2)));
-        iter.next();
-        debug_assert_eq!(iter.size_hint(), (1, Some(1)));
-        iter.next();
-        debug_assert_eq!(iter.size_hint(), (0, Some(0)));
-        iter.next();
-        debug_assert_eq!(iter.size_hint(), (0, Some(0)));
-    }
+    // TODO(ambuc): Size hints in iterators
 
     // // The same as iter_all(), except we mutate each value by +1.
     // #[test]
@@ -75,34 +61,18 @@ mod iterator_tests {
     // }
 
     // #[test]
-    // fn iter_mut_size_hint() {
-    //     let mut q = mk_quadtree_for_iter_tests();
-
-    //     let mut iter = q.iter_mut();
-    //     debug_assert_eq!(iter.size_hint(), (3, Some(3)));
+    // fn iter_exact_size() {
+    //     let q = mk_quadtree_for_iter_tests();
+    //     let mut iter = q.iter();
+    //     debug_assert_eq!(iter.len(), 3);
     //     iter.next();
-    //     debug_assert_eq!(iter.size_hint(), (2, Some(2)));
+    //     debug_assert_eq!(iter.len(), 2);
     //     iter.next();
-    //     debug_assert_eq!(iter.size_hint(), (1, Some(1)));
     //     iter.next();
-    //     debug_assert_eq!(iter.size_hint(), (0, Some(0)));
+    //     debug_assert_eq!(iter.len(), 0);
     //     iter.next();
-    //     debug_assert_eq!(iter.size_hint(), (0, Some(0)));
+    //     debug_assert_eq!(iter.len(), 0);
     // }
-
-    #[test]
-    fn iter_exact_size() {
-        let q = mk_quadtree_for_iter_tests();
-        let mut iter = q.iter();
-        debug_assert_eq!(iter.len(), 3);
-        iter.next();
-        debug_assert_eq!(iter.len(), 2);
-        iter.next();
-        iter.next();
-        debug_assert_eq!(iter.len(), 0);
-        iter.next();
-        debug_assert_eq!(iter.len(), 0);
-    }
 
     // #[test]
     // fn iter_mut_exact_size() {

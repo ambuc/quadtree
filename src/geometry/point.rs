@@ -100,6 +100,9 @@ where
     //         1 if north or northwest of self,
     //         2 if south or southeast of self,
     //      or 3 if west or southwest of self.
+    //
+    // Right now this is only used in tests.
+    #[allow(dead_code)]
     pub fn dir_towards(&self, other: Point<U>) -> Quadrant {
         if other.x() > self.x() && other.y() <= self.y() {
             Quadrant::Northeast // 0 // east, northeast

@@ -70,40 +70,41 @@ mod insert {
     #[test]
     fn insert_successful() {
         let mut q = Quadtree::<u32, u8>::new(2);
-        debug_assert!(q.insert(
+        q.insert(
             /*anchor=*/ (0, 0),
             /*size=*/ (2, 3),
             /*value=*/ 4,
-        ));
-        debug_assert!(q.insert_pt(/*anchor=*/ (1, 1), /*value=*/ 3));
+        );
+        q.insert_pt(/*anchor=*/ (1, 1), /*value=*/ 3);
 
         // The full bounds of the region.
-        debug_assert!(q.insert(
+        q.insert(
             /*anchor=*/ (0, 0),
             /*size=*/ (4, 4),
-            /*value=*/ 17
-        ));
+            /*value=*/ 17,
+        );
         // At (3, 3) but 1x1
-        debug_assert!(q.insert_pt(/*anchor=*/ (3, 3), /*value=*/ 19));
+        q.insert_pt(/*anchor=*/ (3, 3), /*value=*/ 19);
     }
 
     #[test]
     fn insert_unsucessful() {
         let mut q = Quadtree::<u32, u8>::new(2);
         // At (0, 0) and too large.
-        debug_assert!(!q.insert(
+        q.insert(
             /*anchor=*/ (0, 0),
             /*size=*/ (5, 5),
-            /*value=*/ 17
-        ));
+            /*value=*/ 17,
+        );
         // At (4, 4) but 1x1.
-        debug_assert!(!q.insert_pt(/*anchor=*/ (4, 4), /*value=*/ 20));
+        q.insert_pt(/*anchor=*/ (4, 4), /*value=*/ 20);
     }
 
     #[test]
-    fn insert_unsuccessful_outside_region() {
+    fn insert_successful_outside_region() {
+        // Since the region might overlap, insertion doesn't fail.
         let mut q = Quadtree::<u32, u16>::new_with_anchor((2, 2), 2);
-        debug_assert!(!q.insert_pt(/*anchor=*/ (0, 0), /*value=*/ 25));
+        q.insert_pt(/*anchor=*/ (0, 0), /*value=*/ 25);
     }
 }
 
@@ -126,11 +127,11 @@ fn fill_quadrant() {
     let mut q = Quadtree::<u8, f64>::new(2);
     debug_assert!(q.is_empty());
 
-    debug_assert!(q.insert((0, 0), (2, 2), 49.17)); // This should 100% fill one quadrant.
+    q.insert((0, 0), (2, 2), 49.17); // This should 100% fill one quadrant.
     debug_assert_eq!(q.len(), 1);
     debug_assert!(!q.is_empty());
 
-    debug_assert!(q.insert((2, 2), (2, 2), 71.94)); // This should 100% fill one quadrant.
+    q.insert((2, 2), (2, 2), 71.94); // This should 100% fill one quadrant.
     debug_assert_eq!(q.len(), 2);
     debug_assert!(!q.is_empty());
 }
@@ -172,7 +173,7 @@ mod string {
     #[test]
     fn quadtree_string() {
         let mut q = Quadtree::<u32, String>::new(4);
-        debug_assert!(q.insert((0, 0), (1, 1), "foo_bar_baz".to_string()));
+        q.insert((0, 0), (1, 1), "foo_bar_baz".to_string());
 
         let mut iter = q.query((0, 0), (1, 1));
         assert_eq!(iter.next().map_or("", |(_, v)| v), "foo_bar_baz");
@@ -181,7 +182,7 @@ mod string {
     // #[test]
     // fn quadtree_mut_string() {
     //     let mut q = Quadtree::<u32, String>::new(4);
-    //     debug_assert!(q.insert((0, 0), (1, 1), "hello ".to_string()));
+    //     q.insert((0, 0), (1, 1), "hello ".to_string());
     //     for (_, v) in q.query_mut((0, 0), (1, 1)) {
     //         *v += "world";
     //     }
@@ -207,7 +208,7 @@ fn quadtree_struct() {
 
     let mut q = Quadtree::<u32, Foo>::new(4);
 
-    debug_assert!(q.insert((0, 0), (1, 1), foo));
+    q.insert((0, 0), (1, 1), foo);
 
     assert_eq!(
         q.query((0, 0), (1, 1))
@@ -237,7 +238,7 @@ mod extend {
 
     #[test]
     fn extend_with_points_and_regions() {
-        let mut q = Quadtree::<u32, i8>::new(4);
+        let mut q = Quadtree::<u32, i8>::new(3);
         assert!(q.is_empty());
 
         q.extend(vec![(((0, 0), (1, 2)), 0), (((2, 3), (3, 4)), 5)]);

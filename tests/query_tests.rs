@@ -23,9 +23,7 @@ mod query_tests {
     fn query_empty() {
         let q = Quadtree::<u32, u8>::new(2);
         let mut iter = q.query((0, 0), (4, 4));
-        debug_assert_eq!(iter.size_hint(), (0, Some(0)));
         debug_assert_eq!(iter.next(), None);
-        debug_assert_eq!(iter.size_hint(), (0, Some(0)));
     }
 
     #[test]
@@ -37,20 +35,16 @@ mod query_tests {
         let mut iter1 = q.query((0, 0), (1, 1));
         debug_assert_eq!(iter1.next(), Some((&((0, 0), (1, 1)), &49)));
         debug_assert_eq!(iter1.next(), None);
-        debug_assert_eq!(iter1.size_hint(), (0, Some(0)));
 
         // Requesting regions which don't contain '49'.
         let mut iter2 = q.query((0, 1), (1, 1));
         debug_assert_eq!(iter2.next(), None);
-        debug_assert_eq!(iter2.size_hint(), (0, Some(0)));
 
         let mut iter3 = q.query((1, 0), (1, 1));
         debug_assert_eq!(iter3.next(), None);
-        debug_assert_eq!(iter3.size_hint(), (0, Some(0)));
 
         let mut iter4 = q.query((1, 1), (1, 1));
         debug_assert_eq!(iter4.next(), None);
-        debug_assert_eq!(iter4.size_hint(), (0, Some(0)));
     }
 
     #[test]
@@ -70,8 +64,8 @@ mod query_tests {
         // 5 +--+--+--x x x x--+
         //   |  |  |  |  |  |  |
         // 6 +--+--+--+--+--+--+
-        debug_assert!(q.insert((2, 2), (2, 2), 10));
-        debug_assert!(q.insert((3, 3), (2, 2), 55));
+        q.insert((2, 2), (2, 2), 10);
+        q.insert((3, 3), (2, 2), 55);
 
         let expected_ten = Some((&((2, 2), (2, 2)), &10));
         let expected_fifty_five = Some((&((3, 3), (2, 2)), &55));
@@ -79,19 +73,15 @@ mod query_tests {
         // Queries which turn up empty:
         let mut empty1 = q.query((1, 1), (1, 1));
         debug_assert_eq!(empty1.next(), None);
-        debug_assert_eq!(empty1.size_hint(), (0, Some(0)));
 
         let mut empty2 = q.query((0, 0), (2, 2));
         debug_assert_eq!(empty2.next(), None);
-        debug_assert_eq!(empty2.size_hint(), (0, Some(0)));
 
         let mut empty3 = q.query((0, 0), (6, 2));
         debug_assert_eq!(empty3.next(), None);
-        debug_assert_eq!(empty3.size_hint(), (0, Some(0)));
 
         let mut empty4 = q.query((0, 0), (2, 6));
         debug_assert_eq!(empty4.next(), None);
-        debug_assert_eq!(empty4.size_hint(), (0, Some(0)));
 
         // Queries which capture #10:
         let mut ten1 = q.query((2, 2), (1, 1));
@@ -166,6 +156,16 @@ mod query_tests {
         ));
     }
 
+    #[test]
+    fn query_exhibiting_collection() {
+        let mut q: Quadtree<u8, f32> = Quadtree::new(2);
+        q.insert((0, 0), (2, 2), 1.234);
+
+        let mut query_obj = q.query((0, 0), (1, 1));
+
+        debug_assert_eq!(query_obj.next(), Some((&((0, 0), (2, 2)), &1.234)));
+    }
+
     // #[test]
     // fn query_mut_empty() {
     //     let mut q = Quadtree::<u32, u8>::new(2);
@@ -186,12 +186,10 @@ mod query_tests {
     //     // And verify.
     //     let mut tmp_iter_1 = q.query((0, 0), (1, 1));
     //     debug_assert_eq!(tmp_iter_1.next(), Some((&((0, 0), (1, 1)), &50)));
-    //     debug_assert_eq!(tmp_iter_1.size_hint(), (0, Some(0)));
     //     debug_assert_eq!(tmp_iter_1.next(), None);
-    //     debug_assert_eq!(tmp_iter_1.size_hint(), (0, Some(0)));
 
     //     // Insert #17 at (2, 2)->3x3.
-    //     debug_assert!(q.insert((2, 2), (3, 3), 17));
+    //     q.insert((2, 2), (3, 3), 17);
     //     // Up it to 18,
     //     for (_, i) in q.query_mut((1, 1), (2, 2)) {
     //         *i += 1;
@@ -200,7 +198,6 @@ mod query_tests {
     //     let mut tmp_iter_2 = q.query((2, 2), (1, 1));
     //     debug_assert_eq!(tmp_iter_2.next(), Some((&((2, 2), (3, 3)), &18)));
     //     debug_assert_eq!(tmp_iter_2.next(), None);
-    //     debug_assert_eq!(tmp_iter_2.size_hint(), (0, Some(0)));
 
     //     // Reset everything in (0, 0)->6x6 to "0".
     //     for (_, i) in q.query_mut((0, 0), (6, 6)) {
@@ -217,7 +214,7 @@ mod query_tests {
     // fn query_pt_mut() {
     //     let mut q = Quadtree::<u32, u8>::new(4);
     //     // Insert #27 at (0, 0)->1x1.
-    //     debug_assert!(q.insert((0, 0), (1, 1), 27));
+    //     q.insert((0, 0), (1, 1), 27);
 
     //     let mut tmp_iter = q.query_pt_mut((0, 0));
     //     debug_assert_eq!(tmp_iter.next(), Some((&((0, 0), (1, 1)), &mut 27)));

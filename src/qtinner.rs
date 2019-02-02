@@ -21,7 +21,7 @@ use uuid::Uuid;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct QTInner<U>
 where
-    U: PrimInt,
+    U: PrimInt + std::fmt::Debug,
 {
     // The depth of the current cell in its tree. Zero means it's at the very bottom.
     pub(crate) depth: usize,
@@ -40,7 +40,7 @@ where
 
 impl<U> QTInner<U>
 where
-    U: PrimInt,
+    U: PrimInt + std::fmt::Debug,
 {
     pub fn new(anchor: PointType<U>, depth: usize) -> QTInner<U> {
         let width: U = Self::two().pow(depth as u32);
@@ -56,8 +56,6 @@ where
                 .map_or(0, |a| a.iter().map(|q| q.as_ref().len()).sum::<usize>())
     }
 
-    // TODO(ambuc): This should return an iterator of uuids and then delete them all from store_ at
-    // the callsite.
     pub fn reset(&mut self) {
         self.kept_uuids.clear();
         self.subquadrants = None;
@@ -79,7 +77,9 @@ where
         req: Area<U>,
         val: V,
         store: &mut HashMap<Uuid, (Area<U>, V)>,
-    ) -> bool {
+    ) where
+        U: std::fmt::Debug,
+    {
         let uuid = Uuid::new_v4();
         store.insert(uuid, (req, val));
 
@@ -93,22 +93,23 @@ where
         req: Area<U>,
         uuid: Uuid,
         store: &mut HashMap<Uuid, (Area<U>, V)>,
-    ) -> bool {
-        // If the requested region is larger than the region this cell represents, return false.
-        if !self.region.contains(req) {
-            return false;
-        }
-
+    ) where
+        U: std::fmt::Debug,
+    {
         // If we're at the bottom depth, it had better fit.
         if self.depth == 0 {
-            assert!(req == self.region);
             self.kept_uuids.push(uuid);
-            return true;
+            return;
+        }
+
+        if req.contains(self.region) {
+            self.kept_uuids.push(uuid);
+            return;
         }
 
         if req == self.region {
             self.kept_uuids.push(uuid);
-            return true;
+            return;
         }
 
         if self.subquadrants.is_none() {
@@ -117,19 +118,17 @@ where
 
         // For a subquadrant to totally contain the req. area, it must both (a) contain the req.
         // area's anchor and (b) contain the total area. We optimize by checking for (a) first.
-        let q_index = (self.center_pt().dir_towards(req.anchor())) as usize;
+        // let q_index = (self.center_pt().dir_towards(req.anchor())) as usize;
 
         // Attempt to insert the uuid into the subquadrant we think it might fit in,
         assert!(self.subquadrants.is_some()); // We should have Someified this in .split().
         if let Some(sqs) = self.subquadrants.as_mut() {
-            if sqs[q_index].region.contains(req) {
-                sqs[q_index].insert_uuid_at_region(req, uuid, store);
-            } else {
-                self.kept_uuids.push(uuid);
+            for sq in sqs.iter_mut() {
+                if sq.region.intersects(req) {
+                    sq.insert_uuid_at_region(req, uuid, store);
+                }
             }
         }
-
-        true
     }
 
     // +--+--+    +--+--+
@@ -161,24 +160,6 @@ where
             Box::new(Self::new(anchor_se, self.depth - 1)),
             Box::new(Self::new(anchor_sw, self.depth - 1)),
         ]);
-    }
-
-    pub fn lowest_node_totally_containing<'a>(&'a self, a: Area<U>) -> &'a QTInner<U> {
-        if let Some(sqs) = &self.subquadrants {
-            if a.contains(sqs[0].region) {
-                return sqs[0].as_ref();
-            }
-            if a.contains(sqs[1].region) {
-                return sqs[1].as_ref();
-            }
-            if a.contains(sqs[2].region) {
-                return sqs[2].as_ref();
-            }
-            if a.contains(sqs[3].region) {
-                return sqs[3].as_ref();
-            }
-        }
-        self
     }
 
     fn anchor_pt(&self) -> Point<U> {
