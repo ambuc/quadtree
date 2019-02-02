@@ -39,54 +39,22 @@ mod iterator_tests {
         ));
     }
 
-    // TODO(ambuc): Size hints in iterators
+    // The same as iter_all(), except we mutate each value by +1.
+    #[test]
+    fn iter_mut_all() {
+        let mut q = mk_quadtree_for_iter_tests();
 
-    // // The same as iter_all(), except we mutate each value by +1.
-    // #[test]
-    // fn iter_mut_all() {
-    //     let mut q = mk_quadtree_for_iter_tests();
+        q.modify_all(|v| *v += 1);
 
-    //     for (_, v) in q.iter_mut() {
-    //         *v += 1;
-    //     }
-
-    //     debug_assert!(unordered_elements_are(
-    //         q.iter(),
-    //         vec![
-    //             (&((-15, 20), (1, 1)), &-24),
-    //             (&((0, -5), (1, 1)), &11),
-    //             (&((30, -35), (1, 1)), &41)
-    //         ]
-    //     ));
-    // }
-
-    // #[test]
-    // fn iter_exact_size() {
-    //     let q = mk_quadtree_for_iter_tests();
-    //     let mut iter = q.iter();
-    //     debug_assert_eq!(iter.len(), 3);
-    //     iter.next();
-    //     debug_assert_eq!(iter.len(), 2);
-    //     iter.next();
-    //     iter.next();
-    //     debug_assert_eq!(iter.len(), 0);
-    //     iter.next();
-    //     debug_assert_eq!(iter.len(), 0);
-    // }
-
-    // #[test]
-    // fn iter_mut_exact_size() {
-    //     let mut q = mk_quadtree_for_iter_tests();
-    //     let mut iter = q.iter_mut();
-    //     debug_assert_eq!(iter.len(), 3);
-    //     iter.next();
-    //     debug_assert_eq!(iter.len(), 2);
-    //     iter.next();
-    //     iter.next();
-    //     debug_assert_eq!(iter.len(), 0);
-    //     iter.next();
-    //     debug_assert_eq!(iter.len(), 0);
-    // }
+        debug_assert!(unordered_elements_are(
+            q.iter(),
+            vec![
+                (&((-15, 20), (1, 1)), &-24),
+                (&((0, -5), (1, 1)), &11),
+                (&((30, -35), (1, 1)), &41)
+            ]
+        ));
+    }
 
     #[test]
     fn regions() {
@@ -107,17 +75,6 @@ mod iterator_tests {
 
         debug_assert!(unordered_elements_are(q.values(), vec![&10, &-25, &40]));
     }
-
-    // #[test]
-    // fn values_mut() {
-    //     let mut q = mk_quadtree_for_iter_tests();
-
-    //     for v in q.values_mut() {
-    //         *v += 1;
-    //     }
-
-    //     debug_assert!(unordered_elements_are(q.values(), vec![&11, &-24, &41]));
-    // }
 
     #[test]
     fn into_iterator_consuming() {
@@ -143,22 +100,4 @@ mod iterator_tests {
         q.reset();
         debug_assert!(q.is_empty());
     }
-
-    // #[test]
-    // fn into_iterator_mutable_reference() {
-    //     let mut q = mk_quadtree_for_iter_tests();
-
-    //     for (_, v) in (&mut q).into_iter() {
-    //         *v += 1;
-    //     }
-
-    //     debug_assert!(unordered_elements_are(
-    //         q,
-    //         vec![
-    //             (((0, -5), (1, 1)), 11),
-    //             (((-15, 20), (1, 1)), -24),
-    //             (((30, -35), (1, 1)), 41),
-    //         ],
-    //     ));
-    // }
 }

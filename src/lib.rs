@@ -66,10 +66,12 @@ extern crate num;
 
 mod geometry;
 mod qtinner;
+mod uuid_iter;
 
 use crate::geometry::area::{Area, AreaType};
 use crate::geometry::point::PointType;
 use crate::qtinner::QTInner;
+use crate::uuid_iter::UuidIter;
 use num::PrimInt;
 use std::collections::HashMap;
 use std::iter::FusedIterator;
@@ -104,6 +106,8 @@ use uuid::Uuid;
 ///
 /// ## TODOs:
 /// - Methods
+///   - TODO(ambuc): In lieu of mutable getters, expose the held UUID and allow specific lookups
+///   - TODO(ambuc): Size hints in iterators
 ///   - TODO(ambuc): Implement strictly inclusive getters.
 ///   - TODO(ambuc): Implement `.clear(anchor, size)`.
 ///   - TODO(ambuc): Implement `.delete(anchor, size)`.
@@ -335,7 +339,9 @@ where
         let a = (anchor, size).into();
         Query {
             query_region: a,
-            inner: Iter::new(&self.inner, &self.store),
+            uuid_iter: UuidIter::new(&self.inner),
+            store: &self.store,
+            resource_type: std::marker::PhantomData,
         }
     }
 
@@ -353,38 +359,43 @@ where
         let a = (anchor, Self::default_region_size()).into();
         Query {
             query_region: a,
-            inner: Iter::new(&self.inner, &self.store),
+            uuid_iter: UuidIter::new(&self.inner),
+            store: &self.store,
+            resource_type: std::marker::PhantomData,
         }
     }
 
-    // /// Returns a mutable iterator (of type [`QueryMut`]) over
-    // /// `(&'a ((U, U), (U, U)), &'a mut V)` tuples representing values either
-    // /// (a) wholly within or (b) intersecting the query region.
-    // ///
-    // /// The query region described may have an anchor anywhere on the plane, but it
-    // /// must have positive, nonzero values for its width and height.
-    // ///
-    // /// ```
-    // /// let mut q = quadtree_impl::Quadtree::<u32, i16>::new(4);
-    // /// q.insert((0, 5), (7, 7), 21);
-    // /// q.insert((1, 3), (1, 3), 57);
-    // ///
-    // /// // We can verify that the region at (0, 5)->7x7 has the value 21.
-    // /// assert_eq!(q.query((0, 5), (1, 1)).next().unwrap().1, &21);
-    // ///
-    // /// // A mutable iterator lets us access the value in-place:
-    // /// for (_, val) in q.query_mut((0, 5), (1, 1)) {
-    // ///     *val = 1;
-    // /// }
-    // ///
-    // /// // And we can verify that the changes took effect.
-    // /// assert_eq!(q.query((0, 5), (1, 1)).next().unwrap().1, &1);
-    // /// ```
-    // ///
-    // /// [`QueryMut`]: struct.QueryMut.html
-    // pub fn query_mut(&mut self, anchor: PointType<U>, size: (U, U)) -> QueryMut<U, V> {
-    //     self.inner.query_mut(anchor, size, &mut self.store)
-    // }
+    pub fn modify_all<F>(&mut self, f: F)
+    where
+        F: Fn(&mut V) + Copy,
+    {
+        self.modify_region(|_| true, f);
+    }
+
+    pub fn modify<F>(&mut self, anchor: PointType<U>, size: (U, U), f: F)
+    where
+        U: std::fmt::Debug,
+        F: Fn(&mut V) + Copy,
+    {
+        let query_region = (anchor, size).into();
+        self.modify_region(|a| a.intersects(query_region), f);
+    }
+
+    fn modify_region<F, M>(&mut self, filter: F, modify: M)
+    where
+        U: std::fmt::Debug,
+        F: Fn(Area<U>) -> bool,
+        M: Fn(&mut V) + Copy,
+    {
+        let relevant_uuids: Vec<Uuid> = UuidIter::new(&self.inner).collect();
+        for uuid in relevant_uuids {
+            if let Some((region, value)) = self.store.get_mut(&uuid) {
+                if filter(*region) {
+                    modify(value);
+                }
+            }
+        }
+    }
 
     /// Resets the quadtree to a totally empty state.
     pub fn reset(&mut self) {
@@ -422,65 +433,6 @@ where
     }
 }
 
-/// `Extend<((U, U), V)>` will silently drop values whose coordinates do not fit in the region
-/// represented by the Quadtree. It is the responsibility of the callsite to ensure these points
-/// fit.
-impl<U, V> Extend<(PointType<U>, V)> for Quadtree<U, V>
-where
-    U: PrimInt + std::fmt::Debug,
-{
-    fn extend<T>(&mut self, iter: T)
-    where
-        T: IntoIterator<Item = (PointType<U>, V)>,
-    {
-        for (pt, val) in iter {
-            self.insert_pt(pt, val);
-        }
-    }
-}
-
-/// `Extend<(((U, U), (U, U), V)>` will silently drop values whose coordinates do not fit in the
-/// region represented by the Quadtree. It is the responsibility of the callsite to ensure these
-/// points fit.
-impl<U, V> Extend<(AreaType<U>, V)> for Quadtree<U, V>
-where
-    U: PrimInt + std::fmt::Debug,
-{
-    fn extend<T>(&mut self, iter: T)
-    where
-        T: IntoIterator<Item = (AreaType<U>, V)>,
-    {
-        for ((anchor, size), val) in iter {
-            self.insert(anchor, size, val);
-        }
-    }
-}
-
-// Immutable iterator for the Quadtree, returning by-reference.
-impl<'a, U, V> IntoIterator for &'a Quadtree<U, V>
-where
-    U: PrimInt + std::fmt::Debug,
-{
-    type Item = (&'a AreaType<U>, &'a V);
-    type IntoIter = Iter<'a, U, V>;
-
-    fn into_iter(self) -> Iter<'a, U, V> {
-        Iter::new(&self.inner, &self.store)
-    }
-}
-
-impl<U, V> IntoIterator for Quadtree<U, V>
-where
-    U: PrimInt + std::fmt::Debug,
-{
-    type Item = (AreaType<U>, V);
-    type IntoIter = IntoIter<U, V>;
-
-    fn into_iter(self) -> IntoIter<U, V> {
-        IntoIter::new(self.inner, self.store)
-    }
-}
-
 // d888888b d888888b d88888b d8888b.
 //   `88'   `~~88~~' 88'     88  `8D
 //    88       88    88ooooo 88oobY'
@@ -499,11 +451,8 @@ pub struct Iter<'a, U, V>
 where
     U: PrimInt + std::fmt::Debug,
 {
-    uuid_stack: Vec<&'a Uuid>,
-    qt_stack: Vec<&'a QTInner<U>>,
-    remaining: usize,
     store: &'a HashMap<Uuid, (Area<U>, V)>,
-    visited: std::collections::HashSet<Uuid>,
+    uuid_iter: UuidIter<'a, U>,
 }
 
 impl<'a, U, V> Iter<'a, U, V>
@@ -515,11 +464,8 @@ where
         store: &'a HashMap<Uuid, (Area<U>, V)>,
     ) -> Iter<'a, U, V> {
         Iter {
-            uuid_stack: vec![],
-            qt_stack: vec![qt],
-            remaining: qt.len(),
             store,
-            visited: std::collections::HashSet::new(),
+            uuid_iter: UuidIter::new(qt),
         }
     }
 }
@@ -532,40 +478,21 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        use std::ops::Deref;
-
-        // Check the uuid_stack.
-        if let Some(uuid) = self.uuid_stack.pop() {
-            if !self.visited.insert(uuid.clone()) {
-                return self.next();
+        match self.uuid_iter.next() {
+            Some(uuid) => {
+                let (region, value) = self
+                    .store
+                    .get(&uuid)
+                    .expect("Shouldn't have a uuid in the tree which isn't in the store.");
+                Some((&region.inner(), &value))
             }
-
-            let (region, value) = self
-                .store
-                .get(&uuid)
-                .expect("Shouldn't have a uuid in the tree which isn't in the store.");
-            return Some((&region.inner(), &value));
+            None => None,
         }
-
-        // Then check the qt_stack.
-        if let Some(qt) = self.qt_stack.pop() {
-            // Push my regions onto the region stack
-            self.uuid_stack.extend(&qt.kept_uuids);
-
-            // Push my subquadrants onto the qt_stack too.
-            if let Some(sqs) = qt.subquadrants.as_ref() {
-                self.qt_stack.extend(sqs.iter().map(|x| x.deref()));
-            }
-            return self.next();
-        }
-
-        // Else there's nothing left to search.
-        return None;
     }
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.remaining, Some(self.remaining))
+        self.uuid_iter.size_hint()
     }
 }
 
@@ -576,7 +503,160 @@ where
     U: PrimInt + std::fmt::Debug,
 {
     fn len(&self) -> usize {
-        self.remaining
+        self.uuid_iter.len()
+    }
+}
+
+//  .d88b.  db    db d88888b d8888b. db    db
+// .8P  Y8. 88    88 88'     88  `8D `8b  d8'
+// 88    88 88    88 88ooooo 88oobY'  `8bd8'
+// 88    88 88    88 88~~~~~ 88`8b      88
+// `8P  d8' 88b  d88 88.     88 `88.    88
+//  `Y88'Y8 ~Y8888P' Y88888P 88   YD    YP
+
+/// An iterator over the regions and values of a [`Quadtree`].
+///
+/// This struct is created by the [`query`] or [`query_pt`] methods on [`Quadtree`].
+///
+/// [`query`]: struct.Quadtree.html#method.query
+/// [`query_pt`]: struct.Quadtree.html#method.query_pt
+/// [`Quadtree`]: struct.Quadtree.html
+#[derive(Clone, Debug)]
+pub struct Query<'a, U, V>
+where
+    U: PrimInt + std::fmt::Debug,
+{
+    pub(crate) query_region: Area<U>,
+    pub(crate) uuid_iter: UuidIter<'a, U>,
+    store: &'a HashMap<Uuid, (Area<U>, V)>,
+    resource_type: std::marker::PhantomData<V>,
+}
+
+impl<'a, U, V: 'a> Iterator for Query<'a, U, V>
+where
+    U: PrimInt + std::fmt::Debug,
+{
+    type Item = (&'a AreaType<U>, &'a V);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        // TODO(ambuc): There's an optimization over the inner iterator here -- we don't need to
+        // descend the whole tree, just those subquadrants which intersect our held @query_region.
+        // This is essential to performance.
+        if let Some(uuid) = self.uuid_iter.next() {
+            if let Some((region, value)) = self.store.get(&uuid) {
+                if self.query_region.intersects(*region) {
+                    return Some((region.inner(), value));
+                }
+                return self.next();
+            }
+        }
+        None
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.uuid_iter.size_hint()
+    }
+}
+
+impl<'a, U, V: 'a> FusedIterator for Query<'a, U, V> where U: PrimInt + std::fmt::Debug {}
+
+// d8888b. d88888b  d888b  d888888b  .d88b.  d8b   db .d8888.
+// 88  `8D 88'     88' Y8b   `88'   .8P  Y8. 888o  88 88'  YP
+// 88oobY' 88ooooo 88         88    88    88 88V8o 88 `8bo.
+// 88`8b   88~~~~~ 88  ooo    88    88    88 88 V8o88   `Y8b.
+// 88 `88. 88.     88. ~8~   .88.   `8b  d8' 88  V888 db   8D
+// 88   YD Y88888P  Y888P  Y888888P  `Y88P'  VP   V8P `8888Y'
+
+/// An iterator over the regions held within a [`Quadtree`].
+///
+/// This struct is created by the [`regions`] method on [`Quadtree`].
+///
+/// [`regions`]: struct.Quadtree.html#method.regions
+/// [`Quadtree`]: struct.Quadtree.html
+#[derive(Clone, Debug)]
+pub struct Regions<'a, U, V>
+where
+    U: PrimInt + std::fmt::Debug,
+{
+    pub(crate) inner: Iter<'a, U, V>,
+}
+
+impl<'a, U, V> Iterator for Regions<'a, U, V>
+where
+    U: PrimInt + std::fmt::Debug,
+{
+    type Item = (&'a AreaType<U>);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next().map_or(None, |(k, _v)| Some(k))
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
+}
+
+impl<'a, U, V> FusedIterator for Regions<'a, U, V> where U: PrimInt + std::fmt::Debug {}
+
+impl<'a, U, V> ExactSizeIterator for Regions<'a, U, V>
+where
+    U: PrimInt + std::fmt::Debug,
+{
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
+}
+
+// db    db  .d8b.  db      db    db d88888b .d8888.
+// 88    88 d8' `8b 88      88    88 88'     88'  YP
+// Y8    8P 88ooo88 88      88    88 88ooooo `8bo.
+// `8b  d8' 88~~~88 88      88    88 88~~~~~   `Y8b.
+//  `8bd8'  88   88 88booo. 88b  d88 88.     db   8D
+//    YP    YP   YP Y88888P ~Y8888P' Y88888P `8888Y'
+
+/// An iterator over the values held within a [`Quadtree`].
+///
+/// This struct is created by the [`values`] method on [`Quadtree`].
+///
+/// [`values`]: struct.Quadtree.html#method.values
+/// [`Quadtree`]: struct.Quadtree.html
+#[derive(Clone, Debug)]
+pub struct Values<'a, U, V>
+where
+    U: PrimInt + std::fmt::Debug,
+{
+    pub(crate) inner: Iter<'a, U, V>,
+}
+
+impl<'a, U, V> Iterator for Values<'a, U, V>
+where
+    U: PrimInt + std::fmt::Debug,
+{
+    type Item = (&'a V);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next().map_or(None, |(_k, v)| Some(v))
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
+}
+
+impl<'a, U, V> FusedIterator for Values<'a, U, V> where U: PrimInt + std::fmt::Debug {}
+
+impl<'a, U, V> ExactSizeIterator for Values<'a, U, V>
+where
+    U: PrimInt + std::fmt::Debug,
+{
+    fn len(&self) -> usize {
+        self.inner.len()
     }
 }
 
@@ -678,151 +758,61 @@ where
 
 impl<U, V> FusedIterator for IntoIter<U, V> where U: PrimInt + std::fmt::Debug {}
 
-//  .d88b.  db    db d88888b d8888b. db    db
-// .8P  Y8. 88    88 88'     88  `8D `8b  d8'
-// 88    88 88    88 88ooooo 88oobY'  `8bd8'
-// 88    88 88    88 88~~~~~ 88`8b      88
-// `8P  d8' 88b  d88 88.     88 `88.    88
-//  `Y88'Y8 ~Y8888P' Y88888P 88   YD    YP
-
-/// An iterator over the regions and values of a [`Quadtree`].
-///
-/// This struct is created by the [`query`] or [`query_pt`] methods on [`Quadtree`].
-///
-/// [`query`]: struct.Quadtree.html#method.query
-/// [`query_pt`]: struct.Quadtree.html#method.query_pt
-/// [`Quadtree`]: struct.Quadtree.html
-#[derive(Clone, Debug)]
-pub struct Query<'a, U, V>
+/// `Extend<((U, U), V)>` will silently drop values whose coordinates do not fit in the region
+/// represented by the Quadtree. It is the responsibility of the callsite to ensure these points
+/// fit.
+impl<U, V> Extend<(PointType<U>, V)> for Quadtree<U, V>
 where
     U: PrimInt + std::fmt::Debug,
 {
-    pub(crate) query_region: Area<U>,
-    pub(crate) inner: Iter<'a, U, V>,
+    fn extend<T>(&mut self, iter: T)
+    where
+        T: IntoIterator<Item = (PointType<U>, V)>,
+    {
+        for (pt, val) in iter {
+            self.insert_pt(pt, val);
+        }
+    }
 }
 
-impl<'a, U, V> Iterator for Query<'a, U, V>
+/// `Extend<(((U, U), (U, U), V)>` will silently drop values whose coordinates do not fit in the
+/// region represented by the Quadtree. It is the responsibility of the callsite to ensure these
+/// points fit.
+impl<U, V> Extend<(AreaType<U>, V)> for Quadtree<U, V>
+where
+    U: PrimInt + std::fmt::Debug,
+{
+    fn extend<T>(&mut self, iter: T)
+    where
+        T: IntoIterator<Item = (AreaType<U>, V)>,
+    {
+        for ((anchor, size), val) in iter {
+            self.insert(anchor, size, val);
+        }
+    }
+}
+
+// Immutable iterator for the Quadtree, returning by-reference.
+impl<'a, U, V> IntoIterator for &'a Quadtree<U, V>
 where
     U: PrimInt + std::fmt::Debug,
 {
     type Item = (&'a AreaType<U>, &'a V);
+    type IntoIter = Iter<'a, U, V>;
 
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        // TODO(ambuc): There's an optimization over the inner iterator here -- we don't need to
-        // descend the whole tree, just those subquadrants which intersect our held @query_region.
-        // This is essential to performance.
-        self.inner.next().map_or(None, |(region, value)| {
-            if self.query_region.intersects(region.into()) {
-                Some((region, value))
-            } else {
-                self.next()
-            }
-        })
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.inner.size_hint()
+    fn into_iter(self) -> Iter<'a, U, V> {
+        Iter::new(&self.inner, &self.store)
     }
 }
 
-impl<'a, U, V> FusedIterator for Query<'a, U, V> where U: PrimInt + std::fmt::Debug {}
-
-// d8888b. d88888b  d888b  d888888b  .d88b.  d8b   db .d8888.
-// 88  `8D 88'     88' Y8b   `88'   .8P  Y8. 888o  88 88'  YP
-// 88oobY' 88ooooo 88         88    88    88 88V8o 88 `8bo.
-// 88`8b   88~~~~~ 88  ooo    88    88    88 88 V8o88   `Y8b.
-// 88 `88. 88.     88. ~8~   .88.   `8b  d8' 88  V888 db   8D
-// 88   YD Y88888P  Y888P  Y888888P  `Y88P'  VP   V8P `8888Y'
-
-/// An iterator over the regions held within a [`Quadtree`].
-///
-/// This struct is created by the [`regions`] method on [`Quadtree`].
-///
-/// [`regions`]: struct.Quadtree.html#method.regions
-/// [`Quadtree`]: struct.Quadtree.html
-#[derive(Clone, Debug)]
-pub struct Regions<'a, U, V>
+impl<U, V> IntoIterator for Quadtree<U, V>
 where
     U: PrimInt + std::fmt::Debug,
 {
-    pub(crate) inner: Iter<'a, U, V>,
-}
+    type Item = (AreaType<U>, V);
+    type IntoIter = IntoIter<U, V>;
 
-impl<'a, U, V> Iterator for Regions<'a, U, V>
-where
-    U: PrimInt + std::fmt::Debug,
-{
-    type Item = (&'a AreaType<U>);
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map_or(None, |(k, _v)| Some(k))
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.inner.size_hint()
-    }
-}
-
-impl<'a, U, V> FusedIterator for Regions<'a, U, V> where U: PrimInt + std::fmt::Debug {}
-
-impl<'a, U, V> ExactSizeIterator for Regions<'a, U, V>
-where
-    U: PrimInt + std::fmt::Debug,
-{
-    fn len(&self) -> usize {
-        self.inner.len()
-    }
-}
-
-// db    db  .d8b.  db      db    db d88888b .d8888.
-// 88    88 d8' `8b 88      88    88 88'     88'  YP
-// Y8    8P 88ooo88 88      88    88 88ooooo `8bo.
-// `8b  d8' 88~~~88 88      88    88 88~~~~~   `Y8b.
-//  `8bd8'  88   88 88booo. 88b  d88 88.     db   8D
-//    YP    YP   YP Y88888P ~Y8888P' Y88888P `8888Y'
-
-/// An iterator over the values held within a [`Quadtree`].
-///
-/// This struct is created by the [`values`] method on [`Quadtree`].
-///
-/// [`values`]: struct.Quadtree.html#method.values
-/// [`Quadtree`]: struct.Quadtree.html
-#[derive(Clone, Debug)]
-pub struct Values<'a, U, V>
-where
-    U: PrimInt + std::fmt::Debug,
-{
-    pub(crate) inner: Iter<'a, U, V>,
-}
-
-impl<'a, U, V> Iterator for Values<'a, U, V>
-where
-    U: PrimInt + std::fmt::Debug,
-{
-    type Item = (&'a V);
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map_or(None, |(_k, v)| Some(v))
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.inner.size_hint()
-    }
-}
-
-impl<'a, U, V> FusedIterator for Values<'a, U, V> where U: PrimInt + std::fmt::Debug {}
-
-impl<'a, U, V> ExactSizeIterator for Values<'a, U, V>
-where
-    U: PrimInt + std::fmt::Debug,
-{
-    fn len(&self) -> usize {
-        self.inner.len()
+    fn into_iter(self) -> IntoIter<U, V> {
+        IntoIter::new(self.inner, self.store)
     }
 }

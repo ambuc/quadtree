@@ -179,19 +179,17 @@ mod string {
         assert_eq!(iter.next().map_or("", |(_, v)| v), "foo_bar_baz");
     }
 
-    // #[test]
-    // fn quadtree_mut_string() {
-    //     let mut q = Quadtree::<u32, String>::new(4);
-    //     q.insert((0, 0), (1, 1), "hello ".to_string());
-    //     for (_, v) in q.query_mut((0, 0), (1, 1)) {
-    //         *v += "world";
-    //     }
+    #[test]
+    fn quadtree_mut_string() {
+        let mut q = Quadtree::<u32, String>::new(4);
+        q.insert((0, 0), (1, 1), "hello ".to_string());
+        q.modify((0, 0), (1, 1), |v| *v += "world");
 
-    //     assert_eq!(
-    //         q.query((0, 0), (1, 1)).next().map_or("", |(_, v)| v),
-    //         "hello world"
-    //     );
-    // }
+        assert_eq!(
+            q.query((0, 0), (1, 1)).next().map_or("", |(_, v)| v),
+            "hello world"
+        );
+    }
 }
 
 // Test creating a complex struct (containing a string), embed that struct in the Quadtree, and

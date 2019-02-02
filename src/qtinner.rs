@@ -19,7 +19,7 @@ use std::collections::HashMap;
 use uuid::Uuid;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct QTInner<U>
+pub(crate) struct QTInner<U>
 where
     U: PrimInt + std::fmt::Debug,
 {
@@ -31,24 +31,24 @@ where
 
     // The regions held at this level in the tree. (NB: That doesn't mean each value in `values`
     // is at self.region).
-    pub kept_uuids: Vec<Uuid>,
+    pub(crate) kept_uuids: Vec<Uuid>,
 
     // The subquadrants under this cell. [ne, nw, se, sw]. If there are no subquadrants, this
     // entire list could be None.
-    pub subquadrants: Option<[Box<QTInner<U>>; 4]>,
+    pub(crate) subquadrants: Option<[Box<QTInner<U>>; 4]>,
 }
 
 impl<U> QTInner<U>
 where
     U: PrimInt + std::fmt::Debug,
 {
-    pub fn new(anchor: PointType<U>, depth: usize) -> QTInner<U> {
+    pub(crate) fn new(anchor: PointType<U>, depth: usize) -> QTInner<U> {
         let width: U = Self::two().pow(depth as u32);
         let height: U = width;
         Self::new_with_area((anchor, (width, height)).into(), depth)
     }
 
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.kept_uuids.len()
             + self
                 .subquadrants
@@ -56,7 +56,7 @@ where
                 .map_or(0, |a| a.iter().map(|q| q.as_ref().len()).sum::<usize>())
     }
 
-    pub fn reset(&mut self) {
+    pub(crate) fn reset(&mut self) {
         self.kept_uuids.clear();
         self.subquadrants = None;
     }
@@ -72,7 +72,7 @@ where
 
     // Attempts to insert the value at the requested region. Returns false if the region was too
     // large.
-    pub fn insert_val_at_region<V>(
+    pub(crate) fn insert_val_at_region<V>(
         &mut self,
         req: Area<U>,
         val: V,

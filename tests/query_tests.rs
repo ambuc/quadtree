@@ -14,7 +14,7 @@
 
 mod util; // For unordered_elements_are.
 
-// For testing .query(), .query_mut() over different regions.
+// For testing .query(), .modify().
 mod query_tests {
     use crate::util::unordered_elements_are;
     use quadtree_impl::Quadtree;
@@ -166,58 +166,42 @@ mod query_tests {
         debug_assert_eq!(query_obj.next(), Some((&((0, 0), (2, 2)), &1.234)));
     }
 
-    // #[test]
-    // fn query_mut_empty() {
-    //     let mut q = Quadtree::<u32, u8>::new(2);
-    //     let mut iter = q.query_mut((0, 0), (4, 4));
-    //     debug_assert_eq!(iter.next(), None);
-    // }
+    #[test]
+    fn modify_empty() {
+        // Modification shouldn't change the emptiness.
+        let mut q = Quadtree::<u32, u8>::new(2);
+        q.modify((0, 0), (4, 4), |v| *v *= 2);
+        debug_assert!(q.is_empty());
+    }
 
-    // #[test]
-    // fn query_mut() {
-    //     let mut q = Quadtree::<u32, u8>::new(3);
+    #[test]
+    fn modify() {
+        let mut q = Quadtree::<u32, u8>::new(3);
 
-    //     // Insert #49 at (0, 0)->1x1.
-    //     q.insert((0, 0), (1, 1), 49);
-    //     // Up it to 50,
-    //     for (_, i) in q.query_mut((0, 0), (1, 1)) {
-    //         *i += 1;
-    //     }
-    //     // And verify.
-    //     let mut tmp_iter_1 = q.query((0, 0), (1, 1));
-    //     debug_assert_eq!(tmp_iter_1.next(), Some((&((0, 0), (1, 1)), &50)));
-    //     debug_assert_eq!(tmp_iter_1.next(), None);
+        // Insert #49 at (0, 0)->1x1.
+        q.insert((0, 0), (1, 1), 49);
+        q.modify((0, 0), (1, 1), |i| *i += 1);
 
-    //     // Insert #17 at (2, 2)->3x3.
-    //     q.insert((2, 2), (3, 3), 17);
-    //     // Up it to 18,
-    //     for (_, i) in q.query_mut((1, 1), (2, 2)) {
-    //         *i += 1;
-    //     }
-    //     // And verify.
-    //     let mut tmp_iter_2 = q.query((2, 2), (1, 1));
-    //     debug_assert_eq!(tmp_iter_2.next(), Some((&((2, 2), (3, 3)), &18)));
-    //     debug_assert_eq!(tmp_iter_2.next(), None);
+        // And verify.
+        let mut tmp_iter_1 = q.query((0, 0), (1, 1));
+        debug_assert_eq!(tmp_iter_1.next(), Some((&((0, 0), (1, 1)), &50)));
+        debug_assert_eq!(tmp_iter_1.next(), None);
 
-    //     // Reset everything in (0, 0)->6x6 to "0".
-    //     for (_, i) in q.query_mut((0, 0), (6, 6)) {
-    //         *i = 0;
-    //     }
-    //     // Every value is now 0.
+        // Insert #17 at (2, 2)->3x3.
+        q.insert((2, 2), (3, 3), 17);
+        // Up it to 18,
+        q.modify((1, 1), (2, 2), |i| *i += 1);
+        // And verify.
+        let mut tmp_iter_2 = q.query((2, 2), (1, 1));
+        debug_assert_eq!(tmp_iter_2.next(), Some((&((2, 2), (3, 3)), &18)));
+        debug_assert_eq!(tmp_iter_2.next(), None);
 
-    //     for (_, v) in q.query((0, 0), (6, 6)) {
-    //         debug_assert_eq!(*v, 0);
-    //     }
-    // }
+        // Reset everything in (0, 0)->6x6 to "0".
+        q.modify((0, 0), (6, 6), |i| *i = 0);
+        // Every value is now 0.
 
-    // #[test]
-    // fn query_pt_mut() {
-    //     let mut q = Quadtree::<u32, u8>::new(4);
-    //     // Insert #27 at (0, 0)->1x1.
-    //     q.insert((0, 0), (1, 1), 27);
-
-    //     let mut tmp_iter = q.query_pt_mut((0, 0));
-    //     debug_assert_eq!(tmp_iter.next(), Some((&((0, 0), (1, 1)), &mut 27)));
-    //     debug_assert_eq!(tmp_iter.next(), None);
-    // }
+        for (_, v) in q.query((0, 0), (6, 6)) {
+            debug_assert_eq!(*v, 0);
+        }
+    }
 }
