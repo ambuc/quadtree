@@ -14,7 +14,7 @@
 
 use crate::geometry::area::{Area, AreaType};
 use crate::geometry::point::{Point, PointType};
-use crate::types::{IntoIter, Iter, IterMut, Query, QueryMut, Regions, Values, ValuesMut};
+use crate::types::{IntoIter, Iter, IterMut, Query, QueryMut};
 use num::PrimInt;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -26,7 +26,7 @@ where
     depth: usize,
 
     // The region  of the current cell.
-    region: Area<U>,
+    pub(crate) region: Area<U>,
 
     // The regions held at this level in the tree. (NB: That doesn't mean each value in `values`
     // is at self.region).
@@ -126,24 +126,6 @@ where
 
     pub fn iter_mut(&mut self) -> IterMut<U, V> {
         IterMut::new(self)
-    }
-
-    pub fn regions(&self) -> Regions<U, V> {
-        Regions {
-            inner: Iter::new(self),
-        }
-    }
-
-    pub fn values(&self) -> Values<U, V> {
-        Values {
-            inner: Iter::new(self),
-        }
-    }
-
-    pub fn values_mut(&mut self) -> ValuesMut<U, V> {
-        ValuesMut {
-            inner: IterMut::new(self),
-        }
     }
 
     fn new_with_area(region: Area<U>, depth: usize) -> QTInner<U, V> {

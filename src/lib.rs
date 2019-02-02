@@ -391,17 +391,23 @@ where
 
     /// Returns an iterator over all `&'a ((U, U), (U, U))` regions in the Quadtree.
     pub fn regions(&self) -> Regions<U, V> {
-        self.inner.regions()
+        Regions {
+            inner: self.inner.iter(),
+        }
     }
 
     /// Returns an iterator over all `&'a V` values in the Quadtree.
     pub fn values(&self) -> Values<U, V> {
-        self.inner.values()
+        Values {
+            inner: self.inner.iter(),
+        }
     }
 
     /// Returns a mutable iterator over all `&'a mut V` values in the Quadtree.
     pub fn values_mut(&mut self) -> ValuesMut<U, V> {
-        self.inner.values_mut()
+        ValuesMut {
+            inner: self.inner.iter_mut(),
+        }
     }
 }
 
