@@ -202,7 +202,8 @@ where
     /// assert_eq!(q.len(), 2);
     /// ```
     pub fn len(&self) -> usize {
-        self.inner.len()
+        // self.inner.len()
+        self.store.len()
     }
 
     /// Whether or not the quadtree is empty.
@@ -214,7 +215,7 @@ where
     /// assert!(!q.is_empty());
     /// ```
     pub fn is_empty(&self) -> bool {
-        self.inner.is_empty()
+        self.store.is_empty()
     }
 
     /// Whether or not the region represented by this quadtree could contain the given region.
@@ -275,7 +276,8 @@ where
     /// assert!(!q.insert((0, 0), (5, 4), 27500));
     /// ```
     pub fn insert(&mut self, anchor: PointType<U>, size: (U, U), val: V) -> bool {
-        self.inner.insert(anchor, size, val, &mut self.store)
+        self.inner
+            .insert_val_at_region((anchor, size).into(), val, &mut self.store)
     }
 
     /// Attempts to insert the value at the given point. Returns false if the point was out of
@@ -293,7 +295,11 @@ where
     ///
     /// [`.insert(_, (1, 1), _)`]: struct.Quadtree.html#method.insert
     pub fn insert_pt(&mut self, anchor: PointType<U>, val: V) -> bool {
-        self.inner.insert_pt(anchor, val, &mut self.store)
+        self.inner.insert_val_at_region(
+            (anchor, Self::default_region_size()).into(),
+            val,
+            &mut self.store,
+        )
     }
 
     /// Returns an iterator over `(&'a ((U, U), (U, U)), &'a V)` tuples representing values
@@ -320,7 +326,11 @@ where
     /// assert_eq!(query_b.count(), 2);
     /// ```
     pub fn query(&self, anchor: PointType<U>, size: (U, U)) -> Query<U, V> {
-        self.inner.query(anchor, size, &self.store)
+        let a = (anchor, size).into();
+        Query {
+            query_region: a,
+            inner: Iter::new(self.inner.lowest_node_totally_containing(a), &self.store),
+        }
     }
 
     /// Returns an iterator (of type [`Query`]) over `(&'a ((U, U), (U, U)), &'a V)` tuples
@@ -331,7 +341,11 @@ where
     /// [`Query`]: struct.Query.html
     /// [`.query(anchor, (1, 1))`]: struct.Quadtree.html#method.query
     pub fn query_pt(&self, anchor: PointType<U>) -> Query<U, V> {
-        self.inner.query_pt(anchor, &self.store)
+        let a = (anchor, Self::default_region_size()).into();
+        Query {
+            query_region: a,
+            inner: Iter::new(self.inner.lowest_node_totally_containing(a), &self.store),
+        }
     }
 
     // /// Returns a mutable iterator (of type [`QueryMut`]) over
@@ -376,12 +390,13 @@ where
     /// Resets the quadtree to a totally empty state.
     pub fn reset(&mut self) {
         self.inner.reset();
+        self.store.clear();
     }
 
     /// Returns an iterator over all `(&((U, U), (U, U)), &V)` region/value pairs in the
     /// Quadtree.
     pub fn iter(&self) -> Iter<U, V> {
-        self.inner.iter(&self.store)
+        Iter::new(&self.inner, &self.store)
     }
 
     // /// Returns a mutable iterator over all `(&((U, U), (U, U)), &mut V)` region/value pairs in the
@@ -393,14 +408,14 @@ where
     /// Returns an iterator over all `&'a ((U, U), (U, U))` regions in the Quadtree.
     pub fn regions(&self) -> Regions<U, V> {
         Regions {
-            inner: self.inner.iter(&self.store),
+            inner: Iter::new(&self.inner, &self.store),
         }
     }
 
     /// Returns an iterator over all `&'a V` values in the Quadtree.
     pub fn values(&self) -> Values<U, V> {
         Values {
-            inner: self.inner.iter(&self.store),
+            inner: Iter::new(&self.inner, &self.store),
         }
     }
 
@@ -410,6 +425,11 @@ where
     //         inner: self.inner.iter_mut(&mut self.store),
     //     }
     // }
+
+    // Strongly-typed alias for (one(), one()).
+    fn default_region_size() -> (U, U) {
+        (U::one(), U::one())
+    }
 }
 
 /// `Extend<((U, U), V)>` will silently drop values whose coordinates do not fit in the region
@@ -424,7 +444,7 @@ where
         T: IntoIterator<Item = (PointType<U>, V)>,
     {
         for (pt, val) in iter {
-            self.inner.insert_pt(pt, val, &mut self.store);
+            self.insert_pt(pt, val);
         }
     }
 }
@@ -441,7 +461,7 @@ where
         T: IntoIterator<Item = (AreaType<U>, V)>,
     {
         for ((anchor, size), val) in iter {
-            self.inner.insert(anchor, size, val, &mut self.store);
+            self.insert(anchor, size, val);
         }
     }
 }
@@ -455,7 +475,7 @@ where
     type IntoIter = Iter<'a, U, V>;
 
     fn into_iter(self) -> Iter<'a, U, V> {
-        self.inner.iter(&self.store)
+        Iter::new(&self.inner, &self.store)
     }
 }
 

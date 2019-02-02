@@ -14,7 +14,6 @@
 
 use crate::geometry::area::Area;
 use crate::geometry::point::{Point, PointType};
-use crate::types::{Iter, Query};
 // use crate::types::{Iter, IterMut, Query, QueryMut};
 use num::PrimInt;
 use std::collections::HashMap;
@@ -62,52 +61,6 @@ where
                 .map_or(0, |a| a.iter().map(|q| q.as_ref().len()).sum::<usize>())
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.kept_uuids.is_empty()
-            && self
-                .subquadrants
-                .as_ref()
-                .map_or(true, |a| a.iter().all(|q| q.is_empty()))
-    }
-
-    pub fn insert<V>(
-        &mut self,
-        anchor: PointType<U>,
-        size: (U, U),
-        val: V,
-        store: &mut HashMap<Uuid, (Area<U>, V)>,
-    ) -> bool {
-        self.insert_val_at_region((anchor, size).into(), val, store)
-    }
-
-    pub fn insert_pt<V>(
-        &mut self,
-        anchor: PointType<U>,
-        val: V,
-        store: &mut HashMap<Uuid, (Area<U>, V)>,
-    ) -> bool {
-        self.insert_val_at_region((anchor, Self::default_region_size()).into(), val, store)
-    }
-
-    pub fn query<'a, V>(
-        &'a self,
-        anchor: PointType<U>,
-        size: (U, U),
-        store: &'a HashMap<Uuid, (Area<U>, V)>,
-    ) -> Query<'a, U, V> {
-        assert!(!size.0.is_zero());
-        assert!(!size.1.is_zero());
-        self.query_by_area((anchor, size).into(), store)
-    }
-
-    pub fn query_pt<'a, V>(
-        &'a self,
-        anchor: PointType<U>,
-        store: &'a HashMap<Uuid, (Area<U>, V)>,
-    ) -> Query<'a, U, V> {
-        self.query_by_area((anchor, Self::default_region_size()).into(), store)
-    }
-
     // pub fn query_mut<'a>(
     //     &'a mut self,
     //     anchor: PointType<U>,
@@ -127,13 +80,11 @@ where
     //     self.query_mut_by_area((anchor, Self::default_region_size()).into(), store)
     // }
 
+    // TODO(ambuc): This should return an iterator of uuids and then delete them all from store_ at
+    // the callsite.
     pub fn reset(&mut self) {
         self.kept_uuids.clear();
         self.subquadrants = None;
-    }
-
-    pub fn iter<'a, V>(&'a self, store: &'a HashMap<Uuid, (Area<U>, V)>) -> Iter<'a, U, V> {
-        Iter::new(self, store)
     }
 
     // pub fn iter_mut<'a>(
@@ -154,7 +105,7 @@ where
 
     // Attempts to insert the value at the requested region. Returns false if the region was too
     // large.
-    fn insert_val_at_region<V>(
+    pub fn insert_val_at_region<V>(
         &mut self,
         req: Area<U>,
         val: V,
@@ -243,30 +194,22 @@ where
         ]);
     }
 
-    fn query_by_area<'a, V>(
-        &'a self,
-        a: Area<U>,
-        store: &'a HashMap<Uuid, (Area<U>, V)>,
-    ) -> Query<'a, U, V> {
-        // TODO(ambuc): This is a great optimization but it's ugly.
+    pub fn lowest_node_totally_containing<'a>(&'a self, a: Area<U>) -> &'a QTInner<U> {
         if let Some(sqs) = &self.subquadrants {
             if a.contains(sqs[0].region) {
-                return sqs[0].query_by_area(a, store);
+                return sqs[0].as_ref();
             }
             if a.contains(sqs[1].region) {
-                return sqs[1].query_by_area(a, store);
+                return sqs[1].as_ref();
             }
             if a.contains(sqs[2].region) {
-                return sqs[2].query_by_area(a, store);
+                return sqs[2].as_ref();
             }
             if a.contains(sqs[3].region) {
-                return sqs[3].query_by_area(a, store);
+                return sqs[3].as_ref();
             }
         }
-        Query {
-            query_region: a,
-            inner: Iter::new(self, store),
-        }
+        self
     }
 
     // fn query_mut_by_area<'a>(
@@ -299,11 +242,6 @@ where
     // Strongly-typed alias for (zero(), zero()).
     fn default_anchor() -> PointType<U> {
         (U::zero(), U::zero())
-    }
-
-    // Strongly-typed alias for (one(), one()).
-    fn default_region_size() -> (U, U) {
-        (U::one(), U::one())
     }
 
     // Strongly-typed alias for U::one() + U::One()
