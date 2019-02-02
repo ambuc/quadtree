@@ -14,7 +14,6 @@
 
 use crate::geometry::area::Area;
 use crate::geometry::point::{Point, PointType};
-// use crate::types::{Iter, IterMut, Query, QueryMut};
 use num::PrimInt;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -43,11 +42,7 @@ impl<U> QTInner<U>
 where
     U: PrimInt,
 {
-    pub fn new(depth: usize) -> QTInner<U> {
-        Self::new_with_anchor(Self::default_anchor(), depth)
-    }
-
-    pub fn new_with_anchor(anchor: PointType<U>, depth: usize) -> QTInner<U> {
+    pub fn new(anchor: PointType<U>, depth: usize) -> QTInner<U> {
         let width: U = Self::two().pow(depth as u32);
         let height: U = width;
         Self::new_with_area((anchor, (width, height)).into(), depth)
@@ -153,7 +148,7 @@ where
         // Attempt to insert the uuid into the subquadrant we think it might fit in,
         assert!(self.subquadrants.is_some()); // We should have Someified this in .split().
         if let Some(sqs) = self.subquadrants.as_mut() {
-            if sqs[q_index].contains_region(req) {
+            if sqs[q_index].region.contains(req) {
                 sqs[q_index].insert_uuid_at_region(req, uuid, store);
             } else {
                 self.kept_uuids.push(uuid);
@@ -187,10 +182,10 @@ where
         let anchor_se: (U, U) = p.into();
 
         self.subquadrants = Some([
-            Box::new(Self::new_with_anchor(anchor_ne, self.depth - 1)),
-            Box::new(Self::new_with_anchor(anchor_nw, self.depth - 1)),
-            Box::new(Self::new_with_anchor(anchor_se, self.depth - 1)),
-            Box::new(Self::new_with_anchor(anchor_sw, self.depth - 1)),
+            Box::new(Self::new(anchor_ne, self.depth - 1)),
+            Box::new(Self::new(anchor_nw, self.depth - 1)),
+            Box::new(Self::new(anchor_se, self.depth - 1)),
+            Box::new(Self::new(anchor_sw, self.depth - 1)),
         ]);
     }
 
@@ -223,10 +218,6 @@ where
     //     }
     // }
 
-    fn contains_region(&self, a: Area<U>) -> bool {
-        self.region.contains(a)
-    }
-
     fn anchor_pt(&self) -> Point<U> {
         self.region.anchor()
     }
@@ -237,11 +228,6 @@ where
                 self.region.width() / Self::two(),
                 self.region.height() / Self::two(),
             ))
-    }
-
-    // Strongly-typed alias for (zero(), zero()).
-    fn default_anchor() -> PointType<U> {
-        (U::zero(), U::zero())
     }
 
     // Strongly-typed alias for U::one() + U::One()
