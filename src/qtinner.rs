@@ -16,19 +16,12 @@ use crate::geometry::area::{Area, AreaType};
 use crate::geometry::point::{Point, PointType};
 use crate::types::{IntoIter, Iter, IterMut, Query, QueryMut, Regions, Values, ValuesMut};
 use num::PrimInt;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::rc::Rc;
-use uuid::Uuid;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct QTInner<U, V>
 where
     U: PrimInt,
 {
-    // A reference to the top-level store.
-    store: Rc<RefCell<HashMap<Uuid, (U, V)>>>,
-
     // The depth of the current cell in its tree. Zero means it's at the very bottom.
     depth: usize,
 
@@ -48,18 +41,14 @@ impl<U, V> QTInner<U, V>
 where
     U: PrimInt,
 {
-    pub fn new(store: Rc<RefCell<HashMap<Uuid, (U, V)>>>, depth: usize) -> QTInner<U, V> {
-        Self::new_with_anchor(store, Self::default_anchor(), depth)
+    pub fn new(depth: usize) -> QTInner<U, V> {
+        Self::new_with_anchor(Self::default_anchor(), depth)
     }
 
-    pub fn new_with_anchor(
-        store: Rc<RefCell<HashMap<Uuid, (U, V)>>>,
-        anchor: PointType<U>,
-        depth: usize,
-    ) -> QTInner<U, V> {
+    pub fn new_with_anchor(anchor: PointType<U>, depth: usize) -> QTInner<U, V> {
         let width: U = Self::two().pow(depth as u32);
         let height: U = width;
-        Self::new_with_area(store, (anchor, (width, height)).into(), depth)
+        Self::new_with_area((anchor, (width, height)).into(), depth)
     }
 
     pub fn anchor(&self) -> PointType<U> {
@@ -157,13 +146,8 @@ where
         }
     }
 
-    fn new_with_area(
-        store: Rc<RefCell<HashMap<Uuid, (U, V)>>>,
-        region: Area<U>,
-        depth: usize,
-    ) -> QTInner<U, V> {
+    fn new_with_area(region: Area<U>, depth: usize) -> QTInner<U, V> {
         QTInner {
-            store,
             depth,
             region,
             kept_values: Vec::new(),
@@ -236,26 +220,10 @@ where
         let anchor_se = p.into();
 
         self.subquadrants = Some([
-            Box::new(Self::new_with_anchor(
-                Rc::clone(&self.store),
-                anchor_ne,
-                self.depth - 1,
-            )),
-            Box::new(Self::new_with_anchor(
-                Rc::clone(&self.store),
-                anchor_nw,
-                self.depth - 1,
-            )),
-            Box::new(Self::new_with_anchor(
-                Rc::clone(&self.store),
-                anchor_se,
-                self.depth - 1,
-            )),
-            Box::new(Self::new_with_anchor(
-                Rc::clone(&self.store),
-                anchor_sw,
-                self.depth - 1,
-            )),
+            Box::new(Self::new_with_anchor(anchor_ne, self.depth - 1)),
+            Box::new(Self::new_with_anchor(anchor_nw, self.depth - 1)),
+            Box::new(Self::new_with_anchor(anchor_se, self.depth - 1)),
+            Box::new(Self::new_with_anchor(anchor_sw, self.depth - 1)),
         ]);
     }
 

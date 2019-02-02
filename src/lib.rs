@@ -73,9 +73,6 @@ use crate::geometry::point::PointType;
 use crate::types::{IntoIter, Iter, IterMut, Query, QueryMut, Regions, Values, ValuesMut};
 use num::PrimInt;
 use qtinner::QTInner;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::rc::Rc;
 use uuid::Uuid;
 
 //   .d88b.  db    db  .d8b.  d8888b. d888888b d8888b. d88888b d88888b
@@ -121,7 +118,7 @@ where
     U: PrimInt,
 {
     inner: QTInner<U, V>,
-    pub(crate) store: Rc<RefCell<HashMap<Uuid, (U, V)>>>,
+    store: std::collections::HashMap<Uuid, (U, V)>,
 }
 
 impl<U, V> Quadtree<U, V>
@@ -142,10 +139,9 @@ where
     /// assert_eq!(q.height(), 4);
     /// ```
     pub fn new(depth: usize) -> Quadtree<U, V> {
-        let store = Rc::new(RefCell::new(HashMap::new()));
         Quadtree {
-            inner: QTInner::new(Rc::clone(&store), depth),
-            store: Rc::clone(&store),
+            inner: QTInner::new(depth),
+            store: std::collections::HashMap::new(),
         }
     }
 
@@ -160,10 +156,9 @@ where
     /// assert_eq!(q.height(), 8);
     /// ```
     pub fn new_with_anchor(anchor: PointType<U>, depth: usize) -> Quadtree<U, V> {
-        let store = Rc::new(RefCell::new(HashMap::new()));
         Quadtree {
-            inner: QTInner::new_with_anchor(Rc::clone(&store), anchor, depth),
-            store: Rc::clone(&store),
+            inner: QTInner::new_with_anchor(anchor, depth),
+            store: std::collections::HashMap::new(),
         }
     }
 
