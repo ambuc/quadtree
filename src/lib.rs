@@ -376,16 +376,6 @@ where
     //     self.inner.query_mut(anchor, size, &mut self.store)
     // }
 
-    // /// Returns a mutable iterator over `(&'a ((U, U), (U, U)), &'a mut V)` tuples
-    // /// representing values intersecting the query point.
-    // ///
-    // /// Alias for [`.query(anchor, (1, 1))`].
-    // ///
-    // /// [`.query(anchor, (1, 1))`]: struct.Quadtree.html#method.query
-    // pub fn query_pt_mut(&mut self, anchor: PointType<U>) -> QueryMut<U, V> {
-    //     self.inner.query_pt_mut(anchor, &mut self.store)
-    // }
-
     /// Resets the quadtree to a totally empty state.
     pub fn reset(&mut self) {
         self.inner.reset();
@@ -397,12 +387,6 @@ where
     pub fn iter(&self) -> Iter<U, V> {
         Iter::new(&self.inner, &self.store)
     }
-
-    // /// Returns a mutable iterator over all `(&((U, U), (U, U)), &mut V)` region/value pairs in the
-    // /// Quadtree.
-    // pub fn iter_mut(&mut self) -> IterMut<U, V> {
-    //     self.inner.iter_mut(&mut self.store)
-    // }
 
     /// Returns an iterator over all `&'a ((U, U), (U, U))` regions in the Quadtree.
     pub fn regions(&self) -> Regions<U, V> {
@@ -417,13 +401,6 @@ where
             inner: Iter::new(&self.inner, &self.store),
         }
     }
-
-    // /// Returns a mutable iterator over all `&'a mut V` values in the Quadtree.
-    // pub fn values_mut(&mut self) -> ValuesMut<U, V> {
-    //     ValuesMut {
-    //         inner: self.inner.iter_mut(&mut self.store),
-    //     }
-    // }
 
     // Strongly-typed alias for (one(), one()).
     fn default_region_size() -> (U, U) {
@@ -482,19 +459,6 @@ where
     }
 }
 
-// // Mutable iterator for the Quadtree, returning by-mutable-reference.
-// impl<'a, U, V> IntoIterator for &'a mut Quadtree<U, V>
-// where
-//     U: PrimInt,
-// {
-//     type Item = (&'a AreaType<U>, &'a mut V);
-//     type IntoIter = IterMut<'a, U, V>;
-//
-//     fn into_iter(self) -> IterMut<'a, U, V> {
-//         self.inner.iter_mut(&mut self.store)
-//     }
-// }
-//
 impl<U, V> IntoIterator for Quadtree<U, V>
 where
     U: PrimInt,
@@ -514,7 +478,6 @@ where
 //   .88.      88    88.     88 `88.
 // Y888888P    YP    Y88888P 88   YD
 
-// TODO(ambuc): Is it possible to collapse the .next() logic between this and IterMut and IntoIter?
 /// An iterator over all regions and values of a [`Quadtree`].
 ///
 /// This struct is created by the [`iter`] method on [`Quadtree`].
@@ -599,112 +562,6 @@ where
         self.remaining
     }
 }
-
-// // d888888b d888888b d88888b d8888b. .88b  d88. db    db d888888b
-// //   `88'   `~~88~~' 88'     88  `8D 88'YbdP`88 88    88 `~~88~~'
-// //    88       88    88ooooo 88oobY' 88  88  88 88    88    88
-// //    88       88    88~~~~~ 88`8b   88  88  88 88    88    88
-// //   .88.      88    88.     88 `88. 88  88  88 88b  d88    88
-// // Y888888P    YP    Y88888P 88   YD YP  YP  YP ~Y8888P'    YP
-//
-// /// A mutable iterator over all regions and values of a [`Quadtree`].
-// ///
-// /// This struct is created by the [`iter_mut`] method on [`Quadtree`].
-// ///
-// /// [`iter_mut`]: ../struct.Quadtree.html#method.iter_mut
-// /// [`Quadtree`]: ../struct.Quadtree.html
-// #[derive(Debug)]
-// pub struct IterMut<'a, U, V>
-// where
-//     U: PrimInt,
-// {
-//     uuid_stack: Vec<Uuid>,
-//     qt_stack: Vec<&'a mut QTInner<U>>,
-//     remaining: usize,
-//     store: &'a mut HashMap<Uuid, (Area<U>, V)>,
-// }
-//
-// impl<'a, U, V> IterMut<'a, U, V>
-// where
-//     U: PrimInt,
-// {
-//     pub(crate) fn new(
-//         qt: &'a mut QTInner<U>,
-//         store: &'a mut HashMap<Uuid, (Area<U>, V)>,
-//     ) -> IterMut<'a, U, V> {
-//         let len = qt.len();
-//         IterMut {
-//             uuid_stack: vec![],
-//             qt_stack: vec![qt],
-//             remaining: len,
-//             store,
-//         }
-//     }
-//
-//     fn return_uuid(&'a mut self, uuid: Uuid) -> (&'a AreaType<U>, &'a mut V) {
-//         match self.store.entry(uuid) {
-//             std::collections::hash_map::Entry::Occupied(oc) => {
-//                 let o: &'a mut (Area<U>, V) = oc.into_mut();
-//                 return (o.0.inner(), &mut o.1);
-//             }
-//             _ => panic!("?"),
-//         }
-//     }
-// }
-//
-// impl<'a, U, V> Iterator for IterMut<'a, U, V>
-// where
-//     U: PrimInt,
-// {
-//     type Item = (&'a AreaType<U>, &'a mut V);
-//
-//     #[inline]
-//     fn next(&mut self) -> Option<Self::Item> {
-//         // Check the uuid_stack.
-//         if let Some(uuid) = self.uuid_stack.pop() {
-//             self.remaining -= 1;
-//             return Some(self.return_uuid(uuid));
-//         }
-//
-//         // Then check the qt_stack.
-//         if let Some(qt) = self.qt_stack.pop() {
-//             // Push my regions onto the region stack
-//             for uuid in qt.kept_uuids.iter_mut() {
-//                 self.uuid_stack.push(uuid.clone());
-//             }
-//             // Push my subquadrants onto the qt_stack too.
-//             if let Some(sqs) = qt.subquadrants.as_mut() {
-//                 for sq in sqs.iter_mut() {
-//                     self.qt_stack.push(sq);
-//                 }
-//             }
-//             return self.next();
-//         }
-//
-//         // Else there's nothing left to search.
-//         None
-//     }
-//
-//     #[inline]
-//     fn size_hint(&self) -> (usize, Option<usize>) {
-//         (self.remaining, Some(self.remaining))
-//     }
-// }
-//
-// impl<'a, U, V> FusedIterator for IterMut<'a, U, V>
-// where
-//     U: PrimInt,
-// {
-// }
-//
-// impl<'a, U, V> ExactSizeIterator for IterMut<'a, U, V>
-// where
-//     U: PrimInt,
-// {
-//     fn len(&self) -> usize {
-//         self.remaining
-//     }
-// }
 
 // d888888b d8b   db d888888b  .d88b.  d888888b d888888b d88888b d8888b.
 //   `88'   888o  88 `~~88~~' .8P  Y8.   `88'   `~~88~~' 88'     88  `8D
@@ -810,8 +667,6 @@ impl<U, V> FusedIterator for IntoIter<U, V> where U: PrimInt {}
 /// [`query`]: ../struct.Quadtree.html#method.query
 /// [`query_pt`]: ../struct.Quadtree.html#method.query_pt
 /// [`Quadtree`]: ../struct.Quadtree.html
-// TODO(ambuc): This is pretty inefficient at the moment -- it starts at the top level and checks
-// everything. This has to be fixed before v1.0.0. (Same for QueryMut.)
 #[derive(Clone, Debug)]
 pub struct Query<'a, U, V>
 where
@@ -845,57 +700,6 @@ where
 }
 
 impl<'a, U, V> FusedIterator for Query<'a, U, V> where U: PrimInt {}
-
-// //   .d88b.  db    db d88888b d8888b. db    db .88b  d88. db    db d888888b
-// //  .8P  Y8. 88    88 88'     88  `8D `8b  d8' 88'YbdP`88 88    88 `~~88~~'
-// //  88    88 88    88 88ooooo 88oobY'  `8bd8'  88  88  88 88    88    88
-// //  88    88 88    88 88~~~~~ 88`8b      88    88  88  88 88    88    88
-// //  `8P  d8' 88b  d88 88.     88 `88.    88    88  88  88 88b  d88    88
-// //   `Y88'Y8 ~Y8888P' Y88888P 88   YD    YP    YP  YP  YP ~Y8888P'    YP
-//
-// /// A mutable iterator over the regions and values of a [`Quadtree`].
-// ///
-// /// This struct is created by the [`query_mut`] or [`query_pt_mut`] methods on [`Quadtree`].
-// ///
-// /// [`query_mut`]: ../struct.Quadtree.html#method.query_mut
-// /// [`query_pt_mut`]: ../struct.Quadtree.html#method.query_pt_mut
-// /// [`Quadtree`]: ../struct.Quadtree.html
-// pub struct QueryMut<'a, U, V>
-// where
-//     U: PrimInt,
-// {
-//     pub(crate) query_region: Area<U>,
-//     pub(crate) inner: IterMut<'a, U, V>,
-// }
-//
-// impl<'a, U, V> Iterator for QueryMut<'a, U, V>
-// where
-//     U: PrimInt,
-// {
-//     type Item = (&'a AreaType<U>, &'a mut V);
-//
-//     #[inline]
-//     fn next(&mut self) -> Option<Self::Item> {
-//         self.inner.next().map_or(None, |(k, v)| {
-//             if self.query_region.intersects(k.into()) {
-//                 Some((k, v))
-//             } else {
-//                 self.next()
-//             }
-//         })
-//     }
-//
-//     #[inline]
-//     fn size_hint(&self) -> (usize, Option<usize>) {
-//         self.inner.size_hint()
-//     }
-// }
-//
-// impl<'a, U, V> FusedIterator for QueryMut<'a, U, V>
-// where
-//     U: PrimInt,
-// {
-// }
 
 // d8888b. d88888b  d888b  d888888b  .d88b.  d8b   db .d8888.
 // 88  `8D 88'     88' Y8b   `88'   .8P  Y8. 888o  88 88'  YP
@@ -994,56 +798,3 @@ where
         self.inner.len()
     }
 }
-
-// // db    db  .d8b.  db      db    db d88888b .d8888. .88b  d88. db    db d888888b
-// // 88    88 d8' `8b 88      88    88 88'     88'  YP 88'YbdP`88 88    88 `~~88~~'
-// // Y8    8P 88ooo88 88      88    88 88ooooo `8bo.   88  88  88 88    88    88
-// // `8b  d8' 88~~~88 88      88    88 88~~~~~   `Y8b. 88  88  88 88    88    88
-// //  `8bd8'  88   88 88booo. 88b  d88 88.     db   8D 88  88  88 88b  d88    88
-// //    YP    YP   YP Y88888P ~Y8888P' Y88888P `8888Y' YP  YP  YP ~Y8888P'    YP
-//
-// /// A mutable iterator over the values held within a [`Quadtree`].
-// ///
-// /// This struct is created by the [`values_mut`] method on [`Quadtree`].
-// ///
-// /// [`values_mut`]: ../struct.Quadtree.html#method.values_mut
-// /// [`Quadtree`]: ../struct.Quadtree.html
-// #[derive(Debug)]
-// pub struct ValuesMut<'a, U, V>
-// where
-//     U: PrimInt,
-// {
-//     pub(crate) inner: IterMut<'a, U, V>,
-// }
-//
-// impl<'a, U, V> Iterator for ValuesMut<'a, U, V>
-// where
-//     U: PrimInt,
-// {
-//     type Item = (&'a mut V);
-//
-//     #[inline]
-//     fn next(&mut self) -> Option<Self::Item> {
-//         self.inner.next().map_or(None, |(_k, v)| Some(v))
-//     }
-//
-//     #[inline]
-//     fn size_hint(&self) -> (usize, Option<usize>) {
-//         self.inner.size_hint()
-//     }
-// }
-//
-// impl<'a, U, V> FusedIterator for ValuesMut<'a, U, V>
-// where
-//     U: PrimInt,
-// {
-// }
-//
-// impl<'a, U, V> ExactSizeIterator for ValuesMut<'a, U, V>
-// where
-//     U: PrimInt,
-// {
-//     fn len(&self) -> usize {
-//         self.inner.len()
-//     }
-// }

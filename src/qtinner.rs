@@ -56,38 +56,12 @@ where
                 .map_or(0, |a| a.iter().map(|q| q.as_ref().len()).sum::<usize>())
     }
 
-    // pub fn query_mut<'a>(
-    //     &'a mut self,
-    //     anchor: PointType<U>,
-    //     size: (U, U),
-    //     store: &'a mut HashMap<Uuid, (Area<U>, V)>,
-    // ) -> QueryMut<'a, U, V> {
-    //     assert!(!size.0.is_zero());
-    //     assert!(!size.1.is_zero());
-    //     self.query_mut_by_area((anchor, size).into(), store)
-    // }
-
-    // pub fn query_pt_mut<'a>(
-    //     &'a mut self,
-    //     anchor: PointType<U>,
-    //     store: &'a mut HashMap<Uuid, (Area<U>, V)>,
-    // ) -> QueryMut<'a, U, V> {
-    //     self.query_mut_by_area((anchor, Self::default_region_size()).into(), store)
-    // }
-
     // TODO(ambuc): This should return an iterator of uuids and then delete them all from store_ at
     // the callsite.
     pub fn reset(&mut self) {
         self.kept_uuids.clear();
         self.subquadrants = None;
     }
-
-    // pub fn iter_mut<'a>(
-    //     &'a mut self,
-    //     store: &'a mut HashMap<Uuid, (Area<U>, V)>,
-    // ) -> IterMut<'a, U, V> {
-    //     IterMut::new(self, store)
-    // }
 
     fn new_with_area(region: Area<U>, depth: usize) -> QTInner<U> {
         QTInner {
@@ -206,17 +180,6 @@ where
         }
         self
     }
-
-    // fn query_mut_by_area<'a>(
-    //     &'a mut self,
-    //     a: Area<U>,
-    //     store: &'a mut HashMap<Uuid, (Area<U>, V)>,
-    // ) -> QueryMut<'a, U, V> {
-    //     QueryMut {
-    //         query_region: a,
-    //         inner: IterMut::new(self, store),
-    //     }
-    // }
 
     fn anchor_pt(&self) -> Point<U> {
         self.region.anchor()

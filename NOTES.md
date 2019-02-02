@@ -79,3 +79,6 @@ For the example above:
      * 4.2
      * 4.3
      * 4.4
+
+TODO(ambuc): I don't think Rust supports streaming mutable iterators. I might
+have to implement something like the Entry API ?
