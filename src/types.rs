@@ -24,6 +24,7 @@ use crate::geometry::area::{Area, AreaType};
 use crate::qtinner::QTInner;
 use num::PrimInt;
 use std::iter::FusedIterator;
+use uuid::Uuid;
 
 // TODO(ambuc): Is it possible to collapse the .next() logic between this and IterMut and IntoIter?
 /// An iterator over all regions and values of a [`Quadtree`].
@@ -36,21 +37,28 @@ use std::iter::FusedIterator;
 pub struct Iter<'a, U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
-    region_stack: Vec<(&'a Area<U>, &'a V)>,
+    region_stack: Vec<(&'a Area<U>, &'a V, uuid::Uuid)>,
     qt_stack: Vec<&'a QTInner<U, V>>,
     remaining: usize,
+    store: &'a std::collections::HashMap<uuid::Uuid, (Area<U>, V)>,
 }
 
 impl<'a, U, V> Iter<'a, U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
-    pub(crate) fn new(qt: &'a QTInner<U, V>) -> Iter<U, V> {
+    pub(crate) fn new(
+        qt: &'a QTInner<U, V>,
+        store: &'a std::collections::HashMap<uuid::Uuid, (Area<U>, V)>,
+    ) -> Iter<'a, U, V> {
         Iter {
             region_stack: vec![],
             qt_stack: vec![qt],
             remaining: qt.len(),
+            store,
         }
     }
 }
@@ -58,22 +66,24 @@ where
 impl<'a, U, V> Iterator for Iter<'a, U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     type Item = (&'a AreaType<U>, &'a V);
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         // Check the region_stack.
-        if let Some((region, val)) = self.region_stack.pop() {
+        if let Some((region, val, _uuid)) = self.region_stack.pop() {
             self.remaining -= 1;
             return Some((region.inner(), val));
+            //return Some((region.inner(), &self.store.get(&_uuid).unwrap().1));
         }
 
         // Then check the qt_stack.
         if let Some(qt) = self.qt_stack.pop() {
             // Push my regions onto the region stack
-            for (k, v) in qt.kept_values.iter() {
-                self.region_stack.push((k, v));
+            for (k, v, uuid) in qt.kept_values.iter() {
+                self.region_stack.push((k, v, uuid.clone()));
             }
             // Push my subquadrants onto the qt_stack too.
             if let Some(sqs) = qt.subquadrants.as_ref() {
@@ -94,11 +104,17 @@ where
     }
 }
 
-impl<'a, U, V> FusedIterator for Iter<'a, U, V> where U: PrimInt {}
+impl<'a, U, V> FusedIterator for Iter<'a, U, V>
+where
+    U: PrimInt,
+    V: Clone,
+{
+}
 
 impl<'a, U, V> ExactSizeIterator for Iter<'a, U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     fn len(&self) -> usize {
         self.remaining
@@ -122,22 +138,29 @@ where
 pub struct IterMut<'a, U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
-    region_stack: Vec<(&'a Area<U>, &'a mut V)>,
+    region_stack: Vec<(&'a Area<U>, &'a mut V, uuid::Uuid)>,
     qt_stack: Vec<&'a mut QTInner<U, V>>,
     remaining: usize,
+    store: &'a std::collections::HashMap<uuid::Uuid, (Area<U>, V)>,
 }
 
 impl<'a, U, V> IterMut<'a, U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
-    pub(crate) fn new(qt: &'a mut QTInner<U, V>) -> IterMut<U, V> {
+    pub(crate) fn new(
+        qt: &'a mut QTInner<U, V>,
+        store: &'a std::collections::HashMap<uuid::Uuid, (Area<U>, V)>,
+    ) -> IterMut<'a, U, V> {
         let len = qt.len();
         IterMut {
             region_stack: vec![],
             qt_stack: vec![qt],
             remaining: len,
+            store,
         }
     }
 }
@@ -145,13 +168,14 @@ where
 impl<'a, U, V> Iterator for IterMut<'a, U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     type Item = (&'a AreaType<U>, &'a mut V);
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         // Check the region_stack.
-        if let Some((region, val)) = self.region_stack.pop() {
+        if let Some((region, val, _uuid)) = self.region_stack.pop() {
             self.remaining -= 1;
             return Some((region.inner(), val));
         }
@@ -159,8 +183,8 @@ where
         // Then check the qt_stack.
         if let Some(qt) = self.qt_stack.pop() {
             // Push my regions onto the region stack
-            for (k, v) in qt.kept_values.iter_mut() {
-                self.region_stack.push((k, v));
+            for (k, v, uuid) in qt.kept_values.iter_mut() {
+                self.region_stack.push((k, v, uuid.clone()));
             }
             // Push my subquadrants onto the qt_stack too.
             if let Some(sqs) = qt.subquadrants.as_mut() {
@@ -181,11 +205,17 @@ where
     }
 }
 
-impl<'a, U, V> FusedIterator for IterMut<'a, U, V> where U: PrimInt {}
+impl<'a, U, V> FusedIterator for IterMut<'a, U, V>
+where
+    U: PrimInt,
+    V: Clone,
+{
+}
 
 impl<'a, U, V> ExactSizeIterator for IterMut<'a, U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     fn len(&self) -> usize {
         self.remaining
@@ -209,8 +239,9 @@ where
 pub struct IntoIter<U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
-    region_stack: Vec<(Area<U>, V)>,
+    region_stack: Vec<(Area<U>, V, uuid::Uuid)>,
     qt_stack: Vec<QTInner<U, V>>,
     remaining: usize,
 }
@@ -218,6 +249,7 @@ where
 impl<U, V> IntoIter<U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     pub(crate) fn new(qt: QTInner<U, V>) -> IntoIter<U, V> {
         let len = qt.len();
@@ -232,21 +264,22 @@ where
 impl<U, V> Iterator for IntoIter<U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     type Item = (AreaType<U>, V);
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         // Check the region_stack.
-        if let Some((region, val)) = self.region_stack.pop() {
+        if let Some((region, val, _uuid)) = self.region_stack.pop() {
             self.remaining -= 1;
             return Some((*region.inner(), val));
         }
         // Then check the qt_stack.
         if let Some(qt) = self.qt_stack.pop() {
             // Push my regions onto the region stack
-            for (k, v) in qt.kept_values.into_iter() {
-                self.region_stack.push((k, v));
+            for (k, v, uuid) in qt.kept_values.into_iter() {
+                self.region_stack.push((k, v, uuid.clone()));
             }
             // Push my subquadrants onto the qt_stack too.
             if let Some([a, b, c, d]) = qt.subquadrants {
@@ -270,6 +303,7 @@ where
 impl<U, V> ExactSizeIterator for IntoIter<U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     #[inline]
     fn len(&self) -> usize {
@@ -277,7 +311,12 @@ where
     }
 }
 
-impl<U, V> FusedIterator for IntoIter<U, V> where U: PrimInt {}
+impl<U, V> FusedIterator for IntoIter<U, V>
+where
+    U: PrimInt,
+    V: Clone,
+{
+}
 
 //  .d88b.  db    db d88888b d8888b. db    db
 // .8P  Y8. 88    88 88'     88  `8D `8b  d8'
@@ -299,6 +338,7 @@ impl<U, V> FusedIterator for IntoIter<U, V> where U: PrimInt {}
 pub struct Query<'a, U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     pub(crate) query_region: Area<U>,
     pub(crate) inner: Iter<'a, U, V>,
@@ -307,6 +347,7 @@ where
 impl<'a, U, V> Iterator for Query<'a, U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     type Item = (&'a AreaType<U>, &'a V);
 
@@ -327,7 +368,12 @@ where
     }
 }
 
-impl<'a, U, V> FusedIterator for Query<'a, U, V> where U: PrimInt {}
+impl<'a, U, V> FusedIterator for Query<'a, U, V>
+where
+    U: PrimInt,
+    V: Clone,
+{
+}
 
 //   .d88b.  db    db d88888b d8888b. db    db .88b  d88. db    db d888888b
 //  .8P  Y8. 88    88 88'     88  `8D `8b  d8' 88'YbdP`88 88    88 `~~88~~'
@@ -346,6 +392,7 @@ impl<'a, U, V> FusedIterator for Query<'a, U, V> where U: PrimInt {}
 pub struct QueryMut<'a, U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     pub(crate) query_region: Area<U>,
     pub(crate) inner: IterMut<'a, U, V>,
@@ -354,6 +401,7 @@ where
 impl<'a, U, V> Iterator for QueryMut<'a, U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     type Item = (&'a AreaType<U>, &'a mut V);
 
@@ -374,7 +422,12 @@ where
     }
 }
 
-impl<'a, U, V> FusedIterator for QueryMut<'a, U, V> where U: PrimInt {}
+impl<'a, U, V> FusedIterator for QueryMut<'a, U, V>
+where
+    U: PrimInt,
+    V: Clone,
+{
+}
 
 // d8888b. d88888b  d888b  d888888b  .d88b.  d8b   db .d8888.
 // 88  `8D 88'     88' Y8b   `88'   .8P  Y8. 888o  88 88'  YP
@@ -393,6 +446,7 @@ impl<'a, U, V> FusedIterator for QueryMut<'a, U, V> where U: PrimInt {}
 pub struct Regions<'a, U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     pub(crate) inner: Iter<'a, U, V>,
 }
@@ -400,6 +454,7 @@ where
 impl<'a, U, V> Iterator for Regions<'a, U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     type Item = (&'a AreaType<U>);
 
@@ -414,11 +469,17 @@ where
     }
 }
 
-impl<'a, U, V> FusedIterator for Regions<'a, U, V> where U: PrimInt {}
+impl<'a, U, V> FusedIterator for Regions<'a, U, V>
+where
+    U: PrimInt,
+    V: Clone,
+{
+}
 
 impl<'a, U, V> ExactSizeIterator for Regions<'a, U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     fn len(&self) -> usize {
         self.inner.len()
@@ -442,6 +503,7 @@ where
 pub struct Values<'a, U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     pub(crate) inner: Iter<'a, U, V>,
 }
@@ -449,6 +511,7 @@ where
 impl<'a, U, V> Iterator for Values<'a, U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     type Item = (&'a V);
 
@@ -463,11 +526,17 @@ where
     }
 }
 
-impl<'a, U, V> FusedIterator for Values<'a, U, V> where U: PrimInt {}
+impl<'a, U, V> FusedIterator for Values<'a, U, V>
+where
+    U: PrimInt,
+    V: Clone,
+{
+}
 
 impl<'a, U, V> ExactSizeIterator for Values<'a, U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     fn len(&self) -> usize {
         self.inner.len()
@@ -491,6 +560,7 @@ where
 pub struct ValuesMut<'a, U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     pub(crate) inner: IterMut<'a, U, V>,
 }
@@ -498,6 +568,7 @@ where
 impl<'a, U, V> Iterator for ValuesMut<'a, U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     type Item = (&'a mut V);
 
@@ -512,11 +583,17 @@ where
     }
 }
 
-impl<'a, U, V> FusedIterator for ValuesMut<'a, U, V> where U: PrimInt {}
+impl<'a, U, V> FusedIterator for ValuesMut<'a, U, V>
+where
+    U: PrimInt,
+    V: Clone,
+{
+}
 
 impl<'a, U, V> ExactSizeIterator for ValuesMut<'a, U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     fn len(&self) -> usize {
         self.inner.len()

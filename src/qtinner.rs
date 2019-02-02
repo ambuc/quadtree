@@ -16,11 +16,13 @@ use crate::geometry::area::{Area, AreaType};
 use crate::geometry::point::{Point, PointType};
 use crate::types::{IntoIter, Iter, IterMut, Query, QueryMut};
 use num::PrimInt;
+use uuid::Uuid;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct QTInner<U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     // The depth of the current cell in its tree. Zero means it's at the very bottom.
     depth: usize,
@@ -30,7 +32,7 @@ where
 
     // The regions held at this level in the tree. (NB: That doesn't mean each value in `values`
     // is at self.region).
-    pub kept_values: Vec<(Area<U>, V)>,
+    pub kept_values: Vec<(Area<U>, V, uuid::Uuid)>,
 
     // The subquadrants under this cell. [ne, nw, se, sw]. If there are no subquadrants, this
     // entire list could be None.
@@ -40,6 +42,7 @@ where
 impl<U, V> QTInner<U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     pub fn new(depth: usize) -> QTInner<U, V> {
         Self::new_with_anchor(Self::default_anchor(), depth)
@@ -87,32 +90,61 @@ where
         self.contains_region((anchor, size).into())
     }
 
-    pub fn insert(&mut self, anchor: PointType<U>, size: (U, U), val: V) -> bool {
-        self.insert_region((anchor, size).into(), val)
+    pub fn insert(
+        &mut self,
+        anchor: PointType<U>,
+        size: (U, U),
+        val: V,
+        store: &mut std::collections::HashMap<uuid::Uuid, (Area<U>, V)>,
+    ) -> bool {
+        self.insert_region((anchor, size).into(), val, store)
     }
 
-    pub fn insert_pt(&mut self, anchor: PointType<U>, val: V) -> bool {
-        self.insert_region((anchor, Self::default_region_size()).into(), val)
+    pub fn insert_pt(
+        &mut self,
+        anchor: PointType<U>,
+        val: V,
+        store: &mut std::collections::HashMap<uuid::Uuid, (Area<U>, V)>,
+    ) -> bool {
+        self.insert_region((anchor, Self::default_region_size()).into(), val, store)
     }
 
-    pub fn query(&self, anchor: PointType<U>, size: (U, U)) -> Query<U, V> {
+    pub fn query<'a>(
+        &'a self,
+        anchor: PointType<U>,
+        size: (U, U),
+        store: &'a std::collections::HashMap<uuid::Uuid, (Area<U>, V)>,
+    ) -> Query<'a, U, V> {
         assert!(!size.0.is_zero());
         assert!(!size.1.is_zero());
-        self.query_by_area((anchor, size).into())
+        self.query_by_area((anchor, size).into(), store)
     }
 
-    pub fn query_pt(&self, anchor: PointType<U>) -> Query<U, V> {
-        self.query_by_area((anchor, Self::default_region_size()).into())
+    pub fn query_pt<'a>(
+        &'a self,
+        anchor: PointType<U>,
+        store: &'a std::collections::HashMap<uuid::Uuid, (Area<U>, V)>,
+    ) -> Query<'a, U, V> {
+        self.query_by_area((anchor, Self::default_region_size()).into(), store)
     }
 
-    pub fn query_mut(&mut self, anchor: PointType<U>, size: (U, U)) -> QueryMut<U, V> {
+    pub fn query_mut<'a>(
+        &'a mut self,
+        anchor: PointType<U>,
+        size: (U, U),
+        store: &'a mut std::collections::HashMap<uuid::Uuid, (Area<U>, V)>,
+    ) -> QueryMut<'a, U, V> {
         assert!(!size.0.is_zero());
         assert!(!size.1.is_zero());
-        self.query_mut_by_area((anchor, size).into())
+        self.query_mut_by_area((anchor, size).into(), store)
     }
 
-    pub fn query_pt_mut(&mut self, anchor: PointType<U>) -> QueryMut<U, V> {
-        self.query_mut_by_area((anchor, Self::default_region_size()).into())
+    pub fn query_pt_mut<'a>(
+        &'a mut self,
+        anchor: PointType<U>,
+        store: &'a mut std::collections::HashMap<uuid::Uuid, (Area<U>, V)>,
+    ) -> QueryMut<'a, U, V> {
+        self.query_mut_by_area((anchor, Self::default_region_size()).into(), store)
     }
 
     pub fn reset(&mut self) {
@@ -120,12 +152,18 @@ where
         self.subquadrants = None;
     }
 
-    pub fn iter(&self) -> Iter<U, V> {
-        Iter::new(self)
+    pub fn iter<'a>(
+        &'a self,
+        store: &'a std::collections::HashMap<uuid::Uuid, (Area<U>, V)>,
+    ) -> Iter<'a, U, V> {
+        Iter::new(self, store)
     }
 
-    pub fn iter_mut(&mut self) -> IterMut<U, V> {
-        IterMut::new(self)
+    pub fn iter_mut<'a>(
+        &'a mut self,
+        store: &'a mut std::collections::HashMap<uuid::Uuid, (Area<U>, V)>,
+    ) -> IterMut<'a, U, V> {
+        IterMut::new(self, store)
     }
 
     fn new_with_area(region: Area<U>, depth: usize) -> QTInner<U, V> {
@@ -139,21 +177,29 @@ where
 
     // Attempts to insert the value at the requested region. Returns false if the region was too
     // large.
-    fn insert_region(&mut self, req: Area<U>, val: V) -> bool {
+    fn insert_region(
+        &mut self,
+        req: Area<U>,
+        val: V,
+        store: &mut std::collections::HashMap<uuid::Uuid, (Area<U>, V)>,
+    ) -> bool {
         // If the requested region is larger than the region this cell represents, return false.
         if !self.region.contains(req) {
             return false;
         }
 
+        let uuid = Uuid::new_v4();
+        store.insert(uuid, (req, val.clone()));
+
         // If we're at the bottom depth, it had better fit.
         if self.depth == 0 {
             assert!(req == self.region);
-            self.kept_values.push((req, val));
+            self.kept_values.push((req, val, uuid));
             return true;
         }
 
         if req == self.region {
-            self.kept_values.push((req, val));
+            self.kept_values.push((req, val, uuid));
             return true;
         }
 
@@ -169,9 +215,9 @@ where
         assert!(self.subquadrants.is_some()); // We should have Someified this in .split().
         if let Some(sqs) = self.subquadrants.as_mut() {
             if sqs[q_index].contains_region(req) {
-                sqs[q_index].insert_region(req, val);
+                sqs[q_index].insert_region(req, val, store);
             } else {
-                self.kept_values.push((req, val));
+                self.kept_values.push((req, val, uuid));
             }
         }
 
@@ -209,17 +255,25 @@ where
         ]);
     }
 
-    fn query_by_area(&self, a: Area<U>) -> Query<U, V> {
+    fn query_by_area<'a>(
+        &'a self,
+        a: Area<U>,
+        store: &'a std::collections::HashMap<uuid::Uuid, (Area<U>, V)>,
+    ) -> Query<'a, U, V> {
         Query {
             query_region: a,
-            inner: Iter::new(self),
+            inner: Iter::new(self, store),
         }
     }
 
-    fn query_mut_by_area(&mut self, a: Area<U>) -> QueryMut<U, V> {
+    fn query_mut_by_area<'a>(
+        &'a mut self,
+        a: Area<U>,
+        store: &'a mut std::collections::HashMap<uuid::Uuid, (Area<U>, V)>,
+    ) -> QueryMut<'a, U, V> {
         QueryMut {
             query_region: a,
-            inner: IterMut::new(self),
+            inner: IterMut::new(self, store),
         }
     }
 
@@ -252,74 +306,79 @@ where
     }
 }
 
-/// `Extend<((U, U), V)>` will silently drop values whose coordinates do not fit in the region
-/// represented by the Quadtree. It is the responsibility of the callsite to ensure these points
-/// fit.
-impl<U, V> Extend<(PointType<U>, V)> for QTInner<U, V>
-where
-    U: PrimInt,
-{
-    fn extend<T>(&mut self, iter: T)
-    where
-        T: IntoIterator<Item = (PointType<U>, V)>,
-    {
-        for (anchor, v) in iter {
-            self.insert_pt(anchor, v);
-        }
-    }
-}
+// /// `Extend<((U, U), V)>` will silently drop values whose coordinates do not fit in the region
+// /// represented by the Quadtree. It is the responsibility of the callsite to ensure these points
+// /// fit.
+// impl<U, V> Extend<(PointType<U>, V)> for QTInner<U, V>
+// where
+//     U: PrimInt,
+//     V: Clone,
+// {
+//     fn extend<T>(&mut self, iter: T)
+//     where
+//         T: IntoIterator<Item = (PointType<U>, V)>,
+//     {
+//         for (anchor, v) in iter {
+//             self.insert_pt(anchor, v);
+//         }
+//     }
+// }
+//
+// /// `Extend<(((U, U), (U, U), V)>` will silently drop values whose coordinates do not fit in the
+// /// region represented by the Quadtree. It is the responsibility of the callsite to ensure these
+// /// points fit.
+// impl<U, V> Extend<(AreaType<U>, V)> for QTInner<U, V>
+// where
+//     U: PrimInt,
+//     V: Clone,
+// {
+//     fn extend<T>(&mut self, iter: T)
+//     where
+//         T: IntoIterator<Item = (AreaType<U>, V)>,
+//     {
+//         for ((anchor, dimensions), v) in iter {
+//             self.insert(anchor, dimensions, v);
+//         }
+//     }
+// }
 
-/// `Extend<(((U, U), (U, U), V)>` will silently drop values whose coordinates do not fit in the
-/// region represented by the Quadtree. It is the responsibility of the callsite to ensure these
-/// points fit.
-impl<U, V> Extend<(AreaType<U>, V)> for QTInner<U, V>
-where
-    U: PrimInt,
-{
-    fn extend<T>(&mut self, iter: T)
-    where
-        T: IntoIterator<Item = (AreaType<U>, V)>,
-    {
-        for ((anchor, dimensions), v) in iter {
-            self.insert(anchor, dimensions, v);
-        }
-    }
-}
-
-// Immutable iterator for the Quadtree, returning by-reference.
-impl<'a, U, V> IntoIterator for &'a QTInner<U, V>
-where
-    U: PrimInt,
-{
-    type Item = (&'a AreaType<U>, &'a V);
-    type IntoIter = Iter<'a, U, V>;
-
-    fn into_iter(self) -> Iter<'a, U, V> {
-        self.iter()
-    }
-}
-
-// Mutable iterator for the Quadtree, returning by-mutable-reference.
-impl<'a, U, V> IntoIterator for &'a mut QTInner<U, V>
-where
-    U: PrimInt,
-{
-    type Item = (&'a AreaType<U>, &'a mut V);
-    type IntoIter = IterMut<'a, U, V>;
-
-    fn into_iter(self) -> IterMut<'a, U, V> {
-        self.iter_mut()
-    }
-}
-
-impl<U, V> IntoIterator for QTInner<U, V>
-where
-    U: PrimInt,
-{
-    type Item = (AreaType<U>, V);
-    type IntoIter = IntoIter<U, V>;
-
-    fn into_iter(self) -> IntoIter<U, V> {
-        IntoIter::new(self)
-    }
-}
+// // Immutable iterator for the Quadtree, returning by-reference.
+// impl<'a, U, V> IntoIterator for &'a QTInner<U, V>
+// where
+//     U: PrimInt,
+//     V: Clone,
+// {
+//     type Item = (&'a AreaType<U>, &'a V);
+//     type IntoIter = Iter<'a, U, V>;
+//
+//     fn into_iter(self) -> Iter<'a, U, V> {
+//         self.iter()
+//     }
+// }
+//
+// // Mutable iterator for the Quadtree, returning by-mutable-reference.
+// impl<'a, U, V> IntoIterator for &'a mut QTInner<U, V>
+// where
+//     U: PrimInt,
+//     V: Clone,
+// {
+//     type Item = (&'a AreaType<U>, &'a mut V);
+//     type IntoIter = IterMut<'a, U, V>;
+//
+//     fn into_iter(self) -> IterMut<'a, U, V> {
+//         self.iter_mut()
+//     }
+// }
+//
+// impl<U, V> IntoIterator for QTInner<U, V>
+// where
+//     U: PrimInt,
+//     V: Clone,
+// {
+//     type Item = (AreaType<U>, V);
+//     type IntoIter = IntoIter<U, V>;
+//
+//     fn into_iter(self) -> IntoIter<U, V> {
+//         IntoIter::new(self)
+//     }
+// }

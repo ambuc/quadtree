@@ -68,7 +68,7 @@ mod geometry;
 mod qtinner;
 pub mod types;
 
-use crate::geometry::area::AreaType;
+use crate::geometry::area::{Area, AreaType};
 use crate::geometry::point::PointType;
 use crate::types::{IntoIter, Iter, IterMut, Query, QueryMut, Regions, Values, ValuesMut};
 use num::PrimInt;
@@ -116,14 +116,16 @@ use uuid::Uuid;
 pub struct Quadtree<U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     inner: QTInner<U, V>,
-    store: std::collections::HashMap<Uuid, (U, V)>,
+    store: std::collections::HashMap<Uuid, (Area<U>, V)>,
 }
 
 impl<U, V> Quadtree<U, V>
 where
     U: PrimInt,
+    V: Clone,
 {
     // Constructors //
 
@@ -274,7 +276,7 @@ where
     /// assert!(!q.insert((0, 0), (5, 4), 27500));
     /// ```
     pub fn insert(&mut self, anchor: PointType<U>, size: (U, U), val: V) -> bool {
-        self.inner.insert(anchor, size, val)
+        self.inner.insert(anchor, size, val, &mut self.store)
     }
 
     /// Attempts to insert the value at the given point. Returns false if the point was out of
@@ -292,7 +294,7 @@ where
     ///
     /// [`.insert(_, (1, 1), _)`]: struct.Quadtree.html#method.insert
     pub fn insert_pt(&mut self, anchor: PointType<U>, val: V) -> bool {
-        self.inner.insert_pt(anchor, val)
+        self.inner.insert_pt(anchor, val, &mut self.store)
     }
 
     /// Returns an iterator over `(&'a ((U, U), (U, U)), &'a V)` tuples representing values
@@ -319,7 +321,7 @@ where
     /// assert_eq!(query_b.count(), 2);
     /// ```
     pub fn query(&self, anchor: PointType<U>, size: (U, U)) -> Query<U, V> {
-        self.inner.query(anchor, size)
+        self.inner.query(anchor, size, &self.store)
     }
 
     /// Returns an iterator (of type [`Query`]) over `(&'a ((U, U), (U, U)), &'a V)` tuples
@@ -330,7 +332,7 @@ where
     /// [`Query`]: struct.Query.html
     /// [`.query(anchor, (1, 1))`]: struct.Quadtree.html#method.query
     pub fn query_pt(&self, anchor: PointType<U>) -> Query<U, V> {
-        self.inner.query_pt(anchor)
+        self.inner.query_pt(anchor, &self.store)
     }
 
     /// Returns a mutable iterator (of type [`QueryMut`]) over
@@ -359,7 +361,7 @@ where
     ///
     /// [`QueryMut`]: struct.QueryMut.html
     pub fn query_mut(&mut self, anchor: PointType<U>, size: (U, U)) -> QueryMut<U, V> {
-        self.inner.query_mut(anchor, size)
+        self.inner.query_mut(anchor, size, &mut self.store)
     }
 
     /// Returns a mutable iterator over `(&'a ((U, U), (U, U)), &'a mut V)` tuples
@@ -369,7 +371,7 @@ where
     ///
     /// [`.query(anchor, (1, 1))`]: struct.Quadtree.html#method.query
     pub fn query_pt_mut(&mut self, anchor: PointType<U>) -> QueryMut<U, V> {
-        self.inner.query_pt_mut(anchor)
+        self.inner.query_pt_mut(anchor, &mut self.store)
     }
 
     /// Resets the quadtree to a totally empty state.
@@ -380,101 +382,106 @@ where
     /// Returns an iterator over all `(&((U, U), (U, U)), &V)` region/value pairs in the
     /// Quadtree.
     pub fn iter(&self) -> Iter<U, V> {
-        self.inner.iter()
+        self.inner.iter(&self.store)
     }
 
     /// Returns a mutable iterator over all `(&((U, U), (U, U)), &mut V)` region/value pairs in the
     /// Quadtree.
     pub fn iter_mut(&mut self) -> IterMut<U, V> {
-        self.inner.iter_mut()
+        self.inner.iter_mut(&mut self.store)
     }
 
     /// Returns an iterator over all `&'a ((U, U), (U, U))` regions in the Quadtree.
     pub fn regions(&self) -> Regions<U, V> {
         Regions {
-            inner: self.inner.iter(),
+            inner: self.inner.iter(&self.store),
         }
     }
 
     /// Returns an iterator over all `&'a V` values in the Quadtree.
     pub fn values(&self) -> Values<U, V> {
         Values {
-            inner: self.inner.iter(),
+            inner: self.inner.iter(&self.store),
         }
     }
 
     /// Returns a mutable iterator over all `&'a mut V` values in the Quadtree.
     pub fn values_mut(&mut self) -> ValuesMut<U, V> {
         ValuesMut {
-            inner: self.inner.iter_mut(),
+            inner: self.inner.iter_mut(&mut self.store),
         }
     }
 }
 
-/// `Extend<((U, U), V)>` will silently drop values whose coordinates do not fit in the region
-/// represented by the Quadtree. It is the responsibility of the callsite to ensure these points
-/// fit.
-impl<U, V> Extend<(PointType<U>, V)> for Quadtree<U, V>
-where
-    U: PrimInt,
-{
-    fn extend<T>(&mut self, iter: T)
-    where
-        T: IntoIterator<Item = (PointType<U>, V)>,
-    {
-        self.inner.extend(iter);
-    }
-}
-
-/// `Extend<(((U, U), (U, U), V)>` will silently drop values whose coordinates do not fit in the
-/// region represented by the Quadtree. It is the responsibility of the callsite to ensure these
-/// points fit.
-impl<U, V> Extend<(AreaType<U>, V)> for Quadtree<U, V>
-where
-    U: PrimInt,
-{
-    fn extend<T>(&mut self, iter: T)
-    where
-        T: IntoIterator<Item = (AreaType<U>, V)>,
-    {
-        self.inner.extend(iter);
-    }
-}
-
-// Immutable iterator for the Quadtree, returning by-reference.
-impl<'a, U, V> IntoIterator for &'a Quadtree<U, V>
-where
-    U: PrimInt,
-{
-    type Item = (&'a AreaType<U>, &'a V);
-    type IntoIter = Iter<'a, U, V>;
-
-    fn into_iter(self) -> Iter<'a, U, V> {
-        self.inner.iter()
-    }
-}
-
-// Mutable iterator for the Quadtree, returning by-mutable-reference.
-impl<'a, U, V> IntoIterator for &'a mut Quadtree<U, V>
-where
-    U: PrimInt,
-{
-    type Item = (&'a AreaType<U>, &'a mut V);
-    type IntoIter = IterMut<'a, U, V>;
-
-    fn into_iter(self) -> IterMut<'a, U, V> {
-        self.inner.iter_mut()
-    }
-}
-
-impl<U, V> IntoIterator for Quadtree<U, V>
-where
-    U: PrimInt,
-{
-    type Item = (AreaType<U>, V);
-    type IntoIter = IntoIter<U, V>;
-
-    fn into_iter(self) -> IntoIter<U, V> {
-        self.inner.into_iter()
-    }
-}
+// /// `Extend<((U, U), V)>` will silently drop values whose coordinates do not fit in the region
+// /// represented by the Quadtree. It is the responsibility of the callsite to ensure these points
+// /// fit.
+// impl<U, V> Extend<(PointType<U>, V)> for Quadtree<U, V>
+// where
+//     U: PrimInt,
+//     V: Clone,
+// {
+//     fn extend<T>(&mut self, iter: T)
+//     where
+//         T: IntoIterator<Item = (PointType<U>, V)>,
+//     {
+//         self.inner.extend(iter);
+//     }
+// }
+//
+// /// `Extend<(((U, U), (U, U), V)>` will silently drop values whose coordinates do not fit in the
+// /// region represented by the Quadtree. It is the responsibility of the callsite to ensure these
+// /// points fit.
+// impl<U, V> Extend<(AreaType<U>, V)> for Quadtree<U, V>
+// where
+//     U: PrimInt,
+//     V: Clone,
+// {
+//     fn extend<T>(&mut self, iter: T)
+//     where
+//         T: IntoIterator<Item = (AreaType<U>, V)>,
+//     {
+//         self.inner.extend(iter);
+//     }
+// }
+//
+// // Immutable iterator for the Quadtree, returning by-reference.
+// impl<'a, U, V> IntoIterator for &'a Quadtree<U, V>
+// where
+//     U: PrimInt,
+//     V: Clone,
+// {
+//     type Item = (&'a AreaType<U>, &'a V);
+//     type IntoIter = Iter<'a, U, V>;
+//
+//     fn into_iter(self) -> Iter<'a, U, V> {
+//         self.inner.iter()
+//     }
+// }
+//
+// // Mutable iterator for the Quadtree, returning by-mutable-reference.
+// impl<'a, U, V> IntoIterator for &'a mut Quadtree<U, V>
+// where
+//     U: PrimInt,
+//     V: Clone,
+// {
+//     type Item = (&'a AreaType<U>, &'a mut V);
+//     type IntoIter = IterMut<'a, U, V>;
+//
+//     fn into_iter(self) -> IterMut<'a, U, V> {
+//         self.inner.iter_mut()
+//     }
+// }
+//
+// impl<U, V> IntoIterator for Quadtree<U, V>
+// where
+//     U: PrimInt,
+//     V: Clone,
+// {
+//     type Item = (AreaType<U>, V);
+//     type IntoIter = IntoIter<U, V>;
+//
+//     fn into_iter(self) -> IntoIter<U, V> {
+//         self.inner.into_iter()
+//     }
+// }

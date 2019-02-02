@@ -197,6 +197,7 @@ mod string {
 // then query for the struct by location and extract some public field from it.
 #[test]
 fn quadtree_struct() {
+    #[derive(Clone)]
     struct Foo {
         pub baz: String,
     };
@@ -216,39 +217,39 @@ fn quadtree_struct() {
     );
 }
 
-// Since we implement Extend<((U, U), V)> for Quadtree<U, V>, test out .extend()ing with a real
-// iterator.
-mod extend {
-    use super::*;
-
-    #[test]
-    fn extend_with_just_points() {
-        let mut q = Quadtree::<u32, i8>::new(4);
-        assert!(q.is_empty());
-
-        q.extend(vec![((0, 0), 0), ((2, 3), 5)]);
-
-        debug_assert_eq!(q.len(), 2);
-
-        debug_assert_eq!(q.query_pt((0, 0)).next(), Some((&((0, 0), (1, 1)), &0)));
-        debug_assert_eq!(q.query_pt((2, 3)).next(), Some((&((2, 3), (1, 1)), &5)));
-    }
-
-    #[test]
-    fn extend_with_points_and_regions() {
-        let mut q = Quadtree::<u32, i8>::new(4);
-        assert!(q.is_empty());
-
-        q.extend(vec![(((0, 0), (1, 2)), 0), (((2, 3), (3, 4)), 5)]);
-
-        debug_assert_eq!(q.len(), 2);
-
-        dbg!(&q);
-
-        debug_assert_eq!(q.query_pt((0, 0)).next(), Some((&((0, 0), (1, 2)), &0)));
-        debug_assert_eq!(q.query_pt((2, 3)).next(), Some((&((2, 3), (3, 4)), &5)));
-    }
-}
+// // Since we implement Extend<((U, U), V)> for Quadtree<U, V>, test out .extend()ing with a real
+// // iterator.
+// mod extend {
+//     use super::*;
+//
+//     #[test]
+//     fn extend_with_just_points() {
+//         let mut q = Quadtree::<u32, i8>::new(4);
+//         assert!(q.is_empty());
+//
+//         q.extend(vec![((0, 0), 0), ((2, 3), 5)]);
+//
+//         debug_assert_eq!(q.len(), 2);
+//
+//         debug_assert_eq!(q.query_pt((0, 0)).next(), Some((&((0, 0), (1, 1)), &0)));
+//         debug_assert_eq!(q.query_pt((2, 3)).next(), Some((&((2, 3), (1, 1)), &5)));
+//     }
+//
+//     #[test]
+//     fn extend_with_points_and_regions() {
+//         let mut q = Quadtree::<u32, i8>::new(4);
+//         assert!(q.is_empty());
+//
+//         q.extend(vec![(((0, 0), (1, 2)), 0), (((2, 3), (3, 4)), 5)]);
+//
+//         debug_assert_eq!(q.len(), 2);
+//
+//         dbg!(&q);
+//
+//         debug_assert_eq!(q.query_pt((0, 0)).next(), Some((&((0, 0), (1, 2)), &0)));
+//         debug_assert_eq!(q.query_pt((2, 3)).next(), Some((&((2, 3), (3, 4)), &5)));
+//     }
+// }
 
 #[test]
 fn debug() {
