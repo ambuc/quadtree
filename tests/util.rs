@@ -1,5 +1,7 @@
-use num::{cast::FromPrimitive, PrimInt};
-use std::hash::Hash;
+use {
+    num::{cast::FromPrimitive, PrimInt},
+    std::hash::Hash,
+};
 
 // Inspired by google/googletest's UnorderedElementsAre().
 // https://github.com/google/googletest/blob/master/googlemock/docs/CheatSheet.md#container-matchers
@@ -13,8 +15,7 @@ where
     Y: IntoIterator<Item = T>,
     Y::Item: PartialEq + Eq + Hash,
 {
-    use std::collections::HashSet;
-    use std::iter::FromIterator;
+    use std::{collections::HashSet, iter::FromIterator};
 
     let hs1: HashSet<T> = HashSet::from_iter(x);
     let hs2: HashSet<T> = HashSet::from_iter(y);

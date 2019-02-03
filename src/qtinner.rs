@@ -12,12 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::entry::Entry;
-use crate::geometry::area::Area;
-use crate::geometry::point::{Point, PointType};
-use crate::types::StoreType;
-use num::PrimInt;
-use uuid::Uuid;
+use {
+    crate::{
+        entry::Entry,
+        geometry::{
+            area::Area,
+            point::{Point, PointType},
+        },
+        types::StoreType,
+    },
+    num::PrimInt,
+    uuid::Uuid,
+};
 
 #[derive(Clone, PartialEq, Eq)]
 pub(crate) struct QTInner<U>

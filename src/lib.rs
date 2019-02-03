@@ -65,22 +65,32 @@
 extern crate num;
 
 pub mod entry;
+
 mod geometry;
 mod qtinner;
+mod traversal;
 mod types;
 mod uuid_iter;
 
-use crate::entry::Entry;
-use crate::geometry::area::{Area, AreaType};
-use crate::geometry::point::PointType;
-use crate::qtinner::QTInner;
-use crate::types::StoreType;
-use crate::uuid_iter::UuidIter;
-use num::PrimInt;
-use std::collections::HashMap;
-use std::collections::HashSet;
-use std::iter::FusedIterator;
-use uuid::Uuid;
+use {
+    crate::{
+        entry::Entry,
+        geometry::{
+            area::{Area, AreaType},
+            point::PointType,
+        },
+        qtinner::QTInner,
+        traversal::Traversal,
+        types::StoreType,
+        uuid_iter::UuidIter,
+    },
+    num::PrimInt,
+    std::{
+        collections::{HashMap, HashSet},
+        iter::FusedIterator,
+    },
+    uuid::Uuid,
+};
 
 //   .d88b.  db    db  .d8b.  d8888b. d888888b d8888b. d88888b d88888b
 //  .8P  Y8. 88    88 d8' `8b 88  `8D `~~88~~' 88  `8D 88'     88'
@@ -113,9 +123,8 @@ use uuid::Uuid;
 ///  - `dimensions` is a tuple containing the width and height of the region.
 ///
 /// Points should be represented by regions with dimensions `(1, 1)`.
-///
-///   - TODO(ambuc): Implement `.delete_by(anchor, dimensions, fn)`: `.retain()` is the inverse.
-///   - TODO(ambuc): Implement `FromIterator<(K, V)>` for `Quadtree`.
+// TODO(ambuc): Implement `.delete_by(anchor, dimensions, fn)`: `.retain()` is the inverse.
+// TODO(ambuc): Implement `FromIterator<(K, V)>` for `Quadtree`.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Quadtree<U, V>
 where
@@ -610,23 +619,6 @@ where
 
 impl<U, V> FusedIterator for Iter<'_, U, V> where U: PrimInt {}
 
-#[derive(Debug, Clone)]
-enum Traversal {
-    Overlapping,
-    Strict,
-}
-impl Traversal {
-    fn eval<U>(&self, bounding_box: Area<U>, query_region: Area<U>) -> bool
-    where
-        U: PrimInt,
-    {
-        match self {
-            Traversal::Overlapping => query_region.intersects(bounding_box),
-            Traversal::Strict => query_region.contains(bounding_box),
-        }
-    }
-}
-
 //  .d88b.  db    db d88888b d8888b. db    db
 // .8P  Y8. 88    88 88'     88  `8D `8b  d8'
 // 88    88 88    88 88ooooo 88oobY'  `8bd8'
@@ -645,10 +637,10 @@ pub struct Query<'a, U, V>
 where
     U: PrimInt,
 {
-    pub(crate) query_region: Area<U>,
-    pub(crate) uuid_iter: UuidIter<'a, U>,
+    query_region: Area<U>,
+    uuid_iter: UuidIter<'a, U>,
     store: &'a StoreType<U, V>,
-    traversal: Traversal,
+    traversal_method: Traversal,
 }
 
 impl<'a, U, V> Query<'a, U, V>
@@ -659,24 +651,25 @@ where
         query_region: Area<U>,
         qt: &'a QTInner<U>,
         store: &'a StoreType<U, V>,
-        traversal: Traversal,
+        traversal_method: Traversal,
     ) -> Query<'a, U, V>
     where
         U: PrimInt,
     {
-        let q = Query {
+        // Construct the UuidIter first...
+        let mut uuid_iter = UuidIter::new(qt);
+
+        // ...and descend it to the appropriate level. Depending on the type of @traversal_method,
+        // this will potentially collect intersecting regions along the way. Avoiding combing the
+        // entire Quadtree is essential for the efficiency of a query.
+        uuid_iter.query_optimization(query_region, traversal_method);
+
+        Query {
             query_region,
-            uuid_iter: UuidIter::new(qt),
+            uuid_iter,
             store,
-            traversal,
-        };
-        // TODO(ambuc): descend + collect. Maybe even make this an operation on a UuidIter type.
-        // (a) uuid_iter should be an iterator over the lowest possible node which totally contains
-        //     the region, and
-        // (b) we should pop onto the uuid stack each and every uuid we encounter along the way.
-        //     These don't need to be checked!! If they correspond to a node we are descending
-        //     past, they definitely intersect.
-        q
+            traversal_method,
+        }
     }
 }
 
@@ -688,12 +681,9 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        // TODO(ambuc): There's an optimization over the inner iterator here -- we don't need to
-        // descend the whole tree, just those subquadrants which intersect our held @query_region.
-        // This is essential to performance.
         if let Some(uuid) = self.uuid_iter.next() {
             if let Some(entry) = self.store.get(&uuid) {
-                if self.traversal.eval(entry.area(), self.query_region) {
+                if self.traversal_method.eval(entry.area(), self.query_region) {
                     return Some(entry);
                 }
             }

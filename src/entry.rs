@@ -12,10 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::geometry::area::{Area, AreaType};
-use crate::geometry::point::PointType;
-use num::PrimInt;
-use uuid::Uuid;
+use {
+    crate::geometry::{
+        area::{Area, AreaType},
+        point::PointType,
+    },
+    num::PrimInt,
+    uuid::Uuid,
+};
 
 /// Lightweight encapsulation representing a region/value pair being returned by value from the
 /// [`Quadtree`].
@@ -43,11 +47,11 @@ use uuid::Uuid;
 ///
 /// // But the next time, it will have reverted to the default.
 /// assert_ne!(hit.value_ref(), &4.56);
-/// // TODO(ambuc): Entry should hold Box<V> for better return-by-value semantics.
 ///
 /// ```
 ///
 /// [`Quadtree`]: ../struct.Quadtree.html
+// TODO(ambuc): Entry should hold Box<V> for better return-by-value semantics.
 #[derive(Debug, Hash, PartialEq, Eq)]
 pub struct Entry<U, V>
 where

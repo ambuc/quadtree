@@ -16,8 +16,7 @@ mod util; // For unordered_elements_are.
 
 // For testing .query(), .modify().
 mod query_tests {
-    use crate::util::unordered_elements_are;
-    use quadtree_impl::Quadtree;
+    use {crate::util::unordered_elements_are, quadtree_impl::Quadtree};
 
     #[test]
     fn query_empty() {
