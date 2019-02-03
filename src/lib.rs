@@ -110,7 +110,6 @@ use uuid::Uuid;
 ///
 ///   - TODO(ambuc): In lieu of mutable getters, expose the held UUID and allow specific lookups
 ///   - TODO(ambuc): Size hints in iterators
-///   - TODO(ambuc): Implement strictly inclusive getters.
 ///   - TODO(ambuc): Implement `.clear(anchor, size)`.
 ///   - TODO(ambuc): Implement `.delete(anchor, size)`.
 ///   - TODO(ambuc): Implement `.delete_by(anchor, size, fn)`.
@@ -337,8 +336,23 @@ where
     /// assert_eq!(query_b.count(), 2);
     /// ```
     pub fn query(&self, anchor: PointType<U>, size: (U, U)) -> Query<U, V> {
-        let a = (anchor, size).into();
-        Query::new(a, &self.inner, &self.store)
+        Query::new(
+            (anchor, size).into(),
+            &self.inner,
+            &self.store,
+            Traversal::Overlapping,
+        )
+    }
+
+    ///  `query_strict()` behaves the same as `query()`, except that the regions returned are
+    ///  guaranteed to be totally contained within the query region.
+    pub fn query_strict(&self, anchor: PointType<U>, size: (U, U)) -> Query<U, V> {
+        Query::new(
+            (anchor, size).into(),
+            &self.inner,
+            &self.store,
+            Traversal::Strict,
+        )
     }
 
     /// Returns an iterator (of type [`Query`]) over `(&'a ((U, U), (U, U)), &'a V)` tuples
@@ -349,8 +363,23 @@ where
     /// [`Query`]: struct.Query.html
     /// [`.query(anchor, (1, 1))`]: struct.Quadtree.html#method.query
     pub fn query_pt(&self, anchor: PointType<U>) -> Query<U, V> {
-        let a = (anchor, Self::default_region_size()).into();
-        Query::new(a, &self.inner, &self.store)
+        Query::new(
+            (anchor, Self::default_region_size()).into(),
+            &self.inner,
+            &self.store,
+            Traversal::Overlapping,
+        )
+    }
+
+    ///  `query_pt_strict()` behaves the same as `query_pt()`, except that the regions returned are
+    ///  guaranteed to be totally contained within the query region.
+    pub fn query_pt_strict(&self, pt: PointType<U>) -> Query<U, V> {
+        Query::new(
+            (pt, Self::default_region_size()).into(),
+            &self.inner,
+            &self.store,
+            Traversal::Strict,
+        )
     }
 
     /// Accepts a modification lambda of type `Fn(&mut V) + Copy` and applies it to all elements in
@@ -511,6 +540,23 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
+enum Traversal {
+    Overlapping,
+    Strict,
+}
+impl Traversal {
+    fn eval<U>(&self, bounding_box: Area<U>, query_region: Area<U>) -> bool
+    where
+        U: PrimInt,
+    {
+        match self {
+            Traversal::Overlapping => query_region.intersects(bounding_box),
+            Traversal::Strict => query_region.contains(bounding_box),
+        }
+    }
+}
+
 //  .d88b.  db    db d88888b d8888b. db    db
 // .8P  Y8. 88    88 88'     88  `8D `8b  d8'
 // 88    88 88    88 88ooooo 88oobY'  `8bd8'
@@ -533,6 +579,7 @@ where
     pub(crate) query_region: Area<U>,
     pub(crate) uuid_iter: UuidIter<'a, U>,
     store: &'a StoreType<U, V>,
+    traversal: Traversal,
 }
 
 impl<'a, U, V> Query<'a, U, V>
@@ -543,6 +590,7 @@ where
         query_region: Area<U>,
         qt: &'a QTInner<U>,
         store: &'a StoreType<U, V>,
+        traversal: Traversal,
     ) -> Query<'a, U, V>
     where
         U: PrimInt,
@@ -551,6 +599,7 @@ where
             query_region,
             uuid_iter: UuidIter::new(qt),
             store,
+            traversal,
         };
         // TODO(ambuc): descend + collect. Maybe even make this an operation on a UuidIter type.
         //
@@ -576,11 +625,11 @@ where
         // This is essential to performance.
         if let Some(uuid) = self.uuid_iter.next() {
             if let Some((region, value)) = self.store.get(&uuid) {
-                if self.query_region.intersects(*region) {
+                if self.traversal.eval(*region, self.query_region) {
                     return Some((region.inner(), value));
                 }
-                return self.next();
             }
+            return self.next();
         }
         None
     }

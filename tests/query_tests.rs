@@ -157,6 +157,81 @@ mod query_tests {
     }
 
     #[test]
+    fn query_strict_in_region() {
+        let mut q = Quadtree::<u32, u8>::new(4);
+        //   0  1  2  3  4  5  6
+        // 0 +--+--+--+--+--+--+
+        //   |  |  |  |  |  |  |
+        // 1 +--+--+--+--+--+--+
+        //   |  |  |  |  |  |  |
+        // 2 +--+--o o o o--+--+  o @ (2, 2)->(2x2) #10
+        //   |  |   o o o   |  |  x @ (3, 3)->(2x2) #55
+        // 3 +--+--o oxoxox x--+
+        //   |  |   o oxox x   |
+        // 4 +--+--o oxoxox x--+
+        //   |  |  |   x x x   |
+        // 5 +--+--+--x x x x--+
+        //   |  |  |  |  |  |  |
+        // 6 +--+--+--+--+--+--+
+        q.insert((2, 2), (2, 2), 10);
+        q.insert((3, 3), (2, 2), 55);
+
+        let expected_ten = (&((2, 2), (2, 2)), &10);
+        let expected_fifty_five = (&((3, 3), (2, 2)), &55);
+
+        // Queries which turn up empty:
+        debug_assert_eq!(q.query_strict((1, 1), (1, 1)).next(), None);
+        debug_assert_eq!(q.query_strict((0, 0), (2, 2)).next(), None);
+        debug_assert_eq!(q.query_strict((0, 0), (6, 2)).next(), None);
+        debug_assert_eq!(q.query_strict((0, 0), (2, 6)).next(), None);
+
+        // Queries which capture portions of #10 but not enough.
+        debug_assert_eq!(q.query_strict((2, 2), (1, 1)).next(), None);
+        debug_assert_eq!(q.query_strict((2, 3), (1, 1)).next(), None);
+        debug_assert_eq!(q.query_strict((3, 2), (1, 1)).next(), None);
+        debug_assert_eq!(q.query_strict((2, 2), (2, 1)).next(), None);
+        debug_assert_eq!(q.query_strict((2, 2), (1, 2)).next(), None);
+
+        // Queries which capture portions of #55 but not enough.
+        debug_assert_eq!(q.query_strict((3, 4), (1, 1)).next(), None);
+        debug_assert_eq!(q.query_strict((4, 3), (1, 1)).next(), None);
+        debug_assert_eq!(q.query_strict((4, 4), (1, 1)).next(), None);
+        debug_assert_eq!(q.query_strict((4, 3), (1, 2)).next(), None);
+        debug_assert_eq!(q.query_strict((3, 4), (2, 2)).next(), None);
+
+        // Queries which capture portions of both #10 and #55. but still aren't enough
+
+        debug_assert_eq!(q.query_strict((3, 3), (1, 1)).next(), None);
+
+        // Queries which contain one of the other:
+        debug_assert_eq!(
+            q.query_strict((3, 3), (2, 2)).next(),
+            Some(expected_fifty_five)
+        );
+        debug_assert_eq!(
+            q.query_strict((3, 3), (3, 3)).next(),
+            Some(expected_fifty_five)
+        );
+        debug_assert_eq!(
+            q.query_strict((3, 3), (4, 4)).next(),
+            Some(expected_fifty_five)
+        );
+        debug_assert_eq!(q.query_strict((0, 0), (4, 4)).next(), Some(expected_ten));
+        debug_assert_eq!(q.query_strict((1, 1), (3, 3)).next(), Some(expected_ten));
+        debug_assert_eq!(q.query_strict((2, 2), (2, 2)).next(), Some(expected_ten));
+
+        // A query which contains both:
+        debug_assert!(unordered_elements_are(
+            q.query_strict((0, 0), (6, 6)),
+            vec![expected_ten, expected_fifty_five]
+        ));
+        debug_assert!(unordered_elements_are(
+            q.query_strict((2, 2), (6, 6)),
+            vec![expected_fifty_five, expected_ten]
+        ));
+    }
+
+    #[test]
     fn query_exhibiting_collection() {
         let mut q: Quadtree<u8, f32> = Quadtree::new(2);
         q.insert((0, 0), (2, 2), 1.234);
