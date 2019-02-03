@@ -109,7 +109,6 @@ use uuid::Uuid;
 ///
 /// Points should be represented by regions with dimensions `(1, 1)`.
 ///
-///   - TODO(ambuc): In lieu of mutable getters, expose the held UUID and allow specific lookups
 ///   - TODO(ambuc): Fix size hints in iterators
 ///   - TODO(ambuc): Implement `.delete_by(anchor, size, fn)`: `.retain()` is the inverse.
 ///   - TODO(ambuc): Implement `FromIterator<(K, V)>` for `Quadtree`.
@@ -264,7 +263,8 @@ where
         self.inner.region.contains((anchor, size).into())
     }
 
-    /// Inserts the value at the requested region.
+    /// Inserts the value at the requested region. Returns a unique `Uuid` representing this
+    /// instance of the object in the Quadtree.
     ///   - If the requested region does not fit totally in the Quadtree, `.insert()` will fail
     ///     silently. Callsites may want to use `.contains()` first.
     ///   - If the requested region only fits partially in the Quadtree, `.insert()` will mark the
@@ -276,15 +276,65 @@ where
     /// ```
     /// use quadtree_impl::Quadtree;
     ///
-    /// let mut qt = Quadtree::<u32, i64>::new(2);
+    /// let mut qt = Quadtree::<u32, String>::new(2);
     ///
-    /// // Returns whether or not the requested region fits in the quadtree.
-    /// qt.insert((0, 0), (1, 1), 500000);
-    /// qt.insert((0, 0), (5, 4), 27500);
+    /// let uuid_a_1 = qt.insert((0, 0), (1, 1), "a".to_string());
+    /// let uuid_a_2 = qt.insert((0, 0), (1, 1), "a".to_string());
+    ///
+    /// // Even though we inserted "a" at the same point in the Quadtree, the two uuids returned
+    /// // were not the same.
+    /// assert_ne!(uuid_a_1, uuid_a_2);
     /// ```
-    pub fn insert(&mut self, anchor: PointType<U>, size: (U, U), val: V) {
+    pub fn insert(&mut self, anchor: PointType<U>, size: (U, U), val: V) -> Uuid {
         self.inner
             .insert_val_at_region((anchor, size).into(), val, &mut self.store)
+    }
+
+    /// Provides access to a single value in the Quadtree, given a previously known `Uuid`. This
+    /// `Uuid` might have been saved by value at [`insert`].
+    ///
+    /// ```
+    /// use quadtree_impl::Quadtree;
+    /// use uuid::Uuid;
+    ///
+    /// let mut qt = Quadtree::<u32, f32>::new(4);
+    ///
+    /// let uuid: Uuid = qt.insert((0, 1), (2, 3), 9.87);
+    ///
+    /// assert_eq!(qt.get(&uuid), Some(&9.87));
+    ///
+    /// ```
+    ///
+    /// [`insert`]: struct.Quadtree.html#method.insert
+    pub fn get<'a>(&'a self, uuid: &Uuid) -> Option<&'a V> {
+        self.store
+            .get(uuid)
+            .map_or(None, |(_region, value)| Some(value))
+    }
+
+    /// A mutable variant of `.get()`.
+    ///
+    /// ```
+    /// use quadtree_impl::Quadtree;
+    /// use uuid::Uuid;
+    ///
+    /// let mut qt = Quadtree::<u32, f32>::new(4);
+    ///
+    /// let uuid: Uuid = qt.insert((0, 1), (2, 3), 9.87);
+    ///
+    /// if let Some(val) = qt.get_mut(&uuid) {
+    ///   *val += 1.0;
+    /// }
+    ///
+    /// assert_eq!(qt.get(&uuid), Some(&10.87));
+    ///
+    /// ```
+    ///
+    /// [`.get()`]: struct.Quadtree.html#method.get
+    pub fn get_mut<'a>(&'a mut self, uuid: &Uuid) -> Option<&'a mut V> {
+        self.store
+            .get_mut(uuid)
+            .map_or(None, |(_region, value)| Some(value))
     }
 
     /// Returns an iterator over [`EntryRef<U, V>`] structs representing values

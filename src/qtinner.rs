@@ -88,11 +88,11 @@ where
         req: Area<U>,
         val: V,
         store: &mut StoreType<U, V>,
-    ) {
+    ) -> Uuid {
         let uuid = Uuid::new_v4();
         store.insert(uuid, (req, val));
-
-        self.insert_uuid_at_region(req, uuid, store)
+        self.insert_uuid_at_region(req, uuid, store);
+        uuid.clone()
     }
 
     // Attempts to insert the value at the requested region. Returns false if the region was too
