@@ -563,7 +563,13 @@ where
             store,
             resource_type: std::marker::PhantomData,
         };
-        // TODO(ambuc): descend + collect
+        // TODO(ambuc): descend + collect. Maybe even make this an operation on a UuidIter type.
+        //
+        // (a) uuid_iter should be an iterator over the lowest possible node which totally contains
+        //     the region, and
+        // (b) we should pop onto the uuid stack each and every uuid we encounter along the way.
+        //     These don't need to be checked!! If they correspond to a node we are descending
+        //     past, they definitely intersect.
         q
     }
 }
