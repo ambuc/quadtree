@@ -706,7 +706,7 @@ where
     U: PrimInt,
 {
     pub(crate) fn new(qt: QTInner<U>, store: StoreType<U, V>) -> IntoIter<U, V> {
-        let len = qt.len();
+        let len = store.len();
         IntoIter {
             uuid_stack: Vec::new(),
             qt_stack: vec![qt],

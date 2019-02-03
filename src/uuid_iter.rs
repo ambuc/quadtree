@@ -46,7 +46,7 @@ where
         UuidIter {
             uuid_stack: vec![],
             qt_stack: vec![qt],
-            remaining: qt.len(),
+            remaining: 0,
             visited: HashSet::new(),
         }
     }

@@ -67,14 +67,6 @@ where
         Self::new_with_area((anchor, (width, height)).into(), depth)
     }
 
-    pub(crate) fn len(&self) -> usize {
-        self.kept_uuids.len()
-            + self
-                .subquadrants
-                .as_ref()
-                .map_or(0, |a| a.iter().map(|q| q.as_ref().len()).sum::<usize>())
-    }
-
     pub(crate) fn reset(&mut self) {
         self.kept_uuids.clear();
         self.subquadrants = None;
