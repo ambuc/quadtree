@@ -33,7 +33,6 @@ where
 {
     uuid_stack: Vec<&'a Uuid>,
     qt_stack: Vec<&'a QTInner<U>>,
-    // TODO(ambuc): Fix @remaining.
     remaining: usize,
     visited: HashSet<Uuid>,
 }

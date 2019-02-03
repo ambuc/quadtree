@@ -110,9 +110,8 @@ use uuid::Uuid;
 /// Points should be represented by regions with dimensions `(1, 1)`.
 ///
 ///   - TODO(ambuc): In lieu of mutable getters, expose the held UUID and allow specific lookups
-///   - TODO(ambuc): Size hints in iterators
-///   - TODO(ambuc): Implement `.delete_by(anchor, size, fn)`.
-///   - TODO(ambuc): Implement `.retain(anchor, size, fn)`.
+///   - TODO(ambuc): Fix size hints in iterators
+///   - TODO(ambuc): Implement `.delete_by(anchor, size, fn)`: `.retain()` is the inverse.
 ///   - TODO(ambuc): Implement `FromIterator<(K, V)>` for `Quadtree`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Quadtree<U, V>
@@ -414,6 +413,32 @@ where
     /// The default behavior of `.delete()` is to delete and return any intersecting regions or
     /// points, but the callsite could use [`.delete_strict()`] instead.
     ///
+    /// ```
+    /// use quadtree_impl::{IntoIter, Quadtree, entry::Entry};
+    ///
+    /// let mut qt = Quadtree::<u32, f64>::new(4);
+    ///
+    /// qt.insert((0, 0), (2, 2), 1.23);
+    /// qt.insert((1, 1), (3, 2), 4.56);
+    /// //   0123
+    /// // 0 ░░
+    /// // 1 ░▓╳░  <-- ╳ is the deletion region
+    /// // 2  ░░░
+    ///
+    /// let mut returned_entries: IntoIter<u32, f64> = qt.delete((2, 1), (1, 1));
+    /// // We've removed one object from the Quadtree.
+    /// assert_eq!(returned_entries.len(), 1);
+    /// assert_eq!(qt.len(), 1);
+    ///
+    /// // qt.delete() returns a struct of type IntoIter<u32, f64>.
+    /// let hit: Entry<u32, f64> = returned_entries.next().unwrap();
+    /// // IntoIter is an iterator over type Entry<u32, f64>, which makes accessible the returned
+    /// // region and value.
+    /// assert_eq!(hit.value_ref(), &4.56);
+    /// assert_eq!(hit.region(), ((1, 1), (3, 2)));
+    ///
+    /// ```
+    ///
     /// [`IntoIter<U, V>`]: struct.IntoIter.html
     /// [`Entry<U, V>`]: entry/struct.Entry.html
     /// [`.delete_strict()`]: struct.Quadtree.html#method.delete_strict
@@ -592,7 +617,6 @@ where
             traversal,
         };
         // TODO(ambuc): descend + collect. Maybe even make this an operation on a UuidIter type.
-        //
         // (a) uuid_iter should be an iterator over the lowest possible node which totally contains
         //     the region, and
         // (b) we should pop onto the uuid stack each and every uuid we encounter along the way.

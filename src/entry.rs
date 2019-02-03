@@ -21,7 +21,30 @@ use uuid::Uuid;
 /// [`Quadtree`].
 ///
 /// ```
-/// // TODO(ambuc): Add example here once .delete() is written
+/// use quadtree_impl::{IntoIter, Quadtree, entry::Entry};
+///
+/// let mut qt = Quadtree::<u32, f64>::new(4);
+/// qt.insert((1, 1), (3, 2), 4.56);
+///
+/// let mut returned_entries: IntoIter<u32, f64> = qt.delete((2, 1), (1, 1));
+///
+/// let mut hit: Entry<u32, f64> = returned_entries.next().unwrap();
+/// assert_eq!(hit.region(), ((1, 1), (3, 2)));
+/// assert_eq!(hit.anchor(), (1, 1));
+/// assert_eq!(hit.width(), 3);
+/// assert_eq!(hit.height(), 2);
+///
+/// // The held value can be accessed by reference.
+/// assert_eq!(hit.value_ref(), &4.56);
+///
+/// // The held value can be transferred out once:
+/// let value: f64 = hit.value();
+/// assert_eq!(value, 4.56);
+///
+/// // But the next time, it will have reverted to the default.
+/// assert_ne!(hit.value_ref(), &4.56);
+/// // TODO(ambuc): Entry should hold Box<V> for better return-by-value semantics.
+///
 /// ```
 ///
 /// [`Quadtree`]: ../struct.Quadtree.html
@@ -45,27 +68,32 @@ where
             uuid,
         }
     }
+
     /// The held region, in standard (anchor, dimensions) form.
     pub fn region(&self) -> AreaType<U> {
         *self.region.inner()
     }
+
     /// The top-left coordinate of the held region.
     pub fn anchor(&self) -> PointType<U> {
         self.region().0
     }
+
     fn dimensions(&self) -> (U, U) {
         self.region().1
     }
+
     /// The width of the held region.
     pub fn width(&self) -> U {
         self.dimensions().0
     }
+
     /// The height of the held region.
     pub fn height(&self) -> U {
         self.dimensions().1
     }
+
     /// The held value, returned by-value. `V` must implement `std::default::Default` (for now).
-    // TODO(ambuc): Is there really not a better way to return a value?
     pub fn value(&mut self) -> V
     where
         V: std::default::Default,
@@ -73,10 +101,12 @@ where
         let elem = std::mem::replace(&mut self.value, V::default());
         elem
     }
+
     /// The held value, returned by-reference.
     pub fn value_ref<'a>(&'a self) -> &'a V {
         &self.value
     }
+
     /// The held (region, value) tuple.
     pub fn inner(&mut self) -> (AreaType<U>, V)
     where
@@ -129,25 +159,31 @@ where
     pub fn region(&self) -> &'a AreaType<U> {
         self.inner.0.inner()
     }
+
     /// The top-left coordinate of the held region.
     pub fn anchor(&self) -> &'a PointType<U> {
         &self.region().0
     }
+
     fn dimensions(&self) -> &'a (U, U) {
         &self.region().1
     }
+
     /// The width of the held region.
     pub fn width(&self) -> &'a U {
         &self.dimensions().0
     }
+
     /// The height of the held region.
     pub fn height(&self) -> &'a U {
         &self.dimensions().1
     }
+
     /// The held value, returned by-reference.
     pub fn value(&self) -> &'a V {
         &self.inner.1
     }
+
     /// The held (region, value) tuple, returned by-reference.
     pub fn inner(&self) -> (&'a AreaType<U>, &'a V) {
         (self.region(), self.value())
