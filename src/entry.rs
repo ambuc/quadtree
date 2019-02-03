@@ -16,18 +16,81 @@ use crate::geometry::area::{Area, AreaType};
 use crate::geometry::point::PointType;
 use num::PrimInt;
 
+/// Lightweight encapsulation representing a region/value pair being returned by value from the
+/// [`Quadtree`].
+///
+/// ```
+/// // TODO(ambuc): Add example here once .delete() is written
+/// ```
+///
+/// [`Quadtree`]: ../struct.Quadtree.html
+#[derive(Debug, Hash, PartialEq, Eq)]
+pub struct Entry<U, V>
+where
+    U: PrimInt,
+{
+    region: Area<U>,
+    value: V,
+}
+impl<U, V> Entry<U, V>
+where
+    U: PrimInt,
+{
+    pub(crate) fn new(inner: (Area<U>, V)) -> Entry<U, V> {
+        Entry {
+            region: inner.0,
+            value: inner.1,
+        }
+    }
+    /// The held region, in standard (anchor, dimensions) form.
+    pub fn region(&self) -> AreaType<U> {
+        *self.region.inner()
+    }
+    /// The top-left coordinate of the held region.
+    pub fn anchor(&self) -> PointType<U> {
+        self.region().0
+    }
+    fn dimensions(&self) -> (U, U) {
+        self.region().1
+    }
+    /// The width of the held region.
+    pub fn width(&self) -> U {
+        self.dimensions().0
+    }
+    /// The height of the held region.
+    pub fn height(&self) -> U {
+        self.dimensions().1
+    }
+    /// The held value, returned by-value. `V` must implement `std::default::Default` (for now).
+    // TODO(ambuc): Is there really not a better way to return a value?
+    pub fn value(&mut self) -> V
+    where
+        V: std::default::Default,
+    {
+        let elem = std::mem::replace(&mut self.value, V::default());
+        elem
+    }
+    /// The held (region, value) tuple.
+    pub fn inner(&mut self) -> (AreaType<U>, V)
+    where
+        V: std::default::Default,
+    {
+        (self.region(), self.value())
+    }
+}
+
 /// Lightweight reference type representing a region/value pair in the [`Quadtree`].
 ///
 /// ```
 /// use quadtree_impl::Quadtree;
-/// use quadtree_impl::entry::Entry;
+/// use quadtree_impl::entry::EntryRef;
 ///
 /// let mut qt = Quadtree::<u32, f32>::new(4);
 ///
 /// qt.insert((0, 5), (7, 7), 21.01);
 ///
 /// // We can use the Entry API to destructure the result.
-/// let entry: Entry<u32, f32> = qt.query((0, 5), (1, 1)).next().unwrap();
+/// let entry: EntryRef<u32, f32> = qt.query((0, 5), (1, 1)).next().unwrap();
 ///
 /// assert_eq!(entry.region(), &((0, 5), (7, 7)));
 /// assert_eq!(entry.anchor(), &(0, 5));
@@ -39,45 +102,45 @@ use num::PrimInt;
 ///
 /// [`Quadtree`]: ../struct.Quadtree.html
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
-pub struct Entry<'a, U, V>
+pub struct EntryRef<'a, U, V>
 where
     U: PrimInt,
 {
     inner: &'a (Area<U>, V),
 }
 
-impl<'a, U, V> Entry<'a, U, V>
+impl<'a, U, V> EntryRef<'a, U, V>
 where
     U: PrimInt,
 {
-    pub(crate) fn new(inner: &'a (Area<U>, V)) -> Entry<'a, U, V> {
-        Entry { inner }
+    pub(crate) fn new(inner: &'a (Area<U>, V)) -> EntryRef<'a, U, V> {
+        EntryRef { inner }
     }
 
-    /// The region held in this `Entry`, in standard `&'a ((U, U), (U, U))` form, where the first
-    /// tuple are the x/y coordinates of the region's anchor point (in its top-left corner), and
-    /// the second tuple are the width/height of the region.
+    /// The held region, in standard (anchor, dimensions) form.
     pub fn region(&self) -> &'a AreaType<U> {
         self.inner.0.inner()
     }
-    /// The top-left coordinate of the region held in this `Entry`.
+    /// The top-left coordinate of the held region.
     pub fn anchor(&self) -> &'a PointType<U> {
         &self.region().0
     }
     fn dimensions(&self) -> &'a (U, U) {
         &self.region().1
     }
+    /// The width of the held region.
     pub fn width(&self) -> &'a U {
         &self.dimensions().0
     }
+    /// The height of the held region.
     pub fn height(&self) -> &'a U {
         &self.dimensions().1
     }
-    /// The value held in this `Entry`.
+    /// The held value, returned by-reference.
     pub fn value(&self) -> &'a V {
         &self.inner.1
     }
-    /// The `(region, value)` tuple held in this `Entry`.
+    /// The held (region, value) tuple, returned by-reference.
     pub fn inner(&self) -> (&'a AreaType<U>, &'a V) {
         (self.region(), self.value())
     }

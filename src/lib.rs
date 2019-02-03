@@ -70,7 +70,7 @@ mod qtinner;
 mod types;
 mod uuid_iter;
 
-use crate::entry::Entry;
+use crate::entry::{Entry, EntryRef};
 use crate::geometry::area::{Area, AreaType};
 use crate::geometry::point::PointType;
 use crate::qtinner::QTInner;
@@ -310,7 +310,7 @@ where
         )
     }
 
-    /// Returns an iterator over [`Entry<U, V>`] structs representing values
+    /// Returns an iterator over [`EntryRef<U, V>`] structs representing values
     /// within the query region.
     ///
     /// The default behavior of `.query()` is to return any intersecting regions or points, but
@@ -330,7 +330,7 @@ where
     /// // Query over the region anchored at (0, 5) with area 1x1.
     /// let mut query_a = qt.query((0, 5), (1, 1));
     ///
-    /// // We can use the Entry API to destructure the result.
+    /// // We can use the EntryRef API to destructure the result.
     /// let entry = query_a.next().unwrap();
     /// assert_eq!(entry.region(), &((0, 5), (7, 7)));
     /// assert_eq!(entry.value(), &21);
@@ -344,7 +344,7 @@ where
     /// assert_eq!(query_b.count(), 2);
     /// ```
     ///
-    /// [`Entry<U, V>`]: entry/struct.Entry.html
+    /// [`EntryRef<U, V>`]: entry/struct.EntryRef.html
     /// [`.query_strict()`]: struct.Quadtree.html#method.query_strict
     pub fn query(&self, anchor: PointType<U>, size: (U, U)) -> Query<U, V> {
         Query::new(
@@ -395,14 +395,14 @@ where
     /// the Quadtree which intersecting the described region.
     ///
     /// ```
-    /// use quadtree_impl::{Quadtree, entry::Entry};
+    /// use quadtree_impl::{Quadtree, entry::EntryRef};
     ///
     /// let mut qt = Quadtree::<u8, f64>::new(3);
     ///
     /// qt.insert((0, 0), (1, 1), 1.23);
     /// qt.modify_all(|i| *i += 2.0);
     ///
-    /// let e: Entry<u8, f64> = qt.iter().next().unwrap();
+    /// let e: EntryRef<u8, f64> = qt.iter().next().unwrap();
     /// assert_eq!(e.region(), &((0, 0), (1, 1)));
     /// assert_eq!(e.value(), &3.23);
     /// ```
@@ -477,6 +477,14 @@ where
         self.inner.reset();
     }
 
+    pub fn clear(&mut self, anchor: (U, U), size: (U, U)) {
+        // TODO(ambuc): impl
+        // i think i can do a descent, get matching UUIDs and clear them from the vector, return a
+        // set of UUIDs and then clear them all from self.store in one operation. and I don't need
+        // to dispatch it to a struct.
+        // TODO(ambuc): Do I want to return a vec of entry-by-value s ?
+    }
+
     /// Returns an iterator over all `(&((U, U), (U, U)), &V)` region/value pairs in the
     /// Quadtree.
     pub fn iter(&self) -> Iter<U, V> {
@@ -541,13 +549,13 @@ impl<'a, U, V> Iterator for Iter<'a, U, V>
 where
     U: PrimInt,
 {
-    type Item = Entry<'a, U, V>;
+    type Item = EntryRef<'a, U, V>;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         match self.uuid_iter.next() {
             Some(uuid) => {
-                return Some(Entry::new(self.store.get(&uuid).expect(
+                return Some(EntryRef::new(self.store.get(&uuid).expect(
                     "Shouldn't have a uuid in the tree which isn't in the store.",
                 )));
             }
@@ -648,7 +656,7 @@ impl<'a, U, V> Iterator for Query<'a, U, V>
 where
     U: PrimInt,
 {
-    type Item = Entry<'a, U, V>;
+    type Item = EntryRef<'a, U, V>;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -658,7 +666,7 @@ where
         if let Some(uuid) = self.uuid_iter.next() {
             if let Some(rv) = self.store.get(&uuid) {
                 if self.traversal.eval(/*region*/ rv.0, self.query_region) {
-                    return Some(Entry::new(rv));
+                    return Some(EntryRef::new(rv));
                 }
             }
             return self.next();
@@ -816,7 +824,7 @@ impl<U, V> Iterator for IntoIter<U, V>
 where
     U: PrimInt,
 {
-    type Item = (AreaType<U>, V);
+    type Item = Entry<U, V>;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -829,7 +837,7 @@ where
                 .remove_entry(&uuid)
                 .expect("Shouldn't have a uuid in the tree which isn't in the store.");
 
-            return Some((*region.inner(), value));
+            return Some(Entry::new((region, value)));
         }
 
         // Then check the qt_stack.
@@ -909,7 +917,7 @@ impl<'a, U, V> IntoIterator for &'a Quadtree<U, V>
 where
     U: PrimInt,
 {
-    type Item = Entry<'a, U, V>;
+    type Item = EntryRef<'a, U, V>;
     type IntoIter = Iter<'a, U, V>;
 
     fn into_iter(self) -> Iter<'a, U, V> {
@@ -921,7 +929,7 @@ impl<U, V> IntoIterator for Quadtree<U, V>
 where
     U: PrimInt,
 {
-    type Item = (AreaType<U>, V);
+    type Item = Entry<U, V>;
     type IntoIter = IntoIter<U, V>;
 
     fn into_iter(self) -> IntoIter<U, V> {
