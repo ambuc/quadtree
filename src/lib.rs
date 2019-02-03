@@ -78,6 +78,7 @@ use crate::types::StoreType;
 use crate::uuid_iter::UuidIter;
 use num::PrimInt;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::iter::FusedIterator;
 use uuid::Uuid;
 
@@ -110,8 +111,6 @@ use uuid::Uuid;
 ///
 ///   - TODO(ambuc): In lieu of mutable getters, expose the held UUID and allow specific lookups
 ///   - TODO(ambuc): Size hints in iterators
-///   - TODO(ambuc): Implement `.clear(anchor, size)`.
-///   - TODO(ambuc): Implement `.delete(anchor, size)`.
 ///   - TODO(ambuc): Implement `.delete_by(anchor, size, fn)`.
 ///   - TODO(ambuc): Implement `.retain(anchor, size, fn)`.
 ///   - TODO(ambuc): Implement `FromIterator<(K, V)>` for `Quadtree`.
@@ -355,10 +354,10 @@ where
         )
     }
 
-    /// Alias for [`.query(pt, (1, 1))`]. See also [`.query_pt_strict()`].
+    /// Alias for [`.query(pt, (1, 1))`]. See also [`.query_strict_pt()`].
     ///
     /// [`.query(pt, (1, 1))`]: struct.Quadtree.html#method.query
-    /// [`.query_pt_strict()`]: struct.Quadtree.html#method.query_pt_strict
+    /// [`.query_strict_pt()`]: struct.Quadtree.html#method.query_strict_pt
     pub fn query_pt(&self, pt: PointType<U>) -> Query<U, V> {
         Query::new(
             (pt, Self::default_region_size()).into(),
@@ -382,7 +381,7 @@ where
     /// Alias for [`.query_strict(pt, (1, 1))`].
     ///
     /// [`.query_strict(pt, (1, 1))`]: struct.Quadtree.html#method.query_strict
-    pub fn query_pt_strict(&self, pt: PointType<U>) -> Query<U, V> {
+    pub fn query_strict_pt(&self, pt: PointType<U>) -> Query<U, V> {
         Query::new(
             (pt, Self::default_region_size()).into(),
             &self.inner,
@@ -477,12 +476,49 @@ where
         self.inner.reset();
     }
 
-    pub fn clear(&mut self, anchor: (U, U), size: (U, U)) {
-        // TODO(ambuc): impl
-        // i think i can do a descent, get matching UUIDs and clear them from the vector, return a
-        // set of UUIDs and then clear them all from self.store in one operation. and I don't need
-        // to dispatch it to a struct.
-        // TODO(ambuc): Do I want to return a vec of entry-by-value s ?
+    /// Clears a described region in the tree, consuming along the way and returning an iterator
+    /// ([`IntoIter<U, V>`]) over type [`Entry<U, V>`].
+    ///
+    /// The default behavior of `.clear()` is to delete and return any intersecting regions or
+    /// points, but the callsite could use [`.clear_strict()`] instead.
+    ///
+    /// [`IntoIter<U, V>`]: struct.IntoIter.html
+    /// [`Entry<U, V>`]: entry/struct.Entry.html
+    /// [`.clear_strict()`]: struct.Quadtree.html#method.clear_strict
+    pub fn clear(&mut self, anchor: PointType<U>, size: (U, U)) -> IntoIter<U, V> {
+        self.delete_uuids_and_return(self.query(anchor, size).map(|e| e.uuid()).collect())
+    }
+
+    /// Alias for [`.clear(pt, (1, 1))`]. See also [`.clear_strict_pt()`].
+    ///
+    /// [`.clear(pt, (1, 1))`]: struct.Quadtree.html#method.clear
+    /// [`.clear_strict_pt()`]: struct.Quadtree.html#method.clear_strict_pt
+    pub fn clear_pt(&mut self, pt: PointType<U>) -> IntoIter<U, V> {
+        self.clear(pt, Self::default_region_size())
+    }
+
+    ///  `clear_strict()` behaves the same as `clear()`, except that the regions deleted and
+    ///  returned are guaranteed to be totally contained within the clear region.
+    pub fn clear_strict(&mut self, anchor: PointType<U>, size: (U, U)) -> IntoIter<U, V> {
+        self.delete_uuids_and_return(self.query_strict(anchor, size).map(|e| e.uuid()).collect())
+    }
+
+    /// Alias for [`.clear_strict(pt, (1, 1))`].
+    ///
+    /// [`.clear_strict(pt, (1, 1))`]: struct.Quadtree.html#method.clear_strict
+    pub fn clear_strict_pt(&mut self, pt: PointType<U>) -> IntoIter<U, V> {
+        self.clear_strict(pt, Self::default_region_size())
+    }
+
+    fn delete_uuids_and_return(&mut self, uuids: HashSet<Uuid>) -> IntoIter<U, V> {
+        let error: &'static str = "I tried to look up a Uuid in the store which I found in the tree, but it wasn't there!";
+
+        let mut pairs: Vec<Entry<U, V>> = vec![];
+        uuids.iter().for_each(|u| {
+            pairs.push(Entry::new(self.store.remove(&u).expect(&error), u.clone()));
+        });
+
+        IntoIter { pairs }
     }
 
     /// Returns an iterator over all `(&((U, U), (U, U)), &V)` region/value pairs in the
@@ -555,9 +591,12 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         match self.uuid_iter.next() {
             Some(uuid) => {
-                return Some(EntryRef::new(self.store.get(&uuid).expect(
-                    "Shouldn't have a uuid in the tree which isn't in the store.",
-                )));
+                return Some(EntryRef::new(
+                    self.store
+                        .get(&uuid)
+                        .expect("Shouldn't have a uuid in the tree which isn't in the store."),
+                    uuid.clone(),
+                ));
             }
             None => None,
         }
@@ -666,7 +705,7 @@ where
         if let Some(uuid) = self.uuid_iter.next() {
             if let Some(rv) = self.store.get(&uuid) {
                 if self.traversal.eval(/*region*/ rv.0, self.query_region) {
-                    return Some(EntryRef::new(rv));
+                    return Some(EntryRef::new(rv, uuid));
                 }
             }
             return self.next();
@@ -794,30 +833,12 @@ where
 /// [`IntoIterator`]: struct.Quadtree.html#impl-IntoIterator
 ///
 /// [`Quadtree`]: struct.Quadtree.html
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct IntoIter<U, V>
 where
     U: PrimInt,
 {
-    uuid_stack: Vec<Uuid>,
-    qt_stack: Vec<QTInner<U>>,
-    remaining: usize,
-    store: StoreType<U, V>,
-}
-
-impl<U, V> IntoIter<U, V>
-where
-    U: PrimInt,
-{
-    pub(crate) fn new(qt: QTInner<U>, store: StoreType<U, V>) -> IntoIter<U, V> {
-        let len = store.len();
-        IntoIter {
-            uuid_stack: Vec::new(),
-            qt_stack: vec![qt],
-            remaining: len,
-            store,
-        }
-    }
+    pairs: Vec<Entry<U, V>>,
 }
 
 impl<U, V> Iterator for IntoIter<U, V>
@@ -828,41 +849,12 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        // Check the uuid_stack.
-        if let Some(uuid) = self.uuid_stack.pop() {
-            self.remaining -= 1;
-
-            let (_uuid, (region, value)) = self
-                .store
-                .remove_entry(&uuid)
-                .expect("Shouldn't have a uuid in the tree which isn't in the store.");
-
-            return Some(Entry::new((region, value)));
-        }
-
-        // Then check the qt_stack.
-        if let Some(qt) = self.qt_stack.pop() {
-            // Push my regions onto the region stack
-            self.uuid_stack.extend(qt.kept_uuids);
-
-            // Push my subquadrants onto the qt_stack too.
-            if let Some([a, b, c, d]) = qt.subquadrants {
-                self.qt_stack.push(*a);
-                self.qt_stack.push(*b);
-                self.qt_stack.push(*c);
-                self.qt_stack.push(*d);
-            }
-
-            return self.next();
-        }
-
-        // Else there's nothing left to search.
-        return None;
+        self.pairs.pop()
     }
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.remaining, Some(self.remaining))
+        self.pairs.iter().size_hint()
     }
 }
 
@@ -872,7 +864,7 @@ where
 {
     #[inline]
     fn len(&self) -> usize {
-        self.remaining
+        self.pairs.len()
     }
 }
 
@@ -933,6 +925,12 @@ where
     type IntoIter = IntoIter<U, V>;
 
     fn into_iter(self) -> IntoIter<U, V> {
-        IntoIter::new(self.inner, self.store)
+        IntoIter {
+            pairs: self
+                .store
+                .into_iter()
+                .map(|(uuid, (region, value))| Entry::new((region, value), uuid))
+                .collect(),
+        }
     }
 }

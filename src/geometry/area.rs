@@ -96,7 +96,7 @@ where
     pub fn anchor(&self) -> Point<U> {
         self.inner.0.into()
     }
-    fn dimensions(&self) -> PointType<U> {
+    pub fn dimensions(&self) -> PointType<U> {
         self.inner.1
     }
     // Properties

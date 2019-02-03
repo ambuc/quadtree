@@ -103,4 +103,47 @@ mod iterator_tests {
         q.reset();
         debug_assert!(q.is_empty());
     }
+
+    //// Reminder:
+    //let mut q = Quadtree::<i32, i8>::new_with_anchor((-35, -35), 8);
+    //q.extend(vec![((0, -5), 10), ((-15, 20), -25), ((30, -35), 40)]);
+    #[test]
+    fn clear_everything() {
+        let mut q = mk_quadtree_for_iter_tests();
+        debug_assert_eq!(q.len(), 3);
+        q.clear((-35, -35), (80, 80));
+        debug_assert_eq!(q.len(), 0);
+    }
+
+    #[test]
+    fn clear_region() {
+        let mut q = mk_quadtree_for_iter_tests();
+        debug_assert_eq!(q.len(), 3);
+        // Near miss.
+        q.clear((29, -36), (1, 1));
+        debug_assert_eq!(q.len(), 3);
+
+        // Direct hit!
+        let mut returned_entries = q.clear((30, -35), (1, 1));
+        debug_assert_eq!(q.len(), 2);
+        let hit = returned_entries.next().unwrap();
+        debug_assert_eq!(hit.value_ref(), &40);
+        debug_assert_eq!(hit.region(), ((30, -35), (1, 1)));
+    }
+
+    #[test]
+    fn clear_region_two() {
+        let mut q = mk_quadtree_for_iter_tests();
+        debug_assert_eq!(q.len(), 3);
+
+        // Just large enough to encompass the two points.
+        let returned_entries = q.clear((-15, -5), (16, 26));
+        debug_assert_eq!(q.len(), 1);
+        debug_assert_eq!(returned_entries.len(), 2);
+
+        debug_assert!(unordered_elements_are(
+            returned_entries.map(|mut e| e.value()),
+            vec![-25, 10,]
+        ));
+    }
 }

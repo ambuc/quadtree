@@ -15,6 +15,7 @@
 use crate::geometry::area::{Area, AreaType};
 use crate::geometry::point::PointType;
 use num::PrimInt;
+use uuid::Uuid;
 
 /// Lightweight encapsulation representing a region/value pair being returned by value from the
 /// [`Quadtree`].
@@ -31,15 +32,17 @@ where
 {
     region: Area<U>,
     value: V,
+    uuid: Uuid,
 }
 impl<U, V> Entry<U, V>
 where
     U: PrimInt,
 {
-    pub(crate) fn new(inner: (Area<U>, V)) -> Entry<U, V> {
+    pub(crate) fn new(inner: (Area<U>, V), uuid: Uuid) -> Entry<U, V> {
         Entry {
             region: inner.0,
             value: inner.1,
+            uuid,
         }
     }
     /// The held region, in standard (anchor, dimensions) form.
@@ -69,6 +72,10 @@ where
     {
         let elem = std::mem::replace(&mut self.value, V::default());
         elem
+    }
+    /// The held value, returned by-reference.
+    pub fn value_ref<'a>(&'a self) -> &'a V {
+        &self.value
     }
     /// The held (region, value) tuple.
     pub fn inner(&mut self) -> (AreaType<U>, V)
@@ -107,14 +114,15 @@ where
     U: PrimInt,
 {
     inner: &'a (Area<U>, V),
+    uuid: Uuid,
 }
 
 impl<'a, U, V> EntryRef<'a, U, V>
 where
     U: PrimInt,
 {
-    pub(crate) fn new(inner: &'a (Area<U>, V)) -> EntryRef<'a, U, V> {
-        EntryRef { inner }
+    pub(crate) fn new(inner: &'a (Area<U>, V), uuid: Uuid) -> EntryRef<'a, U, V> {
+        EntryRef { inner, uuid }
     }
 
     /// The held region, in standard (anchor, dimensions) form.
@@ -143,5 +151,9 @@ where
     /// The held (region, value) tuple, returned by-reference.
     pub fn inner(&self) -> (&'a AreaType<U>, &'a V) {
         (self.region(), self.value())
+    }
+
+    pub(crate) fn uuid(&self) -> Uuid {
+        self.uuid.clone()
     }
 }
