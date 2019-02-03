@@ -1,5 +1,5 @@
-use crate::geometry::area::Area;
+use crate::entry::Entry;
 use std::collections::HashMap;
 use uuid::Uuid;
 
-pub(crate) type StoreType<U, V> = HashMap<Uuid, (Area<U>, V)>;
+pub(crate) type StoreType<U, V> = HashMap<Uuid, Entry<U, V>>;

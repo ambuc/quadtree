@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use crate::entry::Entry;
 use crate::geometry::area::Area;
 use crate::geometry::point::{Point, PointType};
 use crate::types::StoreType;
@@ -90,7 +91,7 @@ where
         store: &mut StoreType<U, V>,
     ) -> Uuid {
         let uuid = Uuid::new_v4();
-        store.insert(uuid, (req, val));
+        store.insert(uuid, Entry::new((req, val), uuid));
         self.insert_uuid_at_region(req, uuid, store);
         uuid.clone()
     }

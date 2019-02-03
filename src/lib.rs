@@ -50,7 +50,7 @@
 //!
 //! // There is an overlap between our query region and the region holding "foo",
 //! // so we expect that iterator to return the `(coordinate, value)` pair containing "foo".
-//! assert_eq!(query.next().unwrap().value(), "foo");
+//! assert_eq!(query.next().unwrap().value_ref(), "foo");
 //! ```
 //!
 //! # Usage
@@ -70,7 +70,7 @@ mod qtinner;
 mod types;
 mod uuid_iter;
 
-use crate::entry::{Entry, EntryRef};
+use crate::entry::Entry;
 use crate::geometry::area::{Area, AreaType};
 use crate::geometry::point::PointType;
 use crate::qtinner::QTInner;
@@ -112,7 +112,7 @@ use uuid::Uuid;
 ///   - TODO(ambuc): Fix size hints in iterators
 ///   - TODO(ambuc): Implement `.delete_by(anchor, size, fn)`: `.retain()` is the inverse.
 ///   - TODO(ambuc): Implement `FromIterator<(K, V)>` for `Quadtree`.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Quadtree<U, V>
 where
     U: PrimInt,
@@ -309,7 +309,7 @@ where
     pub fn get<'a>(&'a self, uuid: &Uuid) -> Option<&'a V> {
         self.store
             .get(uuid)
-            .map_or(None, |(_region, value)| Some(value))
+            .map_or(None, |entry| Some(entry.value_ref()))
     }
 
     /// A mutable variant of `.get()`.
@@ -334,10 +334,10 @@ where
     pub fn get_mut<'a>(&'a mut self, uuid: &Uuid) -> Option<&'a mut V> {
         self.store
             .get_mut(uuid)
-            .map_or(None, |(_region, value)| Some(value))
+            .map_or(None, |entry| Some(entry.value_mut()))
     }
 
-    /// Returns an iterator over [`EntryRef<U, V>`] structs representing values
+    /// Returns an iterator over [`&Entry<U, V>`] structs representing values
     /// within the query region.
     ///
     /// The default behavior of `.query()` is to return any intersecting regions or points, but
@@ -357,10 +357,10 @@ where
     /// // Query over the region anchored at (0, 5) with area 1x1.
     /// let mut query_a = qt.query((0, 5), (1, 1));
     ///
-    /// // We can use the EntryRef API to destructure the result.
+    /// // We can use the Entry API to destructure the result.
     /// let entry = query_a.next().unwrap();
-    /// assert_eq!(entry.region(), &((0, 5), (7, 7)));
-    /// assert_eq!(entry.value(), &21);
+    /// assert_eq!(entry.region(), ((0, 5), (7, 7)));
+    /// assert_eq!(entry.value_ref(), &21);
     ///
     /// assert_eq!(query_a.next(), None);
     ///
@@ -371,7 +371,7 @@ where
     /// assert_eq!(query_b.count(), 2);
     /// ```
     ///
-    /// [`EntryRef<U, V>`]: entry/struct.EntryRef.html
+    /// [`Entry<U, V>`]: entry/struct.Entry.html
     /// [`.query_strict()`]: struct.Quadtree.html#method.query_strict
     pub fn query(&self, anchor: PointType<U>, size: (U, U)) -> Query<U, V> {
         Query::new(
@@ -397,16 +397,16 @@ where
     /// the Quadtree which intersecting the described region.
     ///
     /// ```
-    /// use quadtree_impl::{Quadtree, entry::EntryRef};
+    /// use quadtree_impl::{Quadtree, entry::Entry};
     ///
     /// let mut qt = Quadtree::<u8, f64>::new(3);
     ///
     /// qt.insert((0, 0), (1, 1), 1.23);
     /// qt.modify_all(|i| *i += 2.0);
     ///
-    /// let e: EntryRef<u8, f64> = qt.iter().next().unwrap();
-    /// assert_eq!(e.region(), &((0, 0), (1, 1)));
-    /// assert_eq!(e.value(), &3.23);
+    /// let e: &Entry<u8, f64> = qt.iter().next().unwrap();
+    /// assert_eq!(e.region(), ((0, 0), (1, 1)));
+    /// assert_eq!(e.value_ref(), &3.23);
     /// ```
     pub fn modify<F>(&mut self, anchor: PointType<U>, size: (U, U), f: F)
     where
@@ -443,9 +443,9 @@ where
     {
         let relevant_uuids: Vec<Uuid> = UuidIter::new(&self.inner).collect();
         for uuid in relevant_uuids {
-            if let Some((region, value)) = self.store.get_mut(&uuid) {
-                if filter(*region) {
-                    modify(value);
+            if let Some(entry) = self.store.get_mut(&uuid) {
+                if filter(entry.area()) {
+                    modify(&mut entry.value_mut());
                 }
             }
         }
@@ -507,7 +507,7 @@ where
 
         let mut pairs: Vec<Entry<U, V>> = vec![];
         uuids.iter().for_each(|u| {
-            pairs.push(Entry::new(self.store.remove(&u).expect(&error), u.clone()));
+            pairs.push(self.store.remove(&u).expect(&error));
         });
 
         IntoIter { pairs }
@@ -572,18 +572,17 @@ impl<'a, U, V> Iterator for Iter<'a, U, V>
 where
     U: PrimInt,
 {
-    type Item = EntryRef<'a, U, V>;
+    type Item = &'a Entry<U, V>;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         match self.uuid_iter.next() {
             Some(uuid) => {
-                return Some(EntryRef::new(
+                return Some(
                     self.store
                         .get(&uuid)
                         .expect("Shouldn't have a uuid in the tree which isn't in the store."),
-                    uuid.clone(),
-                ));
+                );
             }
             None => None,
         }
@@ -680,7 +679,7 @@ impl<'a, U, V> Iterator for Query<'a, U, V>
 where
     U: PrimInt,
 {
-    type Item = EntryRef<'a, U, V>;
+    type Item = &'a Entry<U, V>;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -688,9 +687,9 @@ where
         // descend the whole tree, just those subquadrants which intersect our held @query_region.
         // This is essential to performance.
         if let Some(uuid) = self.uuid_iter.next() {
-            if let Some(rv) = self.store.get(&uuid) {
-                if self.traversal.eval(/*region*/ rv.0, self.query_region) {
-                    return Some(EntryRef::new(rv, uuid));
+            if let Some(entry) = self.store.get(&uuid) {
+                if self.traversal.eval(entry.area(), self.query_region) {
+                    return Some(entry);
                 }
             }
             return self.next();
@@ -731,7 +730,7 @@ impl<'a, U, V> Iterator for Regions<'a, U, V>
 where
     U: PrimInt,
 {
-    type Item = (&'a AreaType<U>);
+    type Item = AreaType<U>;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -784,7 +783,9 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map_or(None, |entry| Some(entry.value()))
+        self.inner
+            .next()
+            .map_or(None, |entry| Some(entry.value_ref()))
     }
 
     #[inline]
@@ -894,7 +895,7 @@ impl<'a, U, V> IntoIterator for &'a Quadtree<U, V>
 where
     U: PrimInt,
 {
-    type Item = EntryRef<'a, U, V>;
+    type Item = &'a Entry<U, V>;
     type IntoIter = Iter<'a, U, V>;
 
     fn into_iter(self) -> Iter<'a, U, V> {
@@ -911,11 +912,7 @@ where
 
     fn into_iter(self) -> IntoIter<U, V> {
         IntoIter {
-            pairs: self
-                .store
-                .into_iter()
-                .map(|(uuid, (region, value))| Entry::new((region, value), uuid))
-                .collect(),
+            pairs: self.store.into_iter().map(|(_uuid, entry)| entry).collect(),
         }
     }
 }

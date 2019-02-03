@@ -34,8 +34,8 @@ mod query_tests {
         // Requesting a region which does contain '49'.
         let mut iter1 = q.query((0, 0), (1, 1));
         let entry = iter1.next().unwrap();
-        debug_assert_eq!(entry.region(), &((0, 0), (1, 1)));
-        debug_assert_eq!(entry.value(), &49);
+        debug_assert_eq!(entry.region(), ((0, 0), (1, 1)));
+        debug_assert_eq!(entry.value_ref(), &49);
         debug_assert_eq!(iter1.next(), None);
 
         // Requesting regions which don't contain '49'.
@@ -84,73 +84,73 @@ mod query_tests {
 
         // Queries which capture #10:
         let mut ten1 = q.query((2, 2), (1, 1));
-        debug_assert_eq!(ten1.next().unwrap().value(), &10);
+        debug_assert_eq!(ten1.next().unwrap().value_ref(), &10);
         debug_assert_eq!(ten1.next(), None);
 
         let mut ten2 = q.query((2, 3), (1, 1));
-        debug_assert_eq!(ten2.next().unwrap().value(), &10);
+        debug_assert_eq!(ten2.next().unwrap().value_ref(), &10);
         debug_assert_eq!(ten2.next(), None);
 
         let mut ten3 = q.query((3, 2), (1, 1));
-        debug_assert_eq!(ten3.next().unwrap().value(), &10);
+        debug_assert_eq!(ten3.next().unwrap().value_ref(), &10);
         debug_assert_eq!(ten3.next(), None);
 
         // Queries which capture #10 but are larger than 1x1.
         let mut ten4 = q.query((2, 2), (2, 1));
-        debug_assert_eq!(ten4.next().unwrap().value(), &10);
+        debug_assert_eq!(ten4.next().unwrap().value_ref(), &10);
         debug_assert_eq!(ten4.next(), None);
 
         let mut ten5 = q.query((2, 2), (1, 2));
-        debug_assert_eq!(ten5.next().unwrap().value(), &10);
+        debug_assert_eq!(ten5.next().unwrap().value_ref(), &10);
         debug_assert_eq!(ten5.next(), None);
 
         // Queries which capture #55:
         let mut fiftyfive1 = q.query((3, 4), (1, 1));
-        debug_assert_eq!(fiftyfive1.next().unwrap().value(), &55);
+        debug_assert_eq!(fiftyfive1.next().unwrap().value_ref(), &55);
         debug_assert_eq!(fiftyfive1.next(), None);
 
         let mut fiftyfive2 = q.query((4, 3), (1, 1));
-        debug_assert_eq!(fiftyfive2.next().unwrap().value(), &55);
+        debug_assert_eq!(fiftyfive2.next().unwrap().value_ref(), &55);
         debug_assert_eq!(fiftyfive2.next(), None);
 
         let mut fiftyfive3 = q.query((4, 4), (1, 1));
-        debug_assert_eq!(fiftyfive3.next().unwrap().value(), &55);
+        debug_assert_eq!(fiftyfive3.next().unwrap().value_ref(), &55);
         debug_assert_eq!(fiftyfive3.next(), None);
 
         // Queries which capture #55 but are larger than 1x1.
 
         let mut fiftyfive4 = q.query((4, 3), (1, 2));
-        debug_assert_eq!(fiftyfive4.next().unwrap().value(), &55);
+        debug_assert_eq!(fiftyfive4.next().unwrap().value_ref(), &55);
         debug_assert_eq!(fiftyfive4.next(), None);
 
         let mut fiftyfive5 = q.query((3, 4), (2, 2));
-        debug_assert_eq!(fiftyfive5.next().unwrap().value(), &55);
+        debug_assert_eq!(fiftyfive5.next().unwrap().value_ref(), &55);
         debug_assert_eq!(fiftyfive5.next(), None);
 
         // Queries which capture both #10 and #55. Dunno in what order.
 
         debug_assert!(unordered_elements_are(
-            q.query((3, 3), (1, 1)).map(|e| e.value()),
+            q.query((3, 3), (1, 1)).map(|e| e.value_ref()),
             vec![&10, &55],
         ));
 
         debug_assert!(unordered_elements_are(
-            q.query((3, 3), (3, 3)).map(|e| e.value()),
+            q.query((3, 3), (3, 3)).map(|e| e.value_ref()),
             vec![&10, &55],
         ));
 
         debug_assert!(unordered_elements_are(
-            q.query((0, 0), (6, 6)).map(|e| e.value()),
+            q.query((0, 0), (6, 6)).map(|e| e.value_ref()),
             vec![&10, &55],
         ));
 
         debug_assert!(unordered_elements_are(
-            q.query((2, 2), (6, 6)).map(|e| e.value()),
+            q.query((2, 2), (6, 6)).map(|e| e.value_ref()),
             vec![&10, &55],
         ));
 
         debug_assert!(unordered_elements_are(
-            q.query((2, 2), (2, 2)).map(|e| e.value()),
+            q.query((2, 2), (2, 2)).map(|e| e.value_ref()),
             vec![&10, &55],
         ));
     }
@@ -200,20 +200,38 @@ mod query_tests {
         debug_assert_eq!(q.query_strict((3, 3), (1, 1)).next(), None);
 
         // Queries which contain one of the other:
-        debug_assert_eq!(q.query_strict((3, 3), (2, 2)).next().unwrap().value(), &55);
-        debug_assert_eq!(q.query_strict((3, 3), (3, 3)).next().unwrap().value(), &55);
-        debug_assert_eq!(q.query_strict((3, 3), (4, 4)).next().unwrap().value(), &55);
-        debug_assert_eq!(q.query_strict((0, 0), (4, 4)).next().unwrap().value(), &10);
-        debug_assert_eq!(q.query_strict((1, 1), (3, 3)).next().unwrap().value(), &10);
-        debug_assert_eq!(q.query_strict((2, 2), (2, 2)).next().unwrap().value(), &10);
+        debug_assert_eq!(
+            q.query_strict((3, 3), (2, 2)).next().unwrap().value_ref(),
+            &55
+        );
+        debug_assert_eq!(
+            q.query_strict((3, 3), (3, 3)).next().unwrap().value_ref(),
+            &55
+        );
+        debug_assert_eq!(
+            q.query_strict((3, 3), (4, 4)).next().unwrap().value_ref(),
+            &55
+        );
+        debug_assert_eq!(
+            q.query_strict((0, 0), (4, 4)).next().unwrap().value_ref(),
+            &10
+        );
+        debug_assert_eq!(
+            q.query_strict((1, 1), (3, 3)).next().unwrap().value_ref(),
+            &10
+        );
+        debug_assert_eq!(
+            q.query_strict((2, 2), (2, 2)).next().unwrap().value_ref(),
+            &10
+        );
 
         // A query which contains both:
         debug_assert!(unordered_elements_are(
-            q.query_strict((0, 0), (6, 6)).map(|e| e.value()),
+            q.query_strict((0, 0), (6, 6)).map(|e| e.value_ref()),
             vec![&10, &55]
         ));
         debug_assert!(unordered_elements_are(
-            q.query_strict((2, 2), (6, 6)).map(|e| e.value()),
+            q.query_strict((2, 2), (6, 6)).map(|e| e.value_ref()),
             vec![&10, &55]
         ));
     }
@@ -225,7 +243,7 @@ mod query_tests {
 
         let mut query_obj = q.query((0, 0), (1, 1));
 
-        debug_assert_eq!(query_obj.next().unwrap().value(), &1.234);
+        debug_assert_eq!(query_obj.next().unwrap().value_ref(), &1.234);
     }
 
     #[test]
@@ -246,7 +264,7 @@ mod query_tests {
 
         // And verify.
         let mut tmp_iter_1 = q.query((0, 0), (1, 1));
-        debug_assert_eq!(tmp_iter_1.next().unwrap().value(), &50);
+        debug_assert_eq!(tmp_iter_1.next().unwrap().value_ref(), &50);
         debug_assert_eq!(tmp_iter_1.next(), None);
 
         // Insert #17 at (2, 2)->3x3.
@@ -255,7 +273,7 @@ mod query_tests {
         q.modify((1, 1), (2, 2), |i| *i += 1);
         // And verify.
         let mut tmp_iter_2 = q.query((2, 2), (1, 1));
-        debug_assert_eq!(tmp_iter_2.next().unwrap().value(), &18);
+        debug_assert_eq!(tmp_iter_2.next().unwrap().value_ref(), &18);
         debug_assert_eq!(tmp_iter_2.next(), None);
 
         // Reset everything in (0, 0)->6x6 to "0".
@@ -263,7 +281,7 @@ mod query_tests {
         // Every value is now 0.
 
         for entry in q.query((0, 0), (6, 6)) {
-            debug_assert_eq!(*entry.value(), 0);
+            debug_assert_eq!(entry.value_ref(), &0);
         }
     }
 }

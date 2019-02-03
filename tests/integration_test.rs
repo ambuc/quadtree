@@ -178,7 +178,7 @@ mod string {
         q.insert((0, 0), (1, 1), "foo_bar_baz".to_string());
 
         let mut iter = q.query((0, 0), (1, 1));
-        assert_eq!(iter.next().unwrap().value(), "foo_bar_baz");
+        assert_eq!(iter.next().unwrap().value_ref(), "foo_bar_baz");
     }
 
     #[test]
@@ -188,7 +188,7 @@ mod string {
         q.modify((0, 0), (1, 1), |v| *v += "world");
 
         assert_eq!(
-            q.query((0, 0), (1, 1)).next().unwrap().value(),
+            q.query((0, 0), (1, 1)).next().unwrap().value_ref(),
             "hello world"
         );
     }
@@ -210,7 +210,10 @@ fn quadtree_struct() {
 
     q.insert((0, 0), (1, 1), foo);
 
-    assert_eq!(q.query((0, 0), (1, 1)).next().unwrap().value().baz, "baz");
+    assert_eq!(
+        q.query((0, 0), (1, 1)).next().unwrap().value_ref().baz,
+        "baz"
+    );
 }
 
 // Since we implement Extend<((U, U), V)> for Quadtree<U, V>, test out .extend()ing with a real
@@ -228,11 +231,11 @@ mod extend {
         debug_assert_eq!(q.len(), 2);
 
         let entry_zero = q.query((0, 0), (1, 1)).next().unwrap();
-        debug_assert_eq!(entry_zero.region(), &((0, 0), (1, 1)));
-        debug_assert_eq!(entry_zero.value(), &0);
+        debug_assert_eq!(entry_zero.region(), ((0, 0), (1, 1)));
+        debug_assert_eq!(entry_zero.value_ref(), &0);
         let entry_five = q.query((2, 3), (1, 1)).next().unwrap();
-        debug_assert_eq!(entry_five.region(), &((2, 3), (1, 1)));
-        debug_assert_eq!(entry_five.value(), &5);
+        debug_assert_eq!(entry_five.region(), ((2, 3), (1, 1)));
+        debug_assert_eq!(entry_five.value_ref(), &5);
     }
 
     #[test]
@@ -246,8 +249,8 @@ mod extend {
 
         dbg!(&q);
 
-        debug_assert_eq!(q.query((0, 0), (1, 1)).next().unwrap().value(), &0);
-        debug_assert_eq!(q.query((2, 3), (1, 1)).next().unwrap().value(), &5);
+        debug_assert_eq!(q.query((0, 0), (1, 1)).next().unwrap().value_ref(), &0);
+        debug_assert_eq!(q.query((2, 3), (1, 1)).next().unwrap().value_ref(), &5);
     }
 }
 

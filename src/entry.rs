@@ -74,6 +74,10 @@ where
         *self.region.inner()
     }
 
+    pub(crate) fn area(&self) -> Area<U> {
+        self.region
+    }
+
     /// The top-left coordinate of the held region.
     pub fn anchor(&self) -> PointType<U> {
         self.region().0
@@ -102,91 +106,13 @@ where
         elem
     }
 
+    pub fn value_mut<'a>(&'a mut self) -> &'a mut V {
+        &mut self.value
+    }
+
     /// The held value, returned by-reference.
     pub fn value_ref<'a>(&'a self) -> &'a V {
         &self.value
-    }
-
-    /// The held (region, value) tuple.
-    pub fn inner(&mut self) -> (AreaType<U>, V)
-    where
-        V: std::default::Default,
-    {
-        (self.region(), self.value())
-    }
-}
-
-/// Lightweight reference type representing a region/value pair in the [`Quadtree`].
-///
-/// ```
-/// use quadtree_impl::Quadtree;
-/// use quadtree_impl::entry::EntryRef;
-///
-/// let mut qt = Quadtree::<u32, f32>::new(4);
-///
-/// qt.insert((0, 5), (7, 7), 21.01);
-///
-/// // We can use the Entry API to destructure the result.
-/// let entry: EntryRef<u32, f32> = qt.query((0, 5), (1, 1)).next().unwrap();
-///
-/// assert_eq!(entry.region(), &((0, 5), (7, 7)));
-/// assert_eq!(entry.anchor(), &(0, 5));
-/// assert_eq!(entry.width(), &7);
-/// assert_eq!(entry.height(), &7);
-/// assert_eq!(entry.value(), &21.01);
-///
-/// ```
-///
-/// [`Quadtree`]: ../struct.Quadtree.html
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
-pub struct EntryRef<'a, U, V>
-where
-    U: PrimInt,
-{
-    inner: &'a (Area<U>, V),
-    uuid: Uuid,
-}
-
-impl<'a, U, V> EntryRef<'a, U, V>
-where
-    U: PrimInt,
-{
-    pub(crate) fn new(inner: &'a (Area<U>, V), uuid: Uuid) -> EntryRef<'a, U, V> {
-        EntryRef { inner, uuid }
-    }
-
-    /// The held region, in standard (anchor, dimensions) form.
-    pub fn region(&self) -> &'a AreaType<U> {
-        self.inner.0.inner()
-    }
-
-    /// The top-left coordinate of the held region.
-    pub fn anchor(&self) -> &'a PointType<U> {
-        &self.region().0
-    }
-
-    fn dimensions(&self) -> &'a (U, U) {
-        &self.region().1
-    }
-
-    /// The width of the held region.
-    pub fn width(&self) -> &'a U {
-        &self.dimensions().0
-    }
-
-    /// The height of the held region.
-    pub fn height(&self) -> &'a U {
-        &self.dimensions().1
-    }
-
-    /// The held value, returned by-reference.
-    pub fn value(&self) -> &'a V {
-        &self.inner.1
-    }
-
-    /// The held (region, value) tuple, returned by-reference.
-    pub fn inner(&self) -> (&'a AreaType<U>, &'a V) {
-        (self.region(), self.value())
     }
 
     pub(crate) fn uuid(&self) -> Uuid {
