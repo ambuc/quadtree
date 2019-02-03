@@ -50,9 +50,7 @@
 //!
 //! // There is an overlap between our query region and the region holding "foo",
 //! // so we expect that iterator to return the `(coordinate, value)` pair containing "foo".
-//! assert_eq!(query.next()
-//!                 .map_or("", |(_coordinate, value)| value),
-//!            "foo");
+//! assert_eq!(query.next().unwrap().value(), "foo");
 //! ```
 //!
 //! # Usage
@@ -66,11 +64,13 @@
 
 extern crate num;
 
+pub mod entry;
 mod geometry;
 mod qtinner;
 mod types;
 mod uuid_iter;
 
+use crate::entry::Entry;
 use crate::geometry::area::{Area, AreaType};
 use crate::geometry::point::PointType;
 use crate::qtinner::QTInner;
@@ -266,8 +266,11 @@ where
         self.inner.region.contains((anchor, size).into())
     }
 
-    /// Attempts to insert the value at the requested anchor and size. Returns false if the region
-    /// was too large.
+    /// Inserts the value at the requested region.
+    ///   - If the requested region does not fit totally in the Quadtree, `.insert()` will fail
+    ///     silently. Callsites may want to use `.contains()` first.
+    ///   - If the requested region only fits partially in the Quadtree, `.insert()` will mark the
+    ///     in-bounds regions and drop the rest of the requested region.
     ///
     /// The region described may have an anchor anywhere on the plane, but it
     /// must have positive, nonzero values for its width and height.
@@ -286,8 +289,7 @@ where
             .insert_val_at_region((anchor, size).into(), val, &mut self.store)
     }
 
-    /// Attempts to insert the value at the given point. Returns false if the point was out of
-    /// bounds.
+    /// Inserts the value at the given point. Fails silently, like [`.insert()`].
     ///  - Expect the behavior of `.insert_pt(_, _)` to be the same as [`.insert(_, (1, 1), _)`].
     /// ```
     /// use quadtree_impl::Quadtree;
@@ -298,6 +300,7 @@ where
     /// qt.insert_pt((5, 4),  6060842);
     /// ```
     ///
+    /// [`.insert()`]: struct.Quadtree.html#method.insert
     /// [`.insert(_, (1, 1), _)`]: struct.Quadtree.html#method.insert
     pub fn insert_pt(&mut self, anchor: PointType<U>, val: V) {
         self.inner.insert_val_at_region(
@@ -307,9 +310,11 @@ where
         )
     }
 
-    /// Returns an iterator over `(&'a ((U, U), (U, U)), &'a V)` tuples representing values
+    /// Returns an iterator over [`Entry<U, V>`] structs representing values
     /// within the query region.
-    ///  - Values returned may either partially intersect or be wholly within the query region.
+    ///
+    /// The default behavior of `.query()` is to return any intersecting regions or points, but
+    /// the callsite could use [`.query_strict()`] instead.
     ///
     /// The query region described may have an anchor anywhere on the plane, but it
     /// must have positive, nonzero values for its width and height.
@@ -324,10 +329,13 @@ where
     ///
     /// // Query over the region anchored at (0, 5) with area 1x1.
     /// let mut query_a = qt.query((0, 5), (1, 1));
-    /// assert_eq!(query_a.next(),
-    ///            Some((&((0, 5), (7, 7)), &21)));
-    /// assert_eq!(query_a.next(),
-    ///            None);
+    ///
+    /// // We can use the Entry API to destructure the result.
+    /// let entry = query_a.next().unwrap();
+    /// assert_eq!(entry.region(), &((0, 5), (7, 7)));
+    /// assert_eq!(entry.value(), &21);
+    ///
+    /// assert_eq!(query_a.next(), None);
     ///
     /// // Query over the region anchored at (0, 0) with area 6x6.
     /// let query_b = qt.query((0, 0), (6, 6));
@@ -335,6 +343,9 @@ where
     /// // It's unclear what order the regions should return in, but there will be two of them.
     /// assert_eq!(query_b.count(), 2);
     /// ```
+    ///
+    /// [`Entry<U, V>`]: entry/struct.Entry.html
+    /// [`.query_strict()`]: struct.Quadtree.html#method.query_strict
     pub fn query(&self, anchor: PointType<U>, size: (U, U)) -> Query<U, V> {
         Query::new(
             (anchor, size).into(),
@@ -355,24 +366,22 @@ where
         )
     }
 
-    /// Returns an iterator (of type [`Query`]) over `(&'a ((U, U), (U, U)), &'a V)` tuples
-    /// representing values intersecting the query point.
+    /// Alias for [`.query(pt, (1, 1))`]. See also [`.query_pt_strict()`].
     ///
-    /// Alias for [`.query(anchor, (1, 1))`].
-    ///
-    /// [`Query`]: struct.Query.html
-    /// [`.query(anchor, (1, 1))`]: struct.Quadtree.html#method.query
-    pub fn query_pt(&self, anchor: PointType<U>) -> Query<U, V> {
+    /// [`.query(pt, (1, 1))`]: struct.Quadtree.html#method.query
+    /// [`.query_pt_strict()`]: struct.Quadtree.html#method.query_pt_strict
+    pub fn query_pt(&self, pt: PointType<U>) -> Query<U, V> {
         Query::new(
-            (anchor, Self::default_region_size()).into(),
+            (pt, Self::default_region_size()).into(),
             &self.inner,
             &self.store,
             Traversal::Overlapping,
         )
     }
 
-    ///  `query_pt_strict()` behaves the same as `query_pt()`, except that the regions returned are
-    ///  guaranteed to be totally contained within the query region.
+    /// Alias for [`.query_strict(pt, (1, 1))`].
+    ///
+    /// [`.query_strict(pt, (1, 1))`]: struct.Quadtree.html#method.query_strict
     pub fn query_pt_strict(&self, pt: PointType<U>) -> Query<U, V> {
         Query::new(
             (pt, Self::default_region_size()).into(),
@@ -382,28 +391,21 @@ where
         )
     }
 
-    /// Accepts a modification lambda of type `Fn(&mut V) + Copy` and applies it to all elements in
-    /// the Quadtree.
+    /// Accepts a modification lambda and applies it to all elements in
+    /// the Quadtree which intersecting the described region.
+    ///
     /// ```
-    /// use quadtree_impl::Quadtree;
+    /// use quadtree_impl::{Quadtree, entry::Entry};
     ///
     /// let mut qt = Quadtree::<u8, f64>::new(3);
     ///
     /// qt.insert((0, 0), (1, 1), 1.23);
     /// qt.modify_all(|i| *i += 2.0);
     ///
-    /// assert_eq!(qt.iter().next(),
-    ///            Some((&((0, 0), (1, 1)), &3.23)));
+    /// let e: Entry<u8, f64> = qt.iter().next().unwrap();
+    /// assert_eq!(e.region(), &((0, 0), (1, 1)));
+    /// assert_eq!(e.value(), &3.23);
     /// ```
-    pub fn modify_all<F>(&mut self, f: F)
-    where
-        F: Fn(&mut V) + Copy,
-    {
-        self.modify_region(|_| true, f);
-    }
-
-    /// Accepts a modification lambda of type `Fn(&mut V) + Copy` and applies it to all elements in
-    /// the Quadtree intersecting the described region.
     pub fn modify<F>(&mut self, anchor: PointType<U>, size: (U, U), f: F)
     where
         F: Fn(&mut V) + Copy,
@@ -412,14 +414,25 @@ where
         self.modify_region(|a| a.intersects(query_region), f);
     }
 
-    /// Accepts a modification lambda of type `Fn(&mut V) + Copy` and applies it to all elements in
-    /// the Quadtree overlapping the given point.
-    pub fn modify_pt<F>(&mut self, anchor: PointType<U>, f: F)
+    /// Alias for [`.modify(pt, (1, 1))`].
+    ///
+    /// [`.modify(pt, (1, 1))`]: struct.Quadtree.html#method.modify
+    pub fn modify_pt<F>(&mut self, pt: PointType<U>, f: F)
     where
         F: Fn(&mut V) + Copy,
     {
-        let query_region = (anchor, Self::default_region_size()).into();
+        let query_region = (pt, Self::default_region_size()).into();
         self.modify_region(|a| a.intersects(query_region), f);
+    }
+
+    /// Alias for [`.modify(self.anchor(), (self.width(), self.height()))`].
+    ///
+    /// [`.modify(self.anchor(), (self.width(), self.height()))`]: struct.Quadtree.html#method.modify
+    pub fn modify_all<F>(&mut self, f: F)
+    where
+        F: Fn(&mut V) + Copy,
+    {
+        self.modify_region(|_| true, f);
     }
 
     fn modify_region<F, M>(&mut self, filter: F, modify: M)
@@ -507,17 +520,15 @@ impl<'a, U, V> Iterator for Iter<'a, U, V>
 where
     U: PrimInt,
 {
-    type Item = (&'a AreaType<U>, &'a V);
+    type Item = Entry<'a, U, V>;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         match self.uuid_iter.next() {
             Some(uuid) => {
-                let (region, value) = self
-                    .store
-                    .get(&uuid)
-                    .expect("Shouldn't have a uuid in the tree which isn't in the store.");
-                Some((&region.inner(), &value))
+                return Some(Entry::new(self.store.get(&uuid).expect(
+                    "Shouldn't have a uuid in the tree which isn't in the store.",
+                )));
             }
             None => None,
         }
@@ -616,7 +627,7 @@ impl<'a, U, V> Iterator for Query<'a, U, V>
 where
     U: PrimInt,
 {
-    type Item = (&'a AreaType<U>, &'a V);
+    type Item = Entry<'a, U, V>;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -624,9 +635,9 @@ where
         // descend the whole tree, just those subquadrants which intersect our held @query_region.
         // This is essential to performance.
         if let Some(uuid) = self.uuid_iter.next() {
-            if let Some((region, value)) = self.store.get(&uuid) {
-                if self.traversal.eval(*region, self.query_region) {
-                    return Some((region.inner(), value));
+            if let Some(rv) = self.store.get(&uuid) {
+                if self.traversal.eval(/*region*/ rv.0, self.query_region) {
+                    return Some(Entry::new(rv));
                 }
             }
             return self.next();
@@ -671,7 +682,7 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map_or(None, |(k, _v)| Some(k))
+        self.inner.next().map_or(None, |entry| Some(entry.region()))
     }
 
     #[inline]
@@ -720,7 +731,7 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map_or(None, |(_k, v)| Some(v))
+        self.inner.next().map_or(None, |entry| Some(entry.value()))
     }
 
     #[inline]
@@ -877,7 +888,7 @@ impl<'a, U, V> IntoIterator for &'a Quadtree<U, V>
 where
     U: PrimInt,
 {
-    type Item = (&'a AreaType<U>, &'a V);
+    type Item = Entry<'a, U, V>;
     type IntoIter = Iter<'a, U, V>;
 
     fn into_iter(self) -> Iter<'a, U, V> {

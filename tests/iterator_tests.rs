@@ -17,6 +17,7 @@ mod util; // For unordered_elements_are.
 // For testing .iter(), .iter_mut(), .regions(), .values(), .values_mut().
 mod iterator_tests {
     use crate::util::unordered_elements_are;
+    use quadtree_impl::entry::Entry;
     use quadtree_impl::Quadtree;
 
     fn mk_quadtree_for_iter_tests() -> Quadtree<i32, i8> {
@@ -30,7 +31,7 @@ mod iterator_tests {
         let q = mk_quadtree_for_iter_tests();
 
         debug_assert!(unordered_elements_are(
-            q.iter(),
+            q.iter().map(|e| e.inner()),
             vec![
                 (&((-15, 20), (1, 1)), &-25),
                 (&((0, -5), (1, 1)), &10),
@@ -47,7 +48,7 @@ mod iterator_tests {
         q.modify_all(|v| *v += 1);
 
         debug_assert!(unordered_elements_are(
-            q.iter(),
+            q.iter().map(|e| e.inner()),
             vec![
                 (&((-15, 20), (1, 1)), &-24),
                 (&((0, -5), (1, 1)), &11),
@@ -94,7 +95,7 @@ mod iterator_tests {
     #[test]
     fn into_iterator_reference() {
         let mut q = mk_quadtree_for_iter_tests();
-        let iter: Vec<(&((i32, i32), (i32, i32)), &i8)> = (&q).into_iter().collect();
+        let iter: Vec<Entry<i32, i8>> = (&q).into_iter().collect();
         debug_assert_eq!(iter.len(), 3);
 
         q.reset();

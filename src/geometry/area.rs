@@ -22,7 +22,7 @@ pub type AreaType<U> = (PointType<U>, (U, U));
 // Defined by a top-left anchor and a width/height.
 // The width/height must both be positive and nonzero.
 // Should be passed by value.
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Area<U> {
     inner: AreaType<U>,
 }
