@@ -355,17 +355,6 @@ where
         )
     }
 
-    ///  `query_strict()` behaves the same as `query()`, except that the regions returned are
-    ///  guaranteed to be totally contained within the query region.
-    pub fn query_strict(&self, anchor: PointType<U>, size: (U, U)) -> Query<U, V> {
-        Query::new(
-            (anchor, size).into(),
-            &self.inner,
-            &self.store,
-            Traversal::Strict,
-        )
-    }
-
     /// Alias for [`.query(pt, (1, 1))`]. See also [`.query_pt_strict()`].
     ///
     /// [`.query(pt, (1, 1))`]: struct.Quadtree.html#method.query
@@ -376,6 +365,17 @@ where
             &self.inner,
             &self.store,
             Traversal::Overlapping,
+        )
+    }
+
+    ///  `query_strict()` behaves the same as `query()`, except that the regions returned are
+    ///  guaranteed to be totally contained within the query region.
+    pub fn query_strict(&self, anchor: PointType<U>, size: (U, U)) -> Query<U, V> {
+        Query::new(
+            (anchor, size).into(),
+            &self.inner,
+            &self.store,
+            Traversal::Strict,
         )
     }
 
@@ -423,6 +423,27 @@ where
     {
         let query_region = (pt, Self::default_region_size()).into();
         self.modify_region(|a| a.intersects(query_region), f);
+    }
+
+    ///  `modify_strict()` behaves the same as `modify()`, except that the regions modified are
+    ///  guaranteed to be totally contained within the query region.
+    pub fn modify_strict<F>(&mut self, anchor: PointType<U>, size: (U, U), f: F)
+    where
+        F: Fn(&mut V) + Copy,
+    {
+        let query_region: Area<U> = (anchor, size).into();
+        self.modify_region(|a| query_region.contains(a), f);
+    }
+
+    /// Alias for [`.modify_strict(pt, (1, 1))`].
+    ///
+    /// [`.modify_strict(pt, (1, 1))`]: struct.Quadtree.html#method.modify_strict
+    pub fn modify_strict_pt<F>(&mut self, pt: PointType<U>, f: F)
+    where
+        F: Fn(&mut V) + Copy,
+    {
+        let query_region: Area<U> = (pt, Self::default_region_size()).into();
+        self.modify_region(|a| query_region.contains(a), f);
     }
 
     /// Alias for [`.modify(self.anchor(), (self.width(), self.height()))`].
