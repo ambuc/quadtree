@@ -226,13 +226,6 @@ where
     /// Perhaps before inserting a region, the callsite would like to check to see if that region
     /// could fit in the area represented by the quadtree.
     /// ```
-    /// //  0  1  2  3  4
-    /// // 0+--*******--+
-    /// //  |  *******  |
-    /// // 1+--*******--+
-    /// //  |  *******  |
-    /// // 2+--*******--+
-    ///
     /// use quadtree_impl::Quadtree;
     ///
     /// let qt = Quadtree::<u32, u32>::new_with_anchor((1, 0), 1);
@@ -240,23 +233,9 @@ where
     /// assert!(qt.contains((1, 0), (2, 2))); // qt contains itself.
     ///
     /// // qt contains a 1x1 region within it.
-    /// //
-    /// //  0  1  2  3  4
-    /// // 0+--XXXX***--+
-    /// //  |  XXXX***  |
-    /// // 1+--XXXX***--+
-    /// //  |  *******  |
-    /// // 2+--*******--+
     /// assert!(qt.contains((1, 0), (1, 1)));
     ///
     /// // But, qt does not contain regions which are not totally within it.
-    /// //
-    /// //  0  1  2  3  4
-    /// // 0XXXX******--+
-    /// //  XXXX******  |
-    /// // 1XXXX******--+
-    /// //  |  *******  |
-    /// // 2+--*******--+
     /// assert!(!qt.contains((0, 0), (1, 1)));
     /// ```
     pub fn contains(&self, anchor: PointType<U>, size: (U, U)) -> bool {
