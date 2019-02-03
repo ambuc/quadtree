@@ -123,7 +123,6 @@ mod iterator_tests {
         // Just large enough to encompass the two points.
         let returned_entries = q.delete((-15, -5), (16, 26));
         debug_assert_eq!(q.len(), 1);
-        debug_assert_eq!(returned_entries.len(), 2);
 
         debug_assert!(unordered_elements_are(
             returned_entries.map(|mut e| e.value()),

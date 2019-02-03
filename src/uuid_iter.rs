@@ -33,7 +33,6 @@ where
 {
     uuid_stack: Vec<&'a Uuid>,
     qt_stack: Vec<&'a QTInner<U>>,
-    remaining: usize,
     visited: HashSet<Uuid>,
 }
 
@@ -45,7 +44,6 @@ where
         UuidIter {
             uuid_stack: vec![],
             qt_stack: vec![qt],
-            remaining: 0,
             visited: HashSet::new(),
         }
     }
@@ -85,17 +83,8 @@ where
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.remaining, Some(self.remaining))
+        (0, None)
     }
 }
 
 impl<U> FusedIterator for UuidIter<'_, U> where U: PrimInt {}
-
-impl<U> ExactSizeIterator for UuidIter<'_, U>
-where
-    U: PrimInt,
-{
-    fn len(&self) -> usize {
-        self.remaining
-    }
-}

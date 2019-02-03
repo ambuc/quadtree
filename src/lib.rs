@@ -114,7 +114,6 @@ use uuid::Uuid;
 ///
 /// Points should be represented by regions with dimensions `(1, 1)`.
 ///
-///   - TODO(ambuc): Fix size hints in iterators
 ///   - TODO(ambuc): Implement `.delete_by(anchor, dimensions, fn)`: `.retain()` is the inverse.
 ///   - TODO(ambuc): Implement `FromIterator<(K, V)>` for `Quadtree`.
 #[derive(Debug, PartialEq, Eq)]
@@ -488,7 +487,6 @@ where
     ///
     /// let mut returned_entries: IntoIter<u32, f64> = qt.delete((2, 1), (1, 1));
     /// // We've removed one object from the Quadtree.
-    /// assert_eq!(returned_entries.len(), 1);
     /// assert_eq!(qt.len(), 1);
     ///
     /// // qt.delete() returns a struct of type IntoIter<u32, f64>.
@@ -606,20 +604,11 @@ where
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.uuid_iter.size_hint()
+        (0, None)
     }
 }
 
 impl<U, V> FusedIterator for Iter<'_, U, V> where U: PrimInt {}
-
-impl<U, V> ExactSizeIterator for Iter<'_, U, V>
-where
-    U: PrimInt,
-{
-    fn len(&self) -> usize {
-        self.uuid_iter.len()
-    }
-}
 
 #[derive(Debug, Clone)]
 enum Traversal {
@@ -715,7 +704,7 @@ where
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.uuid_iter.size_hint()
+        (0, None)
     }
 }
 
@@ -755,20 +744,11 @@ where
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.inner.size_hint()
+        (0, None)
     }
 }
 
 impl<U, V> FusedIterator for Regions<'_, U, V> where U: PrimInt {}
-
-impl<U, V> ExactSizeIterator for Regions<'_, U, V>
-where
-    U: PrimInt,
-{
-    fn len(&self) -> usize {
-        self.inner.len()
-    }
-}
 
 // db    db  .d8b.  db      db    db d88888b .d8888.
 // 88    88 d8' `8b 88      88    88 88'     88'  YP
@@ -806,20 +786,11 @@ where
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.inner.size_hint()
+        (0, None)
     }
 }
 
 impl<U, V> FusedIterator for Values<'_, U, V> where U: PrimInt {}
-
-impl<U, V> ExactSizeIterator for Values<'_, U, V>
-where
-    U: PrimInt,
-{
-    fn len(&self) -> usize {
-        self.inner.len()
-    }
-}
 
 // d888888b d8b   db d888888b  .d88b.  d888888b d888888b d88888b d8888b.
 //   `88'   888o  88 `~~88~~' .8P  Y8.   `88'   `~~88~~' 88'     88  `8D
@@ -856,17 +827,7 @@ where
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.pairs.iter().size_hint()
-    }
-}
-
-impl<U, V> ExactSizeIterator for IntoIter<U, V>
-where
-    U: PrimInt,
-{
-    #[inline]
-    fn len(&self) -> usize {
-        self.pairs.len()
+        (0, None)
     }
 }
 
