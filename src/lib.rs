@@ -76,7 +76,7 @@ use crate::geometry::point::PointType;
 use crate::qtinner::QTInner;
 use crate::types::StoreType;
 use crate::uuid_iter::UuidIter;
-use num::{cast::FromPrimitive, PrimInt};
+use num::PrimInt;
 use std::collections::HashMap;
 use std::iter::FusedIterator;
 use uuid::Uuid;
@@ -416,28 +416,19 @@ where
 
     /// Returns an iterator over all `(&((U, U), (U, U)), &V)` region/value pairs in the
     /// Quadtree.
-    pub fn iter(&self) -> Iter<U, V>
-    where
-        U: FromPrimitive,
-    {
+    pub fn iter(&self) -> Iter<U, V> {
         Iter::new(&self.inner, &self.store)
     }
 
     /// Returns an iterator over all `&'a ((U, U), (U, U))` regions in the Quadtree.
-    pub fn regions(&self) -> Regions<U, V>
-    where
-        U: FromPrimitive,
-    {
+    pub fn regions(&self) -> Regions<U, V> {
         Regions {
             inner: Iter::new(&self.inner, &self.store),
         }
     }
 
     /// Returns an iterator over all `&'a V` values in the Quadtree.
-    pub fn values(&self) -> Values<U, V>
-    where
-        U: FromPrimitive,
-    {
+    pub fn values(&self) -> Values<U, V> {
         Values {
             inner: Iter::new(&self.inner, &self.store),
         }
