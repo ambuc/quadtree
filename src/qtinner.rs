@@ -116,15 +116,11 @@ where
         }
 
         if self.subquadrants.is_none() {
-            self.expand_subquadrants_by_pt(self.center_pt());
+            self.expand_subquadrants_by_pt(self.region.center_pt());
         }
 
-        // For a subquadrant to totally contain the req. area, it must both (a) contain the req.
-        // area's anchor and (b) contain the total area. We optimize by checking for (a) first.
-        // let q_index = (self.center_pt().dir_towards(req.anchor())) as usize;
-
-        // Attempt to insert the uuid into the subquadrant we think it might fit in,
         assert!(self.subquadrants.is_some()); // We should have Someified this in .split().
+
         if let Some(sqs) = self.subquadrants.as_mut() {
             for sq in sqs.iter_mut() {
                 if sq.region.intersects(req) {
@@ -134,18 +130,17 @@ where
         }
     }
 
-    // +--+--+--+    +--+--+--+
+    // a--+--+--+    +--+--+--+ // a <- self.region.anchor()
     // |        |    |     |  |
-    // +     p  + => +--+--+--+
+    // +     p  + => +--+--+--+ // p
     // |        |    |     |  |
     // +--+--+--+    +--+--+--+
-    // TODO(ambuc): Integrate this type with geometry::quadrant::Quadrant for higher type-safety.
     fn expand_subquadrants_by_pt(&mut self, p: Point<U>) {
         assert!(self.region.contains_pt(p));
 
         let anchor_nw: (U, U) = self.region.anchor().into();
-        let anchor_ne: (U, U) = (p.x(), self.anchor_pt().y());
-        let anchor_sw: (U, U) = (self.anchor_pt().x(), p.y());
+        let anchor_ne: (U, U) = (p.x(), self.region.anchor().y());
+        let anchor_sw: (U, U) = (self.region.anchor().x(), p.y());
         let anchor_se: (U, U) = p.into();
 
         self.subquadrants = Some([
@@ -154,18 +149,6 @@ where
             Box::new(Self::new(anchor_se, self.depth - 1)),
             Box::new(Self::new(anchor_sw, self.depth - 1)),
         ]);
-    }
-
-    fn anchor_pt(&self) -> Point<U> {
-        self.region.anchor()
-    }
-
-    fn center_pt(&self) -> Point<U> {
-        self.anchor_pt()
-            + Point::<U>::from((
-                self.region.width() / Self::two(),
-                self.region.height() / Self::two(),
-            ))
     }
 
     // Strongly-typed alias for U::one() + U::One()

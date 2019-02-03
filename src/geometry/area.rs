@@ -88,70 +88,49 @@ impl<U> Area<U>
 where
     U: num::PrimInt,
 {
-    // Accessors
-    pub fn inner(&self) -> &AreaType<U> {
-        &self.inner
-    }
-
     pub fn anchor(&self) -> Point<U> {
         self.inner.0.into()
     }
-    pub fn dimensions(&self) -> PointType<U> {
+    pub fn center_pt(&self) -> Point<U> {
+        self.anchor() + (self.width() / Self::two(), self.height() / Self::two()).into()
+    }
+
+    fn dimensions(&self) -> PointType<U> {
         self.inner.1
     }
-    // Properties
-    // // Measurements
     pub fn width(&self) -> U {
         self.dimensions().0
     }
     pub fn height(&self) -> U {
         self.dimensions().1
     }
-    // // Positions
-    fn top(&self) -> U {
+
+    fn top_edge(&self) -> U {
         self.anchor().y()
     }
-    fn bottom(&self) -> U {
+    fn bottom_edge(&self) -> U {
         self.anchor().y() + self.height()
     }
-    fn left(&self) -> U {
+    fn left_edge(&self) -> U {
         self.anchor().x()
     }
-    fn right(&self) -> U {
+    fn right_edge(&self) -> U {
         self.anchor().x() + self.width()
     }
-    // // Coordinates
-    #[allow(dead_code)]
-    pub fn tl_pt(&self) -> Point<U> {
-        (self.left(), self.top()).into()
-    }
-    #[allow(dead_code)]
-    pub fn tr_pt(&self) -> Point<U> {
-        (self.right(), self.top()).into()
-    }
-    #[allow(dead_code)]
-    pub fn bl_pt(&self) -> Point<U> {
-        (self.left(), self.bottom()).into()
-    }
-    #[allow(dead_code)]
-    pub fn br_pt(&self) -> Point<U> {
-        (self.right(), self.bottom()).into()
-    }
-    // Evaluation
 
     // Whether or not an area intersects another area.
     pub fn intersects(self, other: Area<U>) -> bool {
-        self.left() < other.right()
-            && self.right() > other.left()
-            && self.top() < other.bottom()
-            && self.bottom() > other.top()
+        self.left_edge() < other.right_edge()
+            && self.right_edge() > other.left_edge()
+            && self.top_edge() < other.bottom_edge()
+            && self.bottom_edge() > other.top_edge()
     }
     // Whether or not an area wholly contains another area.
     pub fn contains(self, other: Area<U>) -> bool {
-        other.right() <= self.right()
-            && other.left() >= self.left()
-            && other.top() >= self.top()
-            && other.bottom() <= self.bottom()
+        other.right_edge() <= self.right_edge()
+            && other.left_edge() >= self.left_edge()
+            && other.top_edge() >= self.top_edge()
+            && other.bottom_edge() <= self.bottom_edge()
     }
 
     // Whether or not an area contains a point.
@@ -160,6 +139,11 @@ where
     #[allow(dead_code)]
     pub fn contains_pt(self, pt: Point<U>) -> bool {
         self.contains((pt.into(), /*default dimensions*/ (U::one(), U::one())).into())
+    }
+
+    // Strongly-typed alias for U::one() + U::One()
+    fn two() -> U {
+        U::one() + U::one()
     }
 }
 
@@ -232,15 +216,10 @@ mod tests {
             debug_assert_eq!(a.width(), 5);
             debug_assert_eq!(a.height(), 7);
 
-            debug_assert_eq!(a.left(), 3);
-            debug_assert_eq!(a.top(), 4);
-            debug_assert_eq!(a.right(), /*3+5*/ 8);
-            debug_assert_eq!(a.bottom(), /*4+7*/ 11);
-
-            debug_assert_eq!(a.tl_pt(), (3, 4).into());
-            debug_assert_eq!(a.tr_pt(), (8, 4).into());
-            debug_assert_eq!(a.bl_pt(), (3, 11).into());
-            debug_assert_eq!(a.br_pt(), (8, 11).into());
+            debug_assert_eq!(a.left_edge(), 3);
+            debug_assert_eq!(a.top_edge(), 4);
+            debug_assert_eq!(a.right_edge(), /*3+5*/ 8);
+            debug_assert_eq!(a.bottom_edge(), /*4+7*/ 11);
         }
     }
 

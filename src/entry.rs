@@ -71,7 +71,7 @@ where
 
     /// The held region, in standard (anchor, dimensions) form.
     pub fn region(&self) -> AreaType<U> {
-        *self.region.inner()
+        self.region.into()
     }
 
     pub(crate) fn area(&self) -> Area<U> {
