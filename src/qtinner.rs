@@ -21,7 +21,7 @@ use uuid::Uuid;
 #[derive(Clone, PartialEq, Eq)]
 pub(crate) struct QTInner<U>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt,
 {
     // The depth of the current cell in its tree. Zero means it's at the very bottom.
     pub(crate) depth: usize,
@@ -59,7 +59,7 @@ where
 
 impl<U> QTInner<U>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt,
 {
     pub(crate) fn new(anchor: PointType<U>, depth: usize) -> QTInner<U> {
         let width: U = Self::two().pow(depth as u32);
@@ -96,9 +96,7 @@ where
         req: Area<U>,
         val: V,
         store: &mut StoreType<U, V>,
-    ) where
-        U: std::fmt::Debug,
-    {
+    ) {
         let uuid = Uuid::new_v4();
         store.insert(uuid, (req, val));
 
@@ -107,10 +105,7 @@ where
 
     // Attempts to insert the value at the requested region. Returns false if the region was too
     // large.
-    fn insert_uuid_at_region<V>(&mut self, req: Area<U>, uuid: Uuid, store: &mut StoreType<U, V>)
-    where
-        U: std::fmt::Debug,
-    {
+    fn insert_uuid_at_region<V>(&mut self, req: Area<U>, uuid: Uuid, store: &mut StoreType<U, V>) {
         // If we're at the bottom depth, it had better fit.
         if self.depth == 0 {
             self.kept_uuids.push(uuid);

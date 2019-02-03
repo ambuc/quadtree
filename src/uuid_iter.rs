@@ -15,7 +15,6 @@
 use crate::qtinner::QTInner;
 use num::PrimInt;
 use std::collections::HashSet;
-use std::fmt::Debug;
 use std::iter::FusedIterator;
 use std::ops::Deref;
 use uuid::Uuid;
@@ -30,7 +29,7 @@ use uuid::Uuid;
 #[derive(Clone, Debug)]
 pub struct UuidIter<'a, U>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     uuid_stack: Vec<&'a Uuid>,
     qt_stack: Vec<&'a QTInner<U>>,
@@ -41,7 +40,7 @@ where
 
 impl<'a, U> UuidIter<'a, U>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     pub(crate) fn new(qt: &'a QTInner<U>) -> UuidIter<'a, U> {
         UuidIter {
@@ -55,7 +54,7 @@ where
 
 impl<U> Iterator for UuidIter<'_, U>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     type Item = Uuid;
 
@@ -91,11 +90,11 @@ where
     }
 }
 
-impl<U> FusedIterator for UuidIter<'_, U> where U: PrimInt + Debug {}
+impl<U> FusedIterator for UuidIter<'_, U> where U: PrimInt {}
 
 impl<U> ExactSizeIterator for UuidIter<'_, U>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     fn len(&self) -> usize {
         self.remaining

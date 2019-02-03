@@ -76,7 +76,6 @@ use crate::types::StoreType;
 use crate::uuid_iter::UuidIter;
 use num::{cast::FromPrimitive, PrimInt};
 use std::collections::HashMap;
-use std::fmt::Debug;
 use std::iter::FusedIterator;
 use uuid::Uuid;
 
@@ -118,7 +117,7 @@ use uuid::Uuid;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Quadtree<U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     depth: usize,
     inner: QTInner<U>,
@@ -127,7 +126,7 @@ where
 
 impl<U, V> Quadtree<U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     // Constructors //
 
@@ -277,10 +276,7 @@ where
     /// q.insert((0, 0), (1, 1), 500000);
     /// q.insert((0, 0), (5, 4), 27500);
     /// ```
-    pub fn insert(&mut self, anchor: PointType<U>, size: (U, U), val: V)
-    where
-        U: Debug,
-    {
+    pub fn insert(&mut self, anchor: PointType<U>, size: (U, U), val: V) {
         self.inner
             .insert_val_at_region((anchor, size).into(), val, &mut self.store)
     }
@@ -296,10 +292,7 @@ where
     /// ```
     ///
     /// [`.insert(_, (1, 1), _)`]: struct.Quadtree.html#method.insert
-    pub fn insert_pt(&mut self, anchor: PointType<U>, val: V)
-    where
-        U: Debug,
-    {
+    pub fn insert_pt(&mut self, anchor: PointType<U>, val: V) {
         self.inner.insert_val_at_region(
             (anchor, Self::default_region_size()).into(),
             val,
@@ -330,10 +323,7 @@ where
     /// // It's unclear what order the regions should return in, but there will be two of them.
     /// assert_eq!(query_b.count(), 2);
     /// ```
-    pub fn query(&self, anchor: PointType<U>, size: (U, U)) -> Query<U, V>
-    where
-        U: Debug,
-    {
+    pub fn query(&self, anchor: PointType<U>, size: (U, U)) -> Query<U, V> {
         let a = (anchor, size).into();
         Query::new(a, &self.inner, &self.store)
     }
@@ -345,10 +335,7 @@ where
     ///
     /// [`Query`]: struct.Query.html
     /// [`.query(anchor, (1, 1))`]: struct.Quadtree.html#method.query
-    pub fn query_pt(&self, anchor: PointType<U>) -> Query<U, V>
-    where
-        U: Debug,
-    {
+    pub fn query_pt(&self, anchor: PointType<U>) -> Query<U, V> {
         let a = (anchor, Self::default_region_size()).into();
         Query::new(a, &self.inner, &self.store)
     }
@@ -366,7 +353,6 @@ where
     /// the Quadtree intersecting the described region.
     pub fn modify<F>(&mut self, anchor: PointType<U>, size: (U, U), f: F)
     where
-        U: Debug,
         F: Fn(&mut V) + Copy,
     {
         let query_region = (anchor, size).into();
@@ -377,7 +363,6 @@ where
     /// the Quadtree overlapping the given point.
     pub fn modify_pt<F>(&mut self, anchor: PointType<U>, f: F)
     where
-        U: Debug,
         F: Fn(&mut V) + Copy,
     {
         let query_region = (anchor, Self::default_region_size()).into();
@@ -386,7 +371,6 @@ where
 
     fn modify_region<F, M>(&mut self, filter: F, modify: M)
     where
-        U: Debug,
         F: Fn(Area<U>) -> bool,
         M: Fn(&mut V) + Copy,
     {
@@ -461,7 +445,7 @@ where
 #[derive(Clone, Debug)]
 pub struct Iter<'a, U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     store: &'a StoreType<U, V>,
     uuid_iter: UuidIter<'a, U>,
@@ -469,7 +453,7 @@ where
 
 impl<'a, U, V> Iter<'a, U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     pub(crate) fn new(qt: &'a QTInner<U>, store: &'a StoreType<U, V>) -> Iter<'a, U, V> {
         Iter {
@@ -481,7 +465,7 @@ where
 
 impl<'a, U, V> Iterator for Iter<'a, U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     type Item = (&'a AreaType<U>, &'a V);
 
@@ -505,11 +489,11 @@ where
     }
 }
 
-impl<U, V> FusedIterator for Iter<'_, U, V> where U: PrimInt + Debug {}
+impl<U, V> FusedIterator for Iter<'_, U, V> where U: PrimInt {}
 
 impl<U, V> ExactSizeIterator for Iter<'_, U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     fn len(&self) -> usize {
         self.uuid_iter.len()
@@ -533,7 +517,7 @@ where
 #[derive(Clone, Debug)]
 pub struct Query<'a, U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     pub(crate) query_region: Area<U>,
     pub(crate) uuid_iter: UuidIter<'a, U>,
@@ -543,7 +527,7 @@ where
 
 impl<'a, U, V> Query<'a, U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     pub(crate) fn new(
         query_region: Area<U>,
@@ -551,7 +535,7 @@ where
         store: &'a StoreType<U, V>,
     ) -> Query<'a, U, V>
     where
-        U: PrimInt + Debug,
+        U: PrimInt,
     {
         let q = Query {
             query_region,
@@ -566,7 +550,7 @@ where
 
 impl<'a, U, V> Iterator for Query<'a, U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     type Item = (&'a AreaType<U>, &'a V);
 
@@ -592,7 +576,7 @@ where
     }
 }
 
-impl<U, V> FusedIterator for Query<'_, U, V> where U: PrimInt + Debug {}
+impl<U, V> FusedIterator for Query<'_, U, V> where U: PrimInt {}
 
 // d8888b. d88888b  d888b  d888888b  .d88b.  d8b   db .d8888.
 // 88  `8D 88'     88' Y8b   `88'   .8P  Y8. 888o  88 88'  YP
@@ -610,14 +594,14 @@ impl<U, V> FusedIterator for Query<'_, U, V> where U: PrimInt + Debug {}
 #[derive(Clone, Debug)]
 pub struct Regions<'a, U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     pub(crate) inner: Iter<'a, U, V>,
 }
 
 impl<'a, U, V> Iterator for Regions<'a, U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     type Item = (&'a AreaType<U>);
 
@@ -632,11 +616,11 @@ where
     }
 }
 
-impl<U, V> FusedIterator for Regions<'_, U, V> where U: PrimInt + Debug {}
+impl<U, V> FusedIterator for Regions<'_, U, V> where U: PrimInt {}
 
 impl<U, V> ExactSizeIterator for Regions<'_, U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     fn len(&self) -> usize {
         self.inner.len()
@@ -659,14 +643,14 @@ where
 #[derive(Clone, Debug)]
 pub struct Values<'a, U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     pub(crate) inner: Iter<'a, U, V>,
 }
 
 impl<'a, U, V> Iterator for Values<'a, U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     type Item = (&'a V);
 
@@ -681,11 +665,11 @@ where
     }
 }
 
-impl<U, V> FusedIterator for Values<'_, U, V> where U: PrimInt + Debug {}
+impl<U, V> FusedIterator for Values<'_, U, V> where U: PrimInt {}
 
 impl<U, V> ExactSizeIterator for Values<'_, U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     fn len(&self) -> usize {
         self.inner.len()
@@ -709,7 +693,7 @@ where
 #[derive(Clone, Debug)]
 pub struct IntoIter<U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     uuid_stack: Vec<Uuid>,
     qt_stack: Vec<QTInner<U>>,
@@ -719,7 +703,7 @@ where
 
 impl<U, V> IntoIter<U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     pub(crate) fn new(qt: QTInner<U>, store: StoreType<U, V>) -> IntoIter<U, V> {
         let len = qt.len();
@@ -734,7 +718,7 @@ where
 
 impl<U, V> Iterator for IntoIter<U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     type Item = (AreaType<U>, V);
 
@@ -780,7 +764,7 @@ where
 
 impl<U, V> ExactSizeIterator for IntoIter<U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     #[inline]
     fn len(&self) -> usize {
@@ -788,14 +772,14 @@ where
     }
 }
 
-impl<U, V> FusedIterator for IntoIter<U, V> where U: PrimInt + Debug {}
+impl<U, V> FusedIterator for IntoIter<U, V> where U: PrimInt {}
 
 /// `Extend<((U, U), V)>` will silently drop values whose coordinates do not fit in the region
 /// represented by the Quadtree. It is the responsibility of the callsite to ensure these points
 /// fit.
 impl<U, V> Extend<(PointType<U>, V)> for Quadtree<U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     fn extend<T>(&mut self, iter: T)
     where
@@ -812,7 +796,7 @@ where
 /// points fit.
 impl<U, V> Extend<(AreaType<U>, V)> for Quadtree<U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     fn extend<T>(&mut self, iter: T)
     where
@@ -827,7 +811,7 @@ where
 // Immutable iterator for the Quadtree, returning by-reference.
 impl<'a, U, V> IntoIterator for &'a Quadtree<U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     type Item = (&'a AreaType<U>, &'a V);
     type IntoIter = Iter<'a, U, V>;
@@ -839,7 +823,7 @@ where
 
 impl<U, V> IntoIterator for Quadtree<U, V>
 where
-    U: PrimInt + Debug,
+    U: PrimInt,
 {
     type Item = (AreaType<U>, V);
     type IntoIter = IntoIter<U, V>;
