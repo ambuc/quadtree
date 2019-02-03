@@ -36,7 +36,10 @@ where
         print!("│");
         for j in 0..q.height() {
             match q
-                .query_pt((U::from_usize(i).unwrap(), U::from_usize(j).unwrap()))
+                .query(
+                    (U::from_usize(i).unwrap(), U::from_usize(j).unwrap()),
+                    (U::one(), U::one()),
+                )
                 .count()
             {
                 0 => print!(" "),

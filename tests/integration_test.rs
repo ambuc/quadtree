@@ -77,7 +77,7 @@ mod insert {
             /*size=*/ (2, 3),
             /*value=*/ 4,
         );
-        q.insert_pt(/*anchor=*/ (1, 1), /*value=*/ 3);
+        q.insert(/*anchor=*/ (1, 1), (1, 1), /*value=*/ 3);
 
         // The full bounds of the region.
         q.insert(
@@ -86,7 +86,7 @@ mod insert {
             /*value=*/ 17,
         );
         // At (3, 3) but 1x1
-        q.insert_pt(/*anchor=*/ (3, 3), /*value=*/ 19);
+        q.insert(/*anchor=*/ (3, 3), (1, 1), /*value=*/ 19);
     }
 
     #[test]
@@ -99,14 +99,14 @@ mod insert {
             /*value=*/ 17,
         );
         // At (4, 4) but 1x1.
-        q.insert_pt(/*anchor=*/ (4, 4), /*value=*/ 20);
+        q.insert(/*anchor=*/ (4, 4), (1, 1), /*value=*/ 20);
     }
 
     #[test]
     fn insert_successful_outside_region() {
         // Since the region might overlap, insertion doesn't fail.
         let mut q = Quadtree::<u32, u16>::new_with_anchor((2, 2), 2);
-        q.insert_pt(/*anchor=*/ (0, 0), /*value=*/ 25);
+        q.insert(/*anchor=*/ (0, 0), (1, 1), /*value=*/ 25);
     }
 }
 
@@ -120,7 +120,7 @@ fn len() {
     q.insert((0, 0), (1, 1), 2);
     debug_assert_eq!(q.len(), 2);
     // Or if it's a point.
-    q.insert_pt((2, 3), 2);
+    q.insert((2, 3), (1, 1), 2);
     debug_assert_eq!(q.len(), 3);
 }
 
@@ -151,7 +151,7 @@ fn is_empty() {
     debug_assert!(q2.is_empty());
 
     // Insert point
-    q2.insert_pt((1, 1), 50);
+    q2.insert((1, 1), (1, 1), 50);
     debug_assert!(!q2.is_empty());
 }
 
@@ -160,7 +160,7 @@ fn reset() {
     let mut q = Quadtree::<u32, f32>::new(4);
     debug_assert!(q.is_empty());
 
-    q.insert_pt((2, 2), 57.27);
+    q.insert((2, 2), (1, 1), 57.27);
     debug_assert!(!q.is_empty());
 
     q.reset();
@@ -227,10 +227,10 @@ mod extend {
 
         debug_assert_eq!(q.len(), 2);
 
-        let entry_zero = q.query_pt((0, 0)).next().unwrap();
+        let entry_zero = q.query((0, 0), (1, 1)).next().unwrap();
         debug_assert_eq!(entry_zero.region(), &((0, 0), (1, 1)));
         debug_assert_eq!(entry_zero.value(), &0);
-        let entry_five = q.query_pt((2, 3)).next().unwrap();
+        let entry_five = q.query((2, 3), (1, 1)).next().unwrap();
         debug_assert_eq!(entry_five.region(), &((2, 3), (1, 1)));
         debug_assert_eq!(entry_five.value(), &5);
     }
@@ -246,8 +246,8 @@ mod extend {
 
         dbg!(&q);
 
-        debug_assert_eq!(q.query_pt((0, 0)).next().unwrap().value(), &0);
-        debug_assert_eq!(q.query_pt((2, 3)).next().unwrap().value(), &5);
+        debug_assert_eq!(q.query((0, 0), (1, 1)).next().unwrap().value(), &0);
+        debug_assert_eq!(q.query((2, 3), (1, 1)).next().unwrap().value(), &5);
     }
 }
 

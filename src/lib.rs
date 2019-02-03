@@ -96,7 +96,7 @@ use uuid::Uuid;
 ///  - `U`, where `U` is the index type of the x/y coordinate, and
 ///  - `V`, where `V` is the value being stored in the data structure.
 ///
-/// Both points and regions are represented by the type
+/// Regions are represented by the type
 /// ```
 /// type U = u64; // Or any primitive integer, signed or unsigned.
 ///
@@ -107,7 +107,7 @@ use uuid::Uuid;
 ///  - `anchor` is the x/y coordinate of the top-left corner, and
 ///  - `dimensions` is a tuple containing the width and height of the region.
 ///
-/// Points have dimensions `(1, 1)`.
+/// Points should be represented by regions with dimensions `(1, 1)`.
 ///
 ///   - TODO(ambuc): In lieu of mutable getters, expose the held UUID and allow specific lookups
 ///   - TODO(ambuc): Size hints in iterators
@@ -196,10 +196,10 @@ where
     /// let mut qt = Quadtree::<u32, f32>::new(4);
     /// assert_eq!(qt.len(), 0);
     ///
-    /// qt.insert_pt((3, 1), 3.14159);
+    /// qt.insert((3, 1), (1, 1), 3.14159);
     /// assert_eq!(qt.len(), 1);
     ///
-    /// qt.insert_pt((2, 7), 2.71828);
+    /// qt.insert((2, 7), (1, 1), 2.71828);
     /// assert_eq!(qt.len(), 2);
     /// ```
     pub fn len(&self) -> usize {
@@ -288,27 +288,6 @@ where
             .insert_val_at_region((anchor, size).into(), val, &mut self.store)
     }
 
-    /// Inserts the value at the given point. Fails silently, like [`.insert()`].
-    ///  - Expect the behavior of `.insert_pt(_, _)` to be the same as [`.insert(_, (1, 1), _)`].
-    /// ```
-    /// use quadtree_impl::Quadtree;
-    ///
-    /// let mut qt = Quadtree::<u32, i64>::new(2);
-    ///
-    /// qt.insert_pt((0, 0),  8675309);
-    /// qt.insert_pt((5, 4),  6060842);
-    /// ```
-    ///
-    /// [`.insert()`]: struct.Quadtree.html#method.insert
-    /// [`.insert(_, (1, 1), _)`]: struct.Quadtree.html#method.insert
-    pub fn insert_pt(&mut self, anchor: PointType<U>, val: V) {
-        self.inner.insert_val_at_region(
-            (anchor, Self::default_region_size()).into(),
-            val,
-            &mut self.store,
-        )
-    }
-
     /// Returns an iterator over [`EntryRef<U, V>`] structs representing values
     /// within the query region.
     ///
@@ -354,36 +333,11 @@ where
         )
     }
 
-    /// Alias for [`.query(pt, (1, 1))`]. See also [`.query_strict_pt()`].
-    ///
-    /// [`.query(pt, (1, 1))`]: struct.Quadtree.html#method.query
-    /// [`.query_strict_pt()`]: struct.Quadtree.html#method.query_strict_pt
-    pub fn query_pt(&self, pt: PointType<U>) -> Query<U, V> {
-        Query::new(
-            (pt, Self::default_region_size()).into(),
-            &self.inner,
-            &self.store,
-            Traversal::Overlapping,
-        )
-    }
-
     ///  `query_strict()` behaves the same as `query()`, except that the regions returned are
     ///  guaranteed to be totally contained within the query region.
     pub fn query_strict(&self, anchor: PointType<U>, size: (U, U)) -> Query<U, V> {
         Query::new(
             (anchor, size).into(),
-            &self.inner,
-            &self.store,
-            Traversal::Strict,
-        )
-    }
-
-    /// Alias for [`.query_strict(pt, (1, 1))`].
-    ///
-    /// [`.query_strict(pt, (1, 1))`]: struct.Quadtree.html#method.query_strict
-    pub fn query_strict_pt(&self, pt: PointType<U>) -> Query<U, V> {
-        Query::new(
-            (pt, Self::default_region_size()).into(),
             &self.inner,
             &self.store,
             Traversal::Strict,
@@ -413,17 +367,6 @@ where
         self.modify_region(|a| a.intersects(query_region), f);
     }
 
-    /// Alias for [`.modify(pt, (1, 1))`].
-    ///
-    /// [`.modify(pt, (1, 1))`]: struct.Quadtree.html#method.modify
-    pub fn modify_pt<F>(&mut self, pt: PointType<U>, f: F)
-    where
-        F: Fn(&mut V) + Copy,
-    {
-        let query_region = (pt, Self::default_region_size()).into();
-        self.modify_region(|a| a.intersects(query_region), f);
-    }
-
     ///  `modify_strict()` behaves the same as `modify()`, except that the regions modified are
     ///  guaranteed to be totally contained within the query region.
     pub fn modify_strict<F>(&mut self, anchor: PointType<U>, size: (U, U), f: F)
@@ -431,17 +374,6 @@ where
         F: Fn(&mut V) + Copy,
     {
         let query_region: Area<U> = (anchor, size).into();
-        self.modify_region(|a| query_region.contains(a), f);
-    }
-
-    /// Alias for [`.modify_strict(pt, (1, 1))`].
-    ///
-    /// [`.modify_strict(pt, (1, 1))`]: struct.Quadtree.html#method.modify_strict
-    pub fn modify_strict_pt<F>(&mut self, pt: PointType<U>, f: F)
-    where
-        F: Fn(&mut V) + Copy,
-    {
-        let query_region: Area<U> = (pt, Self::default_region_size()).into();
         self.modify_region(|a| query_region.contains(a), f);
     }
 
@@ -489,25 +421,10 @@ where
         self.delete_uuids_and_return(self.query(anchor, size).map(|e| e.uuid()).collect())
     }
 
-    /// Alias for [`.clear(pt, (1, 1))`]. See also [`.clear_strict_pt()`].
-    ///
-    /// [`.clear(pt, (1, 1))`]: struct.Quadtree.html#method.clear
-    /// [`.clear_strict_pt()`]: struct.Quadtree.html#method.clear_strict_pt
-    pub fn clear_pt(&mut self, pt: PointType<U>) -> IntoIter<U, V> {
-        self.clear(pt, Self::default_region_size())
-    }
-
     ///  `clear_strict()` behaves the same as `clear()`, except that the regions deleted and
     ///  returned are guaranteed to be totally contained within the clear region.
     pub fn clear_strict(&mut self, anchor: PointType<U>, size: (U, U)) -> IntoIter<U, V> {
         self.delete_uuids_and_return(self.query_strict(anchor, size).map(|e| e.uuid()).collect())
-    }
-
-    /// Alias for [`.clear_strict(pt, (1, 1))`].
-    ///
-    /// [`.clear_strict(pt, (1, 1))`]: struct.Quadtree.html#method.clear_strict
-    pub fn clear_strict_pt(&mut self, pt: PointType<U>) -> IntoIter<U, V> {
-        self.clear_strict(pt, Self::default_region_size())
     }
 
     fn delete_uuids_and_return(&mut self, uuids: HashSet<Uuid>) -> IntoIter<U, V> {
@@ -539,11 +456,6 @@ where
         Values {
             inner: Iter::new(&self.inner, &self.store),
         }
-    }
-
-    // Strongly-typed alias for (one(), one()).
-    fn default_region_size() -> (U, U) {
-        (U::one(), U::one())
     }
 }
 
@@ -645,10 +557,9 @@ impl Traversal {
 
 /// An iterator over the regions and values of a [`Quadtree`].
 ///
-/// This struct is created by the [`query`] or [`query_pt`] methods on [`Quadtree`].
+/// This struct is created by the [`query`] method on [`Quadtree`].
 ///
 /// [`query`]: struct.Quadtree.html#method.query
-/// [`query_pt`]: struct.Quadtree.html#method.query_pt
 /// [`Quadtree`]: struct.Quadtree.html
 #[derive(Clone, Debug)]
 pub struct Query<'a, U, V>
@@ -870,23 +781,6 @@ where
 
 impl<U, V> FusedIterator for IntoIter<U, V> where U: PrimInt {}
 
-/// `Extend<((U, U), V)>` will silently drop values whose coordinates do not fit in the region
-/// represented by the Quadtree. It is the responsibility of the callsite to ensure these points
-/// fit.
-impl<U, V> Extend<(PointType<U>, V)> for Quadtree<U, V>
-where
-    U: PrimInt,
-{
-    fn extend<T>(&mut self, iter: T)
-    where
-        T: IntoIterator<Item = (PointType<U>, V)>,
-    {
-        for (pt, val) in iter {
-            self.insert_pt(pt, val);
-        }
-    }
-}
-
 /// `Extend<(((U, U), (U, U), V)>` will silently drop values whose coordinates do not fit in the
 /// region represented by the Quadtree. It is the responsibility of the callsite to ensure these
 /// points fit.
@@ -900,6 +794,23 @@ where
     {
         for ((anchor, size), val) in iter {
             self.insert(anchor, size, val);
+        }
+    }
+}
+
+/// `Extend<((U, U), V)>` will silently drop values whose coordinates do not fit in the region
+/// represented by the Quadtree. It is the responsibility of the callsite to ensure these points
+/// fit.
+impl<U, V> Extend<(PointType<U>, V)> for Quadtree<U, V>
+where
+    U: PrimInt,
+{
+    fn extend<T>(&mut self, iter: T)
+    where
+        T: IntoIterator<Item = (PointType<U>, V)>,
+    {
+        for (pt, val) in iter {
+            self.insert(pt, (U::one(), U::one()), val);
         }
     }
 }
