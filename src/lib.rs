@@ -542,7 +542,6 @@ where
     pub(crate) query_region: Area<U>,
     pub(crate) uuid_iter: UuidIter<'a, U>,
     store: &'a StoreType<U, V>,
-    resource_type: std::marker::PhantomData<V>,
 }
 
 impl<'a, U, V> Query<'a, U, V>
@@ -561,7 +560,6 @@ where
             query_region,
             uuid_iter: UuidIter::new(qt),
             store,
-            resource_type: std::marker::PhantomData,
         };
         // TODO(ambuc): descend + collect. Maybe even make this an operation on a UuidIter type.
         //
