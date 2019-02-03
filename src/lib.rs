@@ -100,8 +100,13 @@ use uuid::Uuid;
 /// ```
 /// type U = u64; // Or any primitive integer, signed or unsigned.
 ///
-/// let _region: (/*    anchor=*/ (U, U),
-///               /*dimensions=*/ (U, U)) = ((1, 2), (3, 4)); // (for example)
+/// //   01234567
+/// // 0 ░░░░░░░░
+/// // 1 ░░▓▓▓░░░ (2,1)->3x1
+/// // 2 ░░░░░░░░
+/// let _region: ((U, U), (U, U)) = ((2, 1), (3, 1));
+/// //             x  y    w  h
+/// //            anchor  dimensions
 /// ```
 /// where
 ///  - `anchor` is the x/y coordinate of the top-left corner, and
@@ -110,7 +115,7 @@ use uuid::Uuid;
 /// Points should be represented by regions with dimensions `(1, 1)`.
 ///
 ///   - TODO(ambuc): Fix size hints in iterators
-///   - TODO(ambuc): Implement `.delete_by(anchor, size, fn)`: `.retain()` is the inverse.
+///   - TODO(ambuc): Implement `.delete_by(anchor, dimensions, fn)`: `.retain()` is the inverse.
 ///   - TODO(ambuc): Implement `FromIterator<(K, V)>` for `Quadtree`.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Quadtree<U, V>
@@ -229,17 +234,23 @@ where
     /// use quadtree_impl::Quadtree;
     ///
     /// let qt = Quadtree::<u32, u32>::new_with_anchor((1, 0), 1);
+    /// // This is a very small quadtree. It has an anchor at (1, 0) and dimensions 2x2.
+    /// assert_eq!(qt.anchor(), (1,0));
+    /// assert_eq!(qt.width(), 2);
+    /// assert_eq!(qt.height(), 2);
     ///
-    /// assert!(qt.contains((1, 0), (2, 2))); // qt contains itself.
-    ///
-    /// // qt contains a 1x1 region within it.
+    /// //  012
+    /// // 0 ▓░ // The quadtree contains a region which is totally within it.
+    /// // 1 ░░
     /// assert!(qt.contains((1, 0), (1, 1)));
     ///
-    /// // But, qt does not contain regions which are not totally within it.
+    /// //  012
+    /// // 0▓░░ // ...and the quadtree does not contains a region which is not totally within it.
+    /// // 1 ░░
     /// assert!(!qt.contains((0, 0), (1, 1)));
     /// ```
-    pub fn contains(&self, anchor: PointType<U>, size: (U, U)) -> bool {
-        self.inner.region.contains((anchor, size).into())
+    pub fn contains(&self, anchor: PointType<U>, dimensions: (U, U)) -> bool {
+        self.inner.region.contains((anchor, dimensions).into())
     }
 
     /// Inserts the value at the requested region. Returns a unique `Uuid` representing this
@@ -264,9 +275,9 @@ where
     /// // were not the same.
     /// assert_ne!(uuid_a_1, uuid_a_2);
     /// ```
-    pub fn insert(&mut self, anchor: PointType<U>, size: (U, U), val: V) -> Uuid {
+    pub fn insert(&mut self, anchor: PointType<U>, dimensions: (U, U), val: V) -> Uuid {
         self.inner
-            .insert_val_at_region((anchor, size).into(), val, &mut self.store)
+            .insert_val_at_region((anchor, dimensions).into(), val, &mut self.store)
     }
 
     /// Provides access to a single value in the Quadtree, given a previously known `Uuid`. This
@@ -328,23 +339,43 @@ where
     /// ```
     /// use quadtree_impl::Quadtree;
     ///
+    /// //   0123456
+    /// // 0 ░░░░░░░
+    /// // 1 ░░▒▒▒░░
+    /// // 2 ░░▒▒▒░░
+    /// // 3 ░░░░░░░
+    /// // 4 ░▒▒▒░░░
+    /// // 5 ░░░░░░░
     /// let mut qt = Quadtree::<u32, i16>::new(4);
+    /// qt.insert((2, 1), (3, 2), 21);
+    /// qt.insert((1, 4), (3, 1), 57);
     ///
-    /// qt.insert((0, 5), (7, 7), 21);
-    /// qt.insert((1, 3), (1, 3), 57);
-    ///
-    /// // Query over the region anchored at (0, 5) with area 1x1.
-    /// let mut query_a = qt.query((0, 5), (1, 1));
+    /// //   0123456
+    /// // 0 ░░░░░░░
+    /// // 1 ░░▓▒▒░░  <-- query
+    /// // 2 ░░▒▒▒░░
+    /// // 3 ░░░░░░░
+    /// // 4 ░▒▒▒░░░
+    /// // 5 ░░░░░░░
+    /// // Query over the region anchored at (2, 1) with area 1x1.
+    /// let mut query_a = qt.query((2, 1), (1, 1));
     ///
     /// // We can use the Entry API to destructure the result.
     /// let entry = query_a.next().unwrap();
-    /// assert_eq!(entry.region(), ((0, 5), (7, 7)));
+    /// assert_eq!(entry.region(), ((2, 1), (3, 2)));
     /// assert_eq!(entry.value_ref(), &21);
     ///
     /// assert_eq!(query_a.next(), None);
     ///
+    /// //   0123456
+    /// // 0 ░░░░░░░
+    /// // 1 ░▒▓▓▓▒░  <-- query
+    /// // 2 ░▒▓▓▓▒░  <--
+    /// // 3 ░▒▒▒▒▒░  <--
+    /// // 4 ░▓▓▓▒▒░  <--
+    /// // 5 ░░░░░░░
     /// // Query over the region anchored at (0, 0) with area 6x6.
-    /// let query_b = qt.query((0, 0), (6, 6));
+    /// let query_b = qt.query((1, 1), (4, 4));
     ///
     /// // It's unclear what order the regions should return in, but there will be two of them.
     /// assert_eq!(query_b.count(), 2);
@@ -352,9 +383,9 @@ where
     ///
     /// [`Entry<U, V>`]: entry/struct.Entry.html
     /// [`.query_strict()`]: struct.Quadtree.html#method.query_strict
-    pub fn query(&self, anchor: PointType<U>, size: (U, U)) -> Query<U, V> {
+    pub fn query(&self, anchor: PointType<U>, dimensions: (U, U)) -> Query<U, V> {
         Query::new(
-            (anchor, size).into(),
+            (anchor, dimensions).into(),
             &self.inner,
             &self.store,
             Traversal::Overlapping,
@@ -362,10 +393,11 @@ where
     }
 
     ///  `query_strict()` behaves the same as `query()`, except that the regions returned are
-    ///  guaranteed to be totally contained within the query region.
-    pub fn query_strict(&self, anchor: PointType<U>, size: (U, U)) -> Query<U, V> {
+    ///  guaranteed to be totally contained within the query region. (In the example above, the
+    ///  first query would have been empty, since it only intersected the region in question.)
+    pub fn query_strict(&self, anchor: PointType<U>, dimensions: (U, U)) -> Query<U, V> {
         Query::new(
-            (anchor, size).into(),
+            (anchor, dimensions).into(),
             &self.inner,
             &self.store,
             Traversal::Strict,
@@ -387,21 +419,21 @@ where
     /// assert_eq!(e.region(), ((0, 0), (1, 1)));
     /// assert_eq!(e.value_ref(), &3.23);
     /// ```
-    pub fn modify<F>(&mut self, anchor: PointType<U>, size: (U, U), f: F)
+    pub fn modify<F>(&mut self, anchor: PointType<U>, dimensions: (U, U), f: F)
     where
         F: Fn(&mut V) + Copy,
     {
-        let query_region = (anchor, size).into();
+        let query_region = (anchor, dimensions).into();
         self.modify_region(|a| a.intersects(query_region), f);
     }
 
     ///  `modify_strict()` behaves the same as `modify()`, except that the regions modified are
     ///  guaranteed to be totally contained within the query region.
-    pub fn modify_strict<F>(&mut self, anchor: PointType<U>, size: (U, U), f: F)
+    pub fn modify_strict<F>(&mut self, anchor: PointType<U>, dimensions: (U, U), f: F)
     where
         F: Fn(&mut V) + Copy,
     {
-        let query_region: Area<U> = (anchor, size).into();
+        let query_region: Area<U> = (anchor, dimensions).into();
         self.modify_region(|a| query_region.contains(a), f);
     }
 
@@ -461,6 +493,7 @@ where
     ///
     /// // qt.delete() returns a struct of type IntoIter<u32, f64>.
     /// let hit: Entry<u32, f64> = returned_entries.next().unwrap();
+    ///
     /// // IntoIter is an iterator over type Entry<u32, f64>, which makes accessible the returned
     /// // region and value.
     /// assert_eq!(hit.value_ref(), &4.56);
@@ -471,14 +504,18 @@ where
     /// [`IntoIter<U, V>`]: struct.IntoIter.html
     /// [`Entry<U, V>`]: entry/struct.Entry.html
     /// [`.delete_strict()`]: struct.Quadtree.html#method.delete_strict
-    pub fn delete(&mut self, anchor: PointType<U>, size: (U, U)) -> IntoIter<U, V> {
-        self.delete_uuids_and_return(self.query(anchor, size).map(|e| e.uuid()).collect())
+    pub fn delete(&mut self, anchor: PointType<U>, dimensions: (U, U)) -> IntoIter<U, V> {
+        self.delete_uuids_and_return(self.query(anchor, dimensions).map(|e| e.uuid()).collect())
     }
 
     ///  `delete_strict()` behaves the same as `delete()`, except that the regions deleted and
     ///  returned are guaranteed to be totally contained within the delete region.
-    pub fn delete_strict(&mut self, anchor: PointType<U>, size: (U, U)) -> IntoIter<U, V> {
-        self.delete_uuids_and_return(self.query_strict(anchor, size).map(|e| e.uuid()).collect())
+    pub fn delete_strict(&mut self, anchor: PointType<U>, dimensions: (U, U)) -> IntoIter<U, V> {
+        self.delete_uuids_and_return(
+            self.query_strict(anchor, dimensions)
+                .map(|e| e.uuid())
+                .collect(),
+        )
     }
 
     fn delete_uuids_and_return(&mut self, uuids: HashSet<Uuid>) -> IntoIter<U, V> {
@@ -846,8 +883,8 @@ where
     where
         T: IntoIterator<Item = (AreaType<U>, V)>,
     {
-        for ((anchor, size), val) in iter {
-            self.insert(anchor, size, val);
+        for ((anchor, dimensions), val) in iter {
+            self.insert(anchor, dimensions, val);
         }
     }
 }
