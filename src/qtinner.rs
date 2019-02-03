@@ -67,11 +67,6 @@ where
         Self::new_with_area((anchor, (width, height)).into(), depth)
     }
 
-    pub(crate) fn reset(&mut self) {
-        self.kept_uuids.clear();
-        self.subquadrants = None;
-    }
-
     fn new_with_area(region: Area<U>, depth: usize) -> QTInner<U> {
         QTInner {
             depth,
@@ -79,6 +74,11 @@ where
             kept_uuids: Vec::new(),
             subquadrants: None,
         }
+    }
+
+    pub(crate) fn reset(&mut self) {
+        self.kept_uuids.clear();
+        self.subquadrants = None;
     }
 
     // Attempts to insert the value at the requested region. Returns false if the region was too

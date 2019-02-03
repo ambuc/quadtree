@@ -21,9 +21,11 @@
 //! ```
 //! extern crate quadtree_impl;
 //!
+//! use quadtree_impl::Quadtree;
+//!
 //! // Create a new Quadtree with (u16, u16) x/y coordinates, String values, and a depth of four
 //! // layers. Since 2^4 = 16, this grid will be of width and height 16.
-//! let mut q = quadtree_impl::Quadtree::<u64, String>::new(4);
+//! let mut qt = Quadtree::<u64, String>::new(4);
 //!
 //! // Insert "foo" in the coordinate system such that it occupies a rectangle with top-left
 //! // "anchor" (0, 0), and width/height 2x1.
@@ -34,7 +36,7 @@
 //! // 1 ░░░░░░░--+
 //! //   |  |  |  |
 //! // 2 +--+--+--+
-//! q.insert((0, 0), (2, 1), "foo".to_string());
+//! qt.insert((0, 0), (2, 1), "foo".to_string());
 //!
 //! // Perform a query over a region with anchor (1, 0) and width/height 1x1...
 //! //
@@ -44,7 +46,7 @@
 //! // 1 ░░░▓▓▓▓▒▒▒
 //! //   |  ▒▒▒▒▒▒▒
 //! // 2 +--▒▒▒▒▒▒▒
-//! let mut query = q.query((1, 0), (2, 2));
+//! let mut query = qt.query((1, 0), (2, 2));
 //!
 //! // There is an overlap between our query region and the region holding "foo",
 //! // so we expect that iterator to return the `(coordinate, value)` pair containing "foo".
@@ -128,36 +130,33 @@ impl<U, V> Quadtree<U, V>
 where
     U: PrimInt,
 {
-    // Constructors //
-
     /// Creates a new, empty Quadtree with the requested depth.
     /// - The default anchor is `(0, 0)`, and the default width and height are both `2^depth`.
     /// - The Quadtree must be explicitly typed, since will contain items of a type.
     /// ```
-    /// let q = quadtree_impl::Quadtree::<u32, u8>::new(/*depth=*/ 2);
+    /// use quadtree_impl::Quadtree;
     ///
-    /// assert_eq!(q.depth(), 2);
-    /// assert_eq!(q.anchor(), (0, 0));
-    /// assert_eq!(q.width(), 4);
-    /// assert_eq!(q.height(), 4);
+    /// let qt = Quadtree::<u32, u8>::new(/*depth=*/ 2);
+    ///
+    /// assert_eq!(qt.depth(), 2);
+    /// assert_eq!(qt.anchor(), (0, 0));
+    /// assert_eq!(qt.width(), 4);
+    /// assert_eq!(qt.height(), 4);
     /// ```
     pub fn new(depth: usize) -> Quadtree<U, V> {
-        Quadtree {
-            depth,
-            inner: QTInner::new(Self::default_anchor(), depth),
-            store: HashMap::new(),
-        }
+        Quadtree::new_with_anchor((U::zero(), U::zero()), depth)
     }
 
     /// Creates a new Quadtree with the requested anchor and depth.
     /// ```
-    /// let q = quadtree_impl::Quadtree::<u32, u8>::new_with_anchor(/*anchor=*/ (2, 4),
-    ///                                                             /* depth=*/ 3);
+    /// use quadtree_impl::Quadtree;
     ///
-    /// assert_eq!(q.depth(), 3);
-    /// assert_eq!(q.anchor(), (2, 4));
-    /// assert_eq!(q.width(), 8);
-    /// assert_eq!(q.height(), 8);
+    /// let qt = Quadtree::<u32, u8>::new_with_anchor(/*anchor=*/ (2, 4), /*depth=*/ 3);
+    ///
+    /// assert_eq!(qt.depth(), 3);
+    /// assert_eq!(qt.anchor(), (2, 4));
+    /// assert_eq!(qt.width(), 8);
+    /// assert_eq!(qt.height(), 8);
     /// ```
     pub fn new_with_anchor(anchor: PointType<U>, depth: usize) -> Quadtree<U, V> {
         Quadtree {
@@ -166,8 +165,6 @@ where
             store: HashMap::new(),
         }
     }
-
-    // Accessors //
 
     /// The coordinate of the top-left corner of the represented region.
     pub fn anchor(&self) -> PointType<U> {
@@ -196,14 +193,16 @@ where
 
     /// Returns the number of elements in the quadtree.
     /// ```
-    /// let mut q = quadtree_impl::Quadtree::<u32, f32>::new(4);
-    /// assert_eq!(q.len(), 0);
+    /// use quadtree_impl::Quadtree;
     ///
-    /// q.insert_pt((3, 1), 3.14159);
-    /// assert_eq!(q.len(), 1);
+    /// let mut qt = Quadtree::<u32, f32>::new(4);
+    /// assert_eq!(qt.len(), 0);
     ///
-    /// q.insert_pt((2, 7), 2.71828);
-    /// assert_eq!(q.len(), 2);
+    /// qt.insert_pt((3, 1), 3.14159);
+    /// assert_eq!(qt.len(), 1);
+    ///
+    /// qt.insert_pt((2, 7), 2.71828);
+    /// assert_eq!(qt.len(), 2);
     /// ```
     pub fn len(&self) -> usize {
         self.store.len()
@@ -211,11 +210,13 @@ where
 
     /// Whether or not the quadtree is empty.
     /// ```
-    /// let mut q = quadtree_impl::Quadtree::<u32, f64>::new(3);
-    /// assert!(q.is_empty());
+    /// use quadtree_impl::Quadtree;
     ///
-    /// q.insert((1, 4), (1, 4), 1.4142135);
-    /// assert!(!q.is_empty());
+    /// let mut qt = Quadtree::<u32, f64>::new(3);
+    /// assert!(qt.is_empty());
+    ///
+    /// qt.insert((1, 4), (1, 4), 1.4142135);
+    /// assert!(!qt.is_empty());
     /// ```
     pub fn is_empty(&self) -> bool {
         self.store.is_empty()
@@ -235,11 +236,14 @@ where
     /// // 1+--*******--+
     /// //  |  *******  |
     /// // 2+--*******--+
-    /// let q = quadtree_impl::Quadtree::<u32, u32>::new_with_anchor((1, 0), 1);
     ///
-    /// assert!(q.contains((1, 0), (2, 2))); // q contains itself.
+    /// use quadtree_impl::Quadtree;
     ///
-    /// // q contains a 1x1 region within it.
+    /// let qt = Quadtree::<u32, u32>::new_with_anchor((1, 0), 1);
+    ///
+    /// assert!(qt.contains((1, 0), (2, 2))); // qt contains itself.
+    ///
+    /// // qt contains a 1x1 region within it.
     /// //
     /// //  0  1  2  3  4
     /// // 0+--XXXX***--+
@@ -247,9 +251,9 @@ where
     /// // 1+--XXXX***--+
     /// //  |  *******  |
     /// // 2+--*******--+
-    /// assert!(q.contains((1, 0), (1, 1)));
+    /// assert!(qt.contains((1, 0), (1, 1)));
     ///
-    /// // But, q does not contain regions which are not totally within it.
+    /// // But, qt does not contain regions which are not totally within it.
     /// //
     /// //  0  1  2  3  4
     /// // 0XXXX******--+
@@ -257,7 +261,7 @@ where
     /// // 1XXXX******--+
     /// //  |  *******  |
     /// // 2+--*******--+
-    /// assert!(!q.contains((0, 0), (1, 1)));
+    /// assert!(!qt.contains((0, 0), (1, 1)));
     /// ```
     pub fn contains(&self, anchor: PointType<U>, size: (U, U)) -> bool {
         self.inner.region.contains((anchor, size).into())
@@ -270,11 +274,13 @@ where
     /// must have positive, nonzero values for its width and height.
     ///
     /// ```
-    /// let mut q = quadtree_impl::Quadtree::<u32, i64>::new(2);
+    /// use quadtree_impl::Quadtree;
+    ///
+    /// let mut qt = Quadtree::<u32, i64>::new(2);
     ///
     /// // Returns whether or not the requested region fits in the quadtree.
-    /// q.insert((0, 0), (1, 1), 500000);
-    /// q.insert((0, 0), (5, 4), 27500);
+    /// qt.insert((0, 0), (1, 1), 500000);
+    /// qt.insert((0, 0), (5, 4), 27500);
     /// ```
     pub fn insert(&mut self, anchor: PointType<U>, size: (U, U), val: V) {
         self.inner
@@ -285,10 +291,12 @@ where
     /// bounds.
     ///  - Expect the behavior of `.insert_pt(_, _)` to be the same as [`.insert(_, (1, 1), _)`].
     /// ```
-    /// let mut q = quadtree_impl::Quadtree::<u32, i64>::new(2);
+    /// use quadtree_impl::Quadtree;
     ///
-    /// q.insert_pt((0, 0),  8675309);
-    /// q.insert_pt((5, 4),  6060842);
+    /// let mut qt = Quadtree::<u32, i64>::new(2);
+    ///
+    /// qt.insert_pt((0, 0),  8675309);
+    /// qt.insert_pt((5, 4),  6060842);
     /// ```
     ///
     /// [`.insert(_, (1, 1), _)`]: struct.Quadtree.html#method.insert
@@ -308,17 +316,22 @@ where
     /// must have positive, nonzero values for its width and height.
     ///
     /// ```
-    /// let mut q = quadtree_impl::Quadtree::<u32, i16>::new(4);
-    /// q.insert((0, 5), (7, 7), 21);
-    /// q.insert((1, 3), (1, 3), 57);
+    /// use quadtree_impl::Quadtree;
+    ///
+    /// let mut qt = Quadtree::<u32, i16>::new(4);
+    ///
+    /// qt.insert((0, 5), (7, 7), 21);
+    /// qt.insert((1, 3), (1, 3), 57);
     ///
     /// // Query over the region anchored at (0, 5) with area 1x1.
-    /// let mut query_a = q.query((0, 5), (1, 1));
-    /// assert_eq!(query_a.next(), Some((&((0, 5), (7, 7)), &21)));
-    /// assert_eq!(query_a.next(), None);
+    /// let mut query_a = qt.query((0, 5), (1, 1));
+    /// assert_eq!(query_a.next(),
+    ///            Some((&((0, 5), (7, 7)), &21)));
+    /// assert_eq!(query_a.next(),
+    ///            None);
     ///
     /// // Query over the region anchored at (0, 0) with area 6x6.
-    /// let query_b = q.query((0, 0), (6, 6));
+    /// let query_b = qt.query((0, 0), (6, 6));
     ///
     /// // It's unclear what order the regions should return in, but there will be two of them.
     /// assert_eq!(query_b.count(), 2);
@@ -342,6 +355,17 @@ where
 
     /// Accepts a modification lambda of type `Fn(&mut V) + Copy` and applies it to all elements in
     /// the Quadtree.
+    /// ```
+    /// use quadtree_impl::Quadtree;
+    ///
+    /// let mut qt = Quadtree::<u8, f64>::new(3);
+    ///
+    /// qt.insert((0, 0), (1, 1), 1.23);
+    /// qt.modify_all(|i| *i += 2.0);
+    ///
+    /// assert_eq!(qt.iter().next(),
+    ///            Some((&((0, 0), (1, 1)), &3.23)));
+    /// ```
     pub fn modify_all<F>(&mut self, f: F)
     where
         F: Fn(&mut V) + Copy,
@@ -422,10 +446,6 @@ where
     // Strongly-typed alias for (one(), one()).
     fn default_region_size() -> (U, U) {
         (U::one(), U::one())
-    }
-
-    fn default_anchor() -> PointType<U> {
-        (U::zero(), U::zero())
     }
 }
 
