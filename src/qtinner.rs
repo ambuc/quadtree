@@ -14,8 +14,8 @@
 
 use crate::geometry::area::Area;
 use crate::geometry::point::{Point, PointType};
+use crate::types::StoreType;
 use num::PrimInt;
-use std::collections::HashMap;
 use uuid::Uuid;
 
 #[derive(Clone, PartialEq, Eq)]
@@ -95,7 +95,7 @@ where
         &mut self,
         req: Area<U>,
         val: V,
-        store: &mut HashMap<Uuid, (Area<U>, V)>,
+        store: &mut StoreType<U, V>,
     ) where
         U: std::fmt::Debug,
     {
@@ -107,12 +107,8 @@ where
 
     // Attempts to insert the value at the requested region. Returns false if the region was too
     // large.
-    fn insert_uuid_at_region<V>(
-        &mut self,
-        req: Area<U>,
-        uuid: Uuid,
-        store: &mut HashMap<Uuid, (Area<U>, V)>,
-    ) where
+    fn insert_uuid_at_region<V>(&mut self, req: Area<U>, uuid: Uuid, store: &mut StoreType<U, V>)
+    where
         U: std::fmt::Debug,
     {
         // If we're at the bottom depth, it had better fit.

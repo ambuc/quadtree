@@ -38,6 +38,7 @@ where
     remaining: usize,
     visited: HashSet<Uuid>,
 }
+
 impl<'a, U> UuidIter<'a, U>
 where
     U: PrimInt + Debug,
@@ -52,7 +53,7 @@ where
     }
 }
 
-impl<'a, U> Iterator for UuidIter<'a, U>
+impl<U> Iterator for UuidIter<'_, U>
 where
     U: PrimInt + Debug,
 {
@@ -90,9 +91,9 @@ where
     }
 }
 
-impl<'a, U> FusedIterator for UuidIter<'a, U> where U: PrimInt + Debug {}
+impl<U> FusedIterator for UuidIter<'_, U> where U: PrimInt + Debug {}
 
-impl<'a, U> ExactSizeIterator for UuidIter<'a, U>
+impl<U> ExactSizeIterator for UuidIter<'_, U>
 where
     U: PrimInt + Debug,
 {
