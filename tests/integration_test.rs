@@ -247,8 +247,6 @@ mod extend {
 
         debug_assert_eq!(q.len(), 2);
 
-        dbg!(&q);
-
         debug_assert_eq!(q.query((0, 0), (1, 1)).next().unwrap().value_ref(), &0);
         debug_assert_eq!(q.query((2, 3), (1, 1)).next().unwrap().value_ref(), &5);
     }

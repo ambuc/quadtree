@@ -116,7 +116,7 @@ where
         }
 
         if self.subquadrants.is_none() {
-            self.expand_subquadrants_by_center();
+            self.expand_subquadrants_by_pt(self.center_pt());
         }
 
         // For a subquadrant to totally contain the req. area, it must both (a) contain the req.
@@ -132,15 +132,6 @@ where
                 }
             }
         }
-    }
-
-    // +--+--+    +--+--+
-    // |     |    |  |  |
-    // +     + => +--+--+
-    // |     |    |  |  |
-    // +--+--+    +--+--+
-    fn expand_subquadrants_by_center(&mut self) {
-        self.expand_subquadrants_by_pt(self.center_pt());
     }
 
     // +--+--+--+    +--+--+--+
