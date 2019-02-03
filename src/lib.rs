@@ -408,22 +408,22 @@ where
         self.inner.reset();
     }
 
-    /// Clears a described region in the tree, consuming along the way and returning an iterator
+    /// Deletes a described region in the tree, consuming along the way and returning an iterator
     /// ([`IntoIter<U, V>`]) over type [`Entry<U, V>`].
     ///
-    /// The default behavior of `.clear()` is to delete and return any intersecting regions or
-    /// points, but the callsite could use [`.clear_strict()`] instead.
+    /// The default behavior of `.delete()` is to delete and return any intersecting regions or
+    /// points, but the callsite could use [`.delete_strict()`] instead.
     ///
     /// [`IntoIter<U, V>`]: struct.IntoIter.html
     /// [`Entry<U, V>`]: entry/struct.Entry.html
-    /// [`.clear_strict()`]: struct.Quadtree.html#method.clear_strict
-    pub fn clear(&mut self, anchor: PointType<U>, size: (U, U)) -> IntoIter<U, V> {
+    /// [`.delete_strict()`]: struct.Quadtree.html#method.delete_strict
+    pub fn delete(&mut self, anchor: PointType<U>, size: (U, U)) -> IntoIter<U, V> {
         self.delete_uuids_and_return(self.query(anchor, size).map(|e| e.uuid()).collect())
     }
 
-    ///  `clear_strict()` behaves the same as `clear()`, except that the regions deleted and
-    ///  returned are guaranteed to be totally contained within the clear region.
-    pub fn clear_strict(&mut self, anchor: PointType<U>, size: (U, U)) -> IntoIter<U, V> {
+    ///  `delete_strict()` behaves the same as `delete()`, except that the regions deleted and
+    ///  returned are guaranteed to be totally contained within the delete region.
+    pub fn delete_strict(&mut self, anchor: PointType<U>, size: (U, U)) -> IntoIter<U, V> {
         self.delete_uuids_and_return(self.query_strict(anchor, size).map(|e| e.uuid()).collect())
     }
 
