@@ -188,7 +188,6 @@ use {
 /// Points should be represented by regions with dimensions `(1, 1)`.
 // TODO(ambuc): Implement `.delete_by(anchor, dimensions, fn)`: `.retain()` is the inverse.
 // TODO(ambuc): Implement `FromIterator<(K, V)>` for `Quadtree`.
-// TODO(ambuc): Implement .delete_uuid(uuid: Uuid).
 #[derive(Debug, PartialEq, Eq)]
 pub struct Quadtree<U, V>
 where
@@ -598,6 +597,21 @@ where
         });
 
         IntoIter { pairs }
+    }
+
+    /// Given a `Uuid`, deletes a single item from the Quadtree. If that `Uuid` was found,
+    /// `delete_uuid()` returns an `Entry<U, V>` containing its former region and value. Otherwise,
+    /// returns `None`.
+    pub fn delete_uuid(&mut self, uuid: Uuid) -> Option<Entry<U, V>> {
+        // Pop the Entry<U, V> out of the @store,
+        if let Some(entry) = self.store.remove(&uuid) {
+            // Use the now-known region to descend into the tree efficiently,
+            self.inner.delete_uuid(uuid, entry.area());
+            // And return the Entry.
+            return Some(entry);
+        }
+        // If the Uuid wasn't in the @store, we don't need to perform a descent.
+        None
     }
 
     /// Returns an iterator over all `(&((U, U), (U, U)), &V)` region/value pairs in the

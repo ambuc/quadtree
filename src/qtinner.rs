@@ -157,6 +157,20 @@ where
         ]);
     }
 
+    pub(crate) fn delete_uuid(&mut self, uuid: Uuid, req: Area<U>) {
+        // Delete all instances of @uuid from this level's @kept_uuids.
+        self.kept_uuids.retain(|&x| x != uuid);
+        // And potentially recurse into the subquadrants...
+        if let Some(sqs) = self.subquadrants.as_mut() {
+            for sq in sqs.iter_mut() {
+                // ...but not all of them.
+                if sq.region.intersects(req) {
+                    sq.delete_uuid(uuid, req);
+                }
+            }
+        }
+    }
+
     // Strongly-typed alias for U::one() + U::One()
     fn two() -> U {
         U::one() + U::one()
