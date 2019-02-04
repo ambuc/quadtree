@@ -71,81 +71,81 @@ mod insert {
 
     #[test]
     fn insert_successful() {
-        let mut q = Quadtree::<u32, u8>::new(2);
-        q.insert(
+        let mut qt = Quadtree::<u32, u8>::new(2);
+        qt.insert(
             /*anchor=*/ (0, 0),
             /*size=*/ (2, 3),
             /*value=*/ 4,
         );
-        q.insert(/*anchor=*/ (1, 1), (1, 1), /*value=*/ 3);
+        qt.insert(/*anchor=*/ (1, 1), (1, 1), /*value=*/ 3);
 
         // The full bounds of the region.
-        q.insert(
+        qt.insert(
             /*anchor=*/ (0, 0),
             /*size=*/ (4, 4),
             /*value=*/ 17,
         );
         // At (3, 3) but 1x1
-        q.insert(/*anchor=*/ (3, 3), (1, 1), /*value=*/ 19);
+        qt.insert(/*anchor=*/ (3, 3), (1, 1), /*value=*/ 19);
     }
 
     #[test]
     fn insert_unsucessful() {
-        let mut q = Quadtree::<u32, u8>::new(2);
+        let mut qt = Quadtree::<u32, u8>::new(2);
         // At (0, 0) and too large.
-        q.insert(
+        qt.insert(
             /*anchor=*/ (0, 0),
             /*size=*/ (5, 5),
             /*value=*/ 17,
         );
         // At (4, 4) but 1x1.
-        q.insert(/*anchor=*/ (4, 4), (1, 1), /*value=*/ 20);
+        qt.insert(/*anchor=*/ (4, 4), (1, 1), /*value=*/ 20);
     }
 
     #[test]
     fn insert_successful_outside_region() {
         // Since the region might overlap, insertion doesn't fail.
-        let mut q = Quadtree::<u32, u16>::new_with_anchor((2, 2), 2);
-        q.insert(/*anchor=*/ (0, 0), (1, 1), /*value=*/ 25);
+        let mut qt = Quadtree::<u32, u16>::new_with_anchor((2, 2), 2);
+        qt.insert(/*anchor=*/ (0, 0), (1, 1), /*value=*/ 25);
     }
 }
 
 #[test]
 fn len() {
-    let mut q = Quadtree::<u32, u32>::new(4);
-    debug_assert_eq!(q.len(), 0);
-    q.insert((0, 0), (1, 1), 2);
-    debug_assert_eq!(q.len(), 1);
+    let mut qt = Quadtree::<u32, u32>::new(4);
+    debug_assert_eq!(qt.len(), 0);
+    qt.insert((0, 0), (1, 1), 2);
+    debug_assert_eq!(qt.len(), 1);
     // Even if it's the same thing again.
-    q.insert((0, 0), (1, 1), 2);
-    debug_assert_eq!(q.len(), 2);
+    qt.insert((0, 0), (1, 1), 2);
+    debug_assert_eq!(qt.len(), 2);
     // Or if it's a point.
-    q.insert((2, 3), (1, 1), 2);
-    debug_assert_eq!(q.len(), 3);
+    qt.insert((2, 3), (1, 1), 2);
+    debug_assert_eq!(qt.len(), 3);
 }
 
 #[test]
 fn fill_quadrant() {
-    let mut q = Quadtree::<u8, f64>::new(2);
-    debug_assert!(q.is_empty());
+    let mut qt = Quadtree::<u8, f64>::new(2);
+    debug_assert!(qt.is_empty());
 
-    q.insert((0, 0), (2, 2), 49.17); // This should 100% fill one quadrant.
-    debug_assert_eq!(q.len(), 1);
-    debug_assert!(!q.is_empty());
+    qt.insert((0, 0), (2, 2), 49.17); // This should 100% fill one quadrant.
+    debug_assert_eq!(qt.len(), 1);
+    debug_assert!(!qt.is_empty());
 
-    q.insert((2, 2), (2, 2), 71.94); // This should 100% fill one quadrant.
-    debug_assert_eq!(q.len(), 2);
-    debug_assert!(!q.is_empty());
+    qt.insert((2, 2), (2, 2), 71.94); // This should 100% fill one quadrant.
+    debug_assert_eq!(qt.len(), 2);
+    debug_assert!(!qt.is_empty());
 }
 
 #[test]
 fn is_empty() {
-    let mut q = Quadtree::<u32, u64>::new(2);
-    debug_assert!(q.is_empty());
+    let mut qt = Quadtree::<u32, u64>::new(2);
+    debug_assert!(qt.is_empty());
 
     // Insert region
-    q.insert((0, 0), (2, 2), 49);
-    debug_assert!(!q.is_empty());
+    qt.insert((0, 0), (2, 2), 49);
+    debug_assert!(!qt.is_empty());
 
     let mut q2 = Quadtree::<u32, u32>::new(4);
     debug_assert!(q2.is_empty());
@@ -157,15 +157,15 @@ fn is_empty() {
 
 #[test]
 fn reset() {
-    let mut q = Quadtree::<u32, f32>::new(4);
-    debug_assert!(q.is_empty());
+    let mut qt = Quadtree::<u32, f32>::new(4);
+    debug_assert!(qt.is_empty());
 
-    q.insert((2, 2), (1, 1), 57.27);
-    debug_assert!(!q.is_empty());
+    qt.insert((2, 2), (1, 1), 57.27);
+    debug_assert!(!qt.is_empty());
 
-    q.reset();
-    debug_assert!(q.is_empty());
-    debug_assert_eq!(q.len(), 0);
+    qt.reset();
+    debug_assert!(qt.is_empty());
+    debug_assert_eq!(qt.len(), 0);
 }
 
 // We should be able to store strings.
@@ -174,21 +174,21 @@ mod string {
 
     #[test]
     fn quadtree_string() {
-        let mut q = Quadtree::<u32, String>::new(4);
-        q.insert((0, 0), (1, 1), "foo_bar_baz".to_string());
+        let mut qt = Quadtree::<u32, String>::new(4);
+        qt.insert((0, 0), (1, 1), "foo_bar_baz".to_string());
 
-        let mut iter = q.query((0, 0), (1, 1));
+        let mut iter = qt.query((0, 0), (1, 1));
         assert_eq!(iter.next().unwrap().value_ref(), "foo_bar_baz");
     }
 
     #[test]
     fn quadtree_mut_string() {
-        let mut q = Quadtree::<u32, String>::new(4);
-        q.insert((0, 0), (1, 1), "hello ".to_string());
-        q.modify((0, 0), (1, 1), |v| *v += "world");
+        let mut qt = Quadtree::<u32, String>::new(4);
+        qt.insert((0, 0), (1, 1), "hello ".to_string());
+        qt.modify((0, 0), (1, 1), |v| *v += "world");
 
         assert_eq!(
-            q.query((0, 0), (1, 1)).next().unwrap().value_ref(),
+            qt.query((0, 0), (1, 1)).next().unwrap().value_ref(),
             "hello world"
         );
     }
@@ -206,12 +206,12 @@ fn quadtree_struct() {
         baz: "baz".to_string(),
     };
 
-    let mut q = Quadtree::<u32, Foo>::new(4);
+    let mut qt = Quadtree::<u32, Foo>::new(4);
 
-    q.insert((0, 0), (1, 1), foo);
+    qt.insert((0, 0), (1, 1), foo);
 
     assert_eq!(
-        q.query((0, 0), (1, 1)).next().unwrap().value_ref().baz,
+        qt.query((0, 0), (1, 1)).next().unwrap().value_ref().baz,
         "baz"
     );
 }
@@ -223,32 +223,32 @@ mod extend {
 
     #[test]
     fn extend_with_just_points() {
-        let mut q = Quadtree::<u32, i8>::new(4);
-        assert!(q.is_empty());
+        let mut qt = Quadtree::<u32, i8>::new(4);
+        assert!(qt.is_empty());
 
-        q.extend(vec![((0, 0), 0), ((2, 3), 5)]);
+        qt.extend(vec![((0, 0), 0), ((2, 3), 5)]);
 
-        debug_assert_eq!(q.len(), 2);
+        debug_assert_eq!(qt.len(), 2);
 
-        let entry_zero = q.query((0, 0), (1, 1)).next().unwrap();
+        let entry_zero = qt.query((0, 0), (1, 1)).next().unwrap();
         debug_assert_eq!(entry_zero.region(), ((0, 0), (1, 1)));
         debug_assert_eq!(entry_zero.value_ref(), &0);
-        let entry_five = q.query((2, 3), (1, 1)).next().unwrap();
+        let entry_five = qt.query((2, 3), (1, 1)).next().unwrap();
         debug_assert_eq!(entry_five.region(), ((2, 3), (1, 1)));
         debug_assert_eq!(entry_five.value_ref(), &5);
     }
 
     #[test]
     fn extend_with_points_and_regions() {
-        let mut q = Quadtree::<u32, i8>::new(3);
-        assert!(q.is_empty());
+        let mut qt = Quadtree::<u32, i8>::new(3);
+        assert!(qt.is_empty());
 
-        q.extend(vec![(((0, 0), (1, 2)), 0), (((2, 3), (3, 4)), 5)]);
+        qt.extend(vec![(((0, 0), (1, 2)), 0), (((2, 3), (3, 4)), 5)]);
 
-        debug_assert_eq!(q.len(), 2);
+        debug_assert_eq!(qt.len(), 2);
 
-        debug_assert_eq!(q.query((0, 0), (1, 1)).next().unwrap().value_ref(), &0);
-        debug_assert_eq!(q.query((2, 3), (1, 1)).next().unwrap().value_ref(), &5);
+        debug_assert_eq!(qt.query((0, 0), (1, 1)).next().unwrap().value_ref(), &0);
+        debug_assert_eq!(qt.query((2, 3), (1, 1)).next().unwrap().value_ref(), &5);
     }
 }
 
@@ -282,12 +282,12 @@ mod delete {
 #[test]
 #[ignore]
 fn debug() {
-    let mut q = Quadtree::<u8, f64>::new(2);
-    q.insert((0, 0), (2, 2), 1.35);
-    q.insert((1, 1), (1, 1), 2.46);
-    q.insert((1, 1), (2, 2), 3.69);
-    q.insert((2, 2), (2, 2), 4.812);
-    dbg!(&q);
+    let mut qt = Quadtree::<u8, f64>::new(2);
+    qt.insert((0, 0), (2, 2), 1.35);
+    qt.insert((1, 1), (1, 1), 2.46);
+    qt.insert((1, 1), (2, 2), 3.69);
+    qt.insert((2, 2), (2, 2), 4.812);
+    dbg!(&qt);
 }
 
 #[test]
@@ -295,11 +295,11 @@ fn debug() {
 fn test_print_quadtree() {
     use crate::util::print_quadtree;
 
-    let mut q = quadtree_impl::Quadtree::<u8, f64>::new(3);
-    q.insert((0, 0), (2, 2), 1.35);
-    q.insert((2, 3), (1, 1), 2.46);
-    q.insert((1, 1), (2, 2), 3.69);
-    q.insert((2, 2), (4, 4), 4.812);
-    q.insert((0, 4), (2, 3), 4.812);
-    print_quadtree(&q);
+    let mut qt = quadtree_impl::Quadtree::<u8, f64>::new(3);
+    qt.insert((0, 0), (2, 2), 1.35);
+    qt.insert((2, 3), (1, 1), 2.46);
+    qt.insert((1, 1), (2, 2), 3.69);
+    qt.insert((2, 2), (4, 4), 4.812);
+    qt.insert((0, 4), (2, 3), 4.812);
+    print_quadtree(&qt);
 }

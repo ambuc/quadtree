@@ -21,17 +21,17 @@ mod iterator_tests {
     };
 
     fn mk_quadtree_for_iter_tests() -> Quadtree<i32, i8> {
-        let mut q = Quadtree::<i32, i8>::new_with_anchor((-35, -35), 8);
-        q.extend(vec![((0, -5), 10), ((-15, 20), -25), ((30, -35), 40)]);
-        q
+        let mut qt = Quadtree::<i32, i8>::new_with_anchor((-35, -35), 8);
+        qt.extend(vec![((0, -5), 10), ((-15, 20), -25), ((30, -35), 40)]);
+        qt
     }
 
     #[test]
     fn iter_all() {
-        let q = mk_quadtree_for_iter_tests();
+        let qt = mk_quadtree_for_iter_tests();
 
         debug_assert!(unordered_elements_are(
-            q.iter().map(|e| e.value_ref()),
+            qt.iter().map(|e| e.value_ref()),
             vec![&-25, &10, &40]
         ));
     }
@@ -39,37 +39,37 @@ mod iterator_tests {
     // The same as iter_all(), except we mutate each value by +1.
     #[test]
     fn iter_mut_all() {
-        let mut q = mk_quadtree_for_iter_tests();
+        let mut qt = mk_quadtree_for_iter_tests();
 
-        q.modify_all(|v| *v += 1);
+        qt.modify_all(|v| *v += 1);
 
         debug_assert!(unordered_elements_are(
-            q.iter().map(|e| e.value_ref()),
+            qt.iter().map(|e| e.value_ref()),
             vec![&-24, &11, &41]
         ));
     }
 
     #[test]
     fn regions() {
-        let q = mk_quadtree_for_iter_tests();
+        let qt = mk_quadtree_for_iter_tests();
         debug_assert!(unordered_elements_are(
-            q.regions(),
+            qt.regions(),
             vec![((0, -5), (1, 1)), ((-15, 20), (1, 1)), ((30, -35), (1, 1))],
         ));
     }
 
     #[test]
     fn values() {
-        let q = mk_quadtree_for_iter_tests();
+        let qt = mk_quadtree_for_iter_tests();
 
-        debug_assert!(unordered_elements_are(q.values(), vec![&10, &-25, &40]));
+        debug_assert!(unordered_elements_are(qt.values(), vec![&10, &-25, &40]));
     }
 
     #[test]
     fn into_iterator_consuming() {
-        let q = mk_quadtree_for_iter_tests();
+        let qt = mk_quadtree_for_iter_tests();
         // Entry holds by-value.
-        let entries: Vec<Entry<i32, i8>> = q.into_iter().collect();
+        let entries: Vec<Entry<i32, i8>> = qt.into_iter().collect();
         let mut values: Vec<i8> = vec![];
         for mut e in entries {
             values.push(e.value());
@@ -80,36 +80,36 @@ mod iterator_tests {
 
     #[test]
     fn into_iterator_reference() {
-        let mut q = mk_quadtree_for_iter_tests();
-        let entries: Vec<&Entry<i32, i8>> = (&q).into_iter().collect();
+        let mut qt = mk_quadtree_for_iter_tests();
+        let entries: Vec<&Entry<i32, i8>> = (&qt).into_iter().collect();
         debug_assert!(unordered_elements_are(
             entries.iter().map(|e| e.value_ref()),
             vec![&10, &-25, &40],
         ));
 
-        q.reset();
-        debug_assert!(q.is_empty());
+        qt.reset();
+        debug_assert!(qt.is_empty());
     }
 
     #[test]
     fn delete_everything() {
-        let mut q = mk_quadtree_for_iter_tests();
-        debug_assert_eq!(q.len(), 3);
-        q.delete((-35, -35), (80, 80));
-        debug_assert_eq!(q.len(), 0);
+        let mut qt = mk_quadtree_for_iter_tests();
+        debug_assert_eq!(qt.len(), 3);
+        qt.delete((-35, -35), (80, 80));
+        debug_assert_eq!(qt.len(), 0);
     }
 
     #[test]
     fn delete_region() {
-        let mut q = mk_quadtree_for_iter_tests();
-        debug_assert_eq!(q.len(), 3);
+        let mut qt = mk_quadtree_for_iter_tests();
+        debug_assert_eq!(qt.len(), 3);
         // Near miss.
-        q.delete((29, -36), (1, 1));
-        debug_assert_eq!(q.len(), 3);
+        qt.delete((29, -36), (1, 1));
+        debug_assert_eq!(qt.len(), 3);
 
         // Direct hit!
-        let mut returned_entries = q.delete((30, -35), (1, 1));
-        debug_assert_eq!(q.len(), 2);
+        let mut returned_entries = qt.delete((30, -35), (1, 1));
+        debug_assert_eq!(qt.len(), 2);
         let hit = returned_entries.next().unwrap();
         debug_assert_eq!(hit.value_ref(), &40);
         debug_assert_eq!(hit.region(), ((30, -35), (1, 1)));
@@ -117,12 +117,12 @@ mod iterator_tests {
 
     #[test]
     fn delete_region_two() {
-        let mut q = mk_quadtree_for_iter_tests();
-        debug_assert_eq!(q.len(), 3);
+        let mut qt = mk_quadtree_for_iter_tests();
+        debug_assert_eq!(qt.len(), 3);
 
         // Just large enough to encompass the two points.
-        let returned_entries = q.delete((-15, -5), (16, 26));
-        debug_assert_eq!(q.len(), 1);
+        let returned_entries = qt.delete((-15, -5), (16, 26));
+        debug_assert_eq!(qt.len(), 1);
 
         debug_assert!(unordered_elements_are(
             returned_entries.map(|mut e| e.value()),

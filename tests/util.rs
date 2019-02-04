@@ -23,20 +23,20 @@ where
 }
 
 #[allow(dead_code)]
-pub fn print_quadtree<U, V>(q: &quadtree_impl::Quadtree<U, V>)
+pub fn print_quadtree<U, V>(qt: &quadtree_impl::Quadtree<U, V>)
 where
     U: PrimInt + FromPrimitive + std::fmt::Debug,
     V: std::fmt::Debug,
 {
     print!("┌");
-    for _i in 0..q.width() {
+    for _i in 0..qt.width() {
         print!("─");
     }
     print!("┐\n");
-    for i in 0..q.width() {
+    for i in 0..qt.width() {
         print!("│");
-        for j in 0..q.height() {
-            match q
+        for j in 0..qt.height() {
+            match qt
                 .query(
                     (U::from_usize(i).unwrap(), U::from_usize(j).unwrap()),
                     (U::one(), U::one()),
@@ -54,7 +54,7 @@ where
         print!("\n");
     }
     print!("└");
-    for _i in 0..q.width() {
+    for _i in 0..qt.width() {
         print!("─");
     }
     print!("┘\n");
