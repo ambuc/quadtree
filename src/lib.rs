@@ -20,15 +20,14 @@
 //! Add `quadtree_impl` to your `Cargo.toml`, and then add it to your main.
 //! ```
 //! extern crate quadtree_impl;
-//!
 //! use quadtree_impl::Quadtree;
 //!
-//! // Create a new Quadtree with (u16, u16) x/y coordinates, String values, and a depth of four
-//! // layers. Since 2^4 = 16, this grid will be of width and height 16.
+//! // Create a new Quadtree with u64 coordinates and String values. Quadtree::new(4) initializes a
+//! // tree with a depth of four layers, or a height and width of 2^4 = 16 .
 //! let mut qt = Quadtree::<u64, String>::new(4);
 //!
-//! // Insert "foo" in the coordinate system such that it occupies a rectangle with top-left
-//! // "anchor" (0, 0), and width/height 2x1.
+//! // Insert "foo" in the tree at the rectangle with
+//! // top-left corner (0, 0), width 2, and height 1.
 //! //
 //! //   0  1  2  3
 //! // 0 ░░░░░░░--+
@@ -38,7 +37,7 @@
 //! // 2 +--+--+--+
 //! qt.insert((0, 0), (2, 1), "foo".to_string());
 //!
-//! // Perform a query over a region with anchor (1, 0) and width/height 1x1...
+//! // Perform a query over a region with top-left corner (1, 0), width 1, and height 1.
 //! //
 //! //   0  1  2  3
 //! // 0 ░░░▓▓▓▓▒▒▒
@@ -48,10 +47,74 @@
 //! // 2 +--▒▒▒▒▒▒▒
 //! let mut query = qt.query((1, 0), (2, 2));
 //!
-//! // There is an overlap between our query region and the region holding "foo",
-//! // so we expect that iterator to return the `(coordinate, value)` pair containing "foo".
+//! // @query implements `Iterator` over `Entry<u64, String>` entries, so we can call
+//! // `Entry::value_ref()` and see that our query region contains the rectangle at which "foo" was
+//! // inserted.
 //! assert_eq!(query.next().unwrap().value_ref(), "foo");
 //! ```
+//!
+//! # Implementation
+//! ```
+//! // The Quadtree is a tree where every node has four children, representing the four
+//! // evenly-divided subquadrants beneath it in the grid.
+//! let mut qt = quadtree_impl::Quadtree::<u8, f32>::new(2);
+//!
+//! // Inserting a point (a.k.a. a region of dimensions 1x1) means traversing that tree all the way
+//! // to the bottom.
+//! qt.insert((0, 0), (1, 1), 1.23456);
+//! // (0,0)->4x4 ─┬─ (0,0)->2x2 ─┬─ (0,0)->1x1
+//! //             │              │    └ [1.23456]
+//! //             │              ├─ (0,2)->1x1
+//! //             │              ├─ (2,0)->1x1
+//! //             │              └─ (2,2)->1x1
+//! //             ├─ (0,2)->2x2
+//! //             ├─ (2,0)->2x2
+//! //             └─ (2,2)->2x2
+//!
+//! // But inserting a region which coincides with a quadrant means inserting that value somewhere
+//! // higher in the tree.
+//! qt.insert((0, 0), (2, 2), 2.46810);
+//! // (0,0)->4x4 ─┬─ (0,0)->2x2 ─────┬─ (0,0)->1x1
+//! //             │    └ [2.46810]   │    └ [1.23456]
+//! //             │                  ├─ (0,2)->1x1
+//! //             │                  ├─ (2,0)->1x1
+//! //             │                  └─ (2,2)->1x1
+//! //             ├─ (0,2)->2x2
+//! //             ├─ (2,0)->2x2
+//! //             └─ (2,2)->2x2
+//!
+//! // Inserting a region which overlaps a few quadrants means inserting that value (actually, a
+//! // key which points to that value in a store) in multiple places.
+//! qt.insert((0, 0), (3, 3), 3.6912);
+//! // (0,0)->4x4 ─┬─ (0,0)->2x2 ─────┬─ (0,0)->1x1
+//! //             │    └ [ 2.46810,  │    └ [1.23456]
+//! //             │        3.6912 ]  ├─ (0,1)->1x1
+//! //             │                  ├─ (1,0)->1x1
+//! //             │                  └─ (1,1)->1x1
+//! //             │
+//! //             ├─ (0,2)->2x2 ─────┬─ (0,2)->1x1
+//! //             │                  │    └ [3.6912]
+//! //             │                  ├─ (0,3)->1x1
+//! //             │                  ├─ (1,2)->1x1
+//! //             │                  │    └ [3.6912]
+//! //             │                  └─ (1,3)->1x1
+//! //             │
+//! //             ├─ (2,0)->2x2 ─────┬─ (2,0)->1x1
+//! //             │                  │    └ [3.6912]
+//! //             │                  ├─ (2,1)->1x1
+//! //             │                  │    └ [3.6912]
+//! //             │                  ├─ (3,0)->1x1
+//! //             │                  └─ (3,1)->1x1
+//! //             │
+//! //             └─ (2,2)->2x2 ─────┬─ (2,2)->1x1
+//! //                                │    └ [3.6912]
+//! //                                ├─ (2,3)->1x1
+//! //                                ├─ (3,2)->1x1
+//! //                                └─ (3,3)->1x1
+//! ```
+//! In practice this is relatively efficient. It allows for fast regional lookups at the cost of
+//! more expensive insertions and deletions. This library optimizes for many small items which
+//! don't overlap much as opposed to large items.
 //!
 //! # Usage
 //!
@@ -125,6 +188,7 @@ use {
 /// Points should be represented by regions with dimensions `(1, 1)`.
 // TODO(ambuc): Implement `.delete_by(anchor, dimensions, fn)`: `.retain()` is the inverse.
 // TODO(ambuc): Implement `FromIterator<(K, V)>` for `Quadtree`.
+// TODO(ambuc): Implement .delete_uuid(uuid: Uuid).
 #[derive(Debug, PartialEq, Eq)]
 pub struct Quadtree<U, V>
 where

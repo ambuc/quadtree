@@ -12,7 +12,7 @@ extern crate quadtree_impl;
 use quadtree_impl::Quadtree;
 use quadtree_impl::Entry;
 
-// Create a new Quadtree with (u16, u16) x/y coordinates, String values, and a
+// Create a new Quadtree with (u64, u64) x/y coordinates, String values, and a
 // depth of four layers. Since 2^4 = 16, this grid will be of width and
 // height 16.
 let mut qt = Quadtree::<u64, String>::new(4);
