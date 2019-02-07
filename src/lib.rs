@@ -591,12 +591,13 @@ where
     fn delete_uuids_and_return(&mut self, uuids: HashSet<Uuid>) -> IntoIter<U, V> {
         let error: &'static str = "I tried to look up a Uuid in the store which I found in the tree, but it wasn't there!";
 
-        let mut pairs: Vec<Entry<U, V>> = vec![];
+        let mut entries: Vec<Entry<U, V>> = vec![];
+
         uuids.iter().for_each(|u| {
-            pairs.push(self.store.remove(&u).expect(&error));
+            entries.push(self.store.remove(&u).expect(&error));
         });
 
-        IntoIter { pairs }
+        IntoIter { entries }
     }
 
     /// Given a `Uuid`, deletes a single item from the Quadtree. If that `Uuid` was found,
@@ -613,6 +614,35 @@ where
         // If the Uuid wasn't in the @store, we don't need to perform a descent.
         None
     }
+
+    // TODO(ambuc): Test this fn.
+    /// Retains only the elements specified by the predicate.
+    ///
+    /// In other words, remove all items such that `f(&mut v)` returns `false`.
+    pub fn retain<F>(&mut self, mut f: F) -> IntoIter<U, V>
+    where
+        F: FnMut(&mut V) -> bool,
+        U: std::hash::Hash,
+    {
+        // TODO(ambuc): I think this is technically correct but it seems to be interweaving three
+        // routines. Is there a way to simplify this?
+        let mut doomed: HashSet<(Uuid, Area<U>)> = HashSet::new();
+        for (uuid, entry) in self.store.iter_mut() {
+            if f(entry.value_mut()) {
+                doomed.insert((*uuid, entry.area()));
+            }
+        }
+        // TODO(ambuc): There is an optimization here to do one traversal with many matches, over
+        // many traversals i.e. one per match.
+        let mut entries: Vec<Entry<U, V>> = vec![];
+        for (uuid, region) in doomed {
+            entries.push(self.store.remove(&uuid).unwrap());
+            self.inner.delete_uuid(uuid, region);
+        }
+
+        IntoIter { entries }
+    }
+    // TODO(ambuc): retain_within
 
     /// Returns an iterator over all `(&((U, U), (U, U)), &V)` region/value pairs in the
     /// Quadtree.
@@ -879,7 +909,7 @@ pub struct IntoIter<U, V>
 where
     U: PrimInt,
 {
-    pairs: Vec<Entry<U, V>>,
+    entries: Vec<Entry<U, V>>,
 }
 
 impl<U, V> Iterator for IntoIter<U, V>
@@ -890,7 +920,7 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        self.pairs.pop()
+        self.entries.pop()
     }
 
     #[inline]
@@ -957,7 +987,7 @@ where
 
     fn into_iter(self) -> IntoIter<U, V> {
         IntoIter {
-            pairs: self.store.into_iter().map(|(_uuid, entry)| entry).collect(),
+            entries: self.store.into_iter().map(|(_uuid, entry)| entry).collect(),
         }
     }
 }
