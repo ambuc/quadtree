@@ -256,25 +256,25 @@ mod delete {
     use super::*;
 
     #[test]
-    fn delete_by_uuid() {
+    fn delete_by_handle() {
         let mut qt = Quadtree::<u32, i8>::new(4);
-        // We don't know the Uuids for any of these.
+        // We don't know the indices for any of these.
         qt.extend(vec![((0, 0), 0), ((2, 3), 5), ((2, 2), 7), ((1, 2), 9)]);
         debug_assert_eq!(qt.len(), 4);
 
         // But we will be sure to retain this one.
-        let uuid = qt.insert((0, 0), (1, 1), 11);
+        let handle = qt.insert((0, 0), (1, 1), 11);
         debug_assert_eq!(qt.len(), 5); // Insertion succeeded.
 
         // Check the returned entry.
-        let entry = qt.delete_uuid(uuid).unwrap();
+        let entry = qt.delete_by_handle(handle).unwrap();
         debug_assert_eq!(entry.region(), ((0, 0), (1, 1)));
         debug_assert_eq!(entry.value_ref(), &11);
 
         // And check that the tree is smaller now.
         debug_assert_eq!(qt.len(), 4); // Insertion succeeded.
 
-        // And, check that queries over the previous area don't crash or return garbage Uuids.
+        // And, check that queries over the previous area don't crash or return garbage indices.
         debug_assert_eq!(qt.query((0, 0), (1, 1)).count(), 1);
     }
 }

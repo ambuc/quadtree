@@ -18,7 +18,6 @@ use {
         point::PointType,
     },
     num::PrimInt,
-    uuid::Uuid,
 };
 
 /// Lightweight encapsulation representing a region/value pair being returned by value from the
@@ -59,17 +58,17 @@ where
 {
     region: Area<U>,
     value: V,
-    uuid: Uuid,
+    handle: u64,
 }
 impl<U, V> Entry<U, V>
 where
     U: PrimInt,
 {
-    pub(crate) fn new(inner: (Area<U>, V), uuid: Uuid) -> Entry<U, V> {
+    pub(crate) fn new(inner: (Area<U>, V), handle: u64) -> Entry<U, V> {
         Entry {
             region: inner.0,
             value: inner.1,
-            uuid,
+            handle,
         }
     }
 
@@ -119,7 +118,7 @@ where
         &self.value
     }
 
-    pub(crate) fn uuid(&self) -> Uuid {
-        self.uuid.clone()
+    pub(crate) fn handle(&self) -> u64 {
+        self.handle
     }
 }

@@ -1,3 +1,3 @@
-use {crate::entry::Entry, std::collections::HashMap, uuid::Uuid};
+use {crate::entry::Entry, std::collections::HashMap};
 
-pub(crate) type StoreType<U, V> = HashMap<Uuid, Entry<U, V>>;
+pub(crate) type StoreType<U, V> = HashMap<u64, Entry<U, V>>;

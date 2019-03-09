@@ -26,11 +26,11 @@ let mut qt = Quadtree::<u64, String>::new(4);
 // 1 ░░░░░░░--+
 //   |  |  |  |
 // 2 +--+--+--+
-let uuid = qt.insert((0, 0), (2, 1), "foo".to_string());
+let index = qt.insert((0, 0), (2, 1), "foo".to_string());
 
-// We've received a uuid for our insertion which can be used to get (and mutate) 
+// We've received an index for our insertion which can be used to get (and mutate) 
 // the value in-place.
-assert_eq!(qt.get(&uuid), Some("foo"));
+assert_eq!(qt.get(index), Some("foo"));
 
 // A Quadtree can be queried by region. 
 //

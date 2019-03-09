@@ -22,7 +22,6 @@ use {
         types::StoreType,
     },
     num::PrimInt,
-    uuid::Uuid,
 };
 
 #[derive(Clone, PartialEq, Eq)]
@@ -38,11 +37,14 @@ where
 
     // The regions held at this level in the tree. (NB: That doesn't mean each value in `values`
     // is at self.region).
-    pub(crate) kept_uuids: Vec<Uuid>,
+    pub(crate) kept_handles: Vec<u64>,
 
     // The subquadrants under this cell. [ne, nw, se, sw]. If there are no subquadrants, this
     // entire list could be None.
     pub(crate) subquadrants: Option<[Box<QTInner<U>>; 4]>,
+
+    // The last-inserted handle. This is a monotonically increasing counter.
+    handle_counter: u64,
 }
 
 impl<U> std::fmt::Debug for QTInner<U>
@@ -55,11 +57,11 @@ where
                 f,
                 "{:?} :: {:?} {:#?}",
                 self.region,
-                self.kept_uuids,
+                self.kept_handles,
                 self.subquadrants.as_ref().unwrap()
             )
         } else {
-            write!(f, "{:?} :: {:?}", self.region, self.kept_uuids,)
+            write!(f, "{:?} :: {:?}", self.region, self.kept_handles,)
         }
     }
 }
@@ -78,13 +80,14 @@ where
         QTInner {
             depth,
             region,
-            kept_uuids: Vec::new(),
+            kept_handles: Vec::new(),
             subquadrants: None,
+            handle_counter: 0_u64,
         }
     }
 
     pub(crate) fn reset(&mut self) {
-        self.kept_uuids.clear();
+        self.kept_handles.clear();
         self.subquadrants = None;
     }
 
@@ -95,29 +98,35 @@ where
         req: Area<U>,
         val: V,
         store: &mut StoreType<U, V>,
-    ) -> Uuid {
-        let uuid = Uuid::new_v4();
-        store.insert(uuid, Entry::new((req, val), uuid));
-        self.insert_uuid_at_region(req, uuid, store);
-        uuid.clone()
+    ) -> u64 {
+        let handle = self.handle_counter;
+        self.handle_counter += 1;
+        store.insert(handle, Entry::new((req, val), handle));
+        self.insert_handle_at_region(req, handle, store);
+        handle
     }
 
     // Attempts to insert the value at the requested region. Returns false if the region was too
     // large.
-    fn insert_uuid_at_region<V>(&mut self, req: Area<U>, uuid: Uuid, store: &mut StoreType<U, V>) {
+    fn insert_handle_at_region<V>(
+        &mut self,
+        req: Area<U>,
+        handle: u64,
+        store: &mut StoreType<U, V>,
+    ) {
         // If we're at the bottom depth, it had better fit.
         if self.depth == 0 {
-            self.kept_uuids.push(uuid);
+            self.kept_handles.push(handle);
             return;
         }
 
         if req.contains(self.region) {
-            self.kept_uuids.push(uuid);
+            self.kept_handles.push(handle);
             return;
         }
 
         if req == self.region {
-            self.kept_uuids.push(uuid);
+            self.kept_handles.push(handle);
             return;
         }
 
@@ -130,7 +139,7 @@ where
         if let Some(sqs) = self.subquadrants.as_mut() {
             for sq in sqs.iter_mut() {
                 if sq.region.intersects(req) {
-                    sq.insert_uuid_at_region(req, uuid, store);
+                    sq.insert_handle_at_region(req, handle, store);
                 }
             }
         }
@@ -157,15 +166,15 @@ where
         ]);
     }
 
-    pub(crate) fn delete_uuid(&mut self, uuid: Uuid, req: Area<U>) {
-        // Delete all instances of @uuid from this level's @kept_uuids.
-        self.kept_uuids.retain(|&x| x != uuid);
+    pub(crate) fn delete_by_handle(&mut self, handle: u64, req: Area<U>) {
+        // Delete all instances of @handle from this level's @kept_handles.
+        self.kept_handles.retain(|&x| x != handle);
         // And potentially recurse into the subquadrants...
         if let Some(sqs) = self.subquadrants.as_mut() {
             for sq in sqs.iter_mut() {
                 // ...but not all of them.
                 if sq.region.intersects(req) {
-                    sq.delete_uuid(uuid, req);
+                    sq.delete_by_handle(handle, req);
                 }
             }
         }

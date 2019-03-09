@@ -130,10 +130,10 @@ extern crate num;
 pub mod entry;
 
 mod geometry;
+mod handle_iter;
 mod qtinner;
 mod traversal;
 mod types;
-mod uuid_iter;
 
 use {
     crate::{
@@ -142,17 +142,16 @@ use {
             area::{Area, AreaType},
             point::PointType,
         },
+        handle_iter::HandleIter,
         qtinner::QTInner,
         traversal::Traversal,
         types::StoreType,
-        uuid_iter::UuidIter,
     },
     num::PrimInt,
     std::{
         collections::{HashMap, HashSet},
         iter::FusedIterator,
     },
-    uuid::Uuid,
 };
 
 //   .d88b.  db    db  .d8b.  d8888b. d888888b d8888b. d88888b d88888b
@@ -324,7 +323,7 @@ where
         self.inner.region.contains((anchor, dimensions).into())
     }
 
-    /// Inserts the value at the requested region. Returns a unique `Uuid` representing this
+    /// Inserts the value at the requested region. Returns a unique `handle` representing this
     /// instance of the object in the Quadtree.
     ///   - If the requested region does not fit totally in the Quadtree, `.insert()` will fail
     ///     silently. Callsites may want to use `.contains()` first.
@@ -339,37 +338,36 @@ where
     ///
     /// let mut qt = Quadtree::<u32, String>::new(2);
     ///
-    /// let uuid_a_1 = qt.insert((0, 0), (1, 1), "a".to_string());
-    /// let uuid_a_2 = qt.insert((0, 0), (1, 1), "a".to_string());
+    /// let handle_a_1 = qt.insert((0, 0), (1, 1), "a".to_string());
+    /// let handle_a_2 = qt.insert((0, 0), (1, 1), "a".to_string());
     ///
-    /// // Even though we inserted "a" at the same point in the Quadtree, the two uuids returned
+    /// // Even though we inserted "a" at the same point in the Quadtree, the two handles returned
     /// // were not the same.
-    /// assert_ne!(uuid_a_1, uuid_a_2);
+    /// assert_ne!(handle_a_1, handle_a_2);
     /// ```
-    pub fn insert(&mut self, anchor: PointType<U>, dimensions: (U, U), val: V) -> Uuid {
+    pub fn insert(&mut self, anchor: PointType<U>, dimensions: (U, U), val: V) -> u64 {
         self.inner
             .insert_val_at_region((anchor, dimensions).into(), val, &mut self.store)
     }
 
-    /// Provides access to a single value in the Quadtree, given a previously known `Uuid`. This
-    /// `Uuid` might have been saved by value at [`insert`].
+    /// Provides access to a single value in the Quadtree, given a previously known handle. This
+    /// handle might have been saved by value at [`insert`].
     ///
     /// ```
     /// use quadtree_impl::Quadtree;
-    /// use uuid::Uuid;
     ///
     /// let mut qt = Quadtree::<u32, f32>::new(4);
     ///
-    /// let uuid: Uuid = qt.insert((0, 1), (2, 3), 9.87);
+    /// let handle: u64 = qt.insert((0, 1), (2, 3), 9.87);
     ///
-    /// assert_eq!(qt.get(&uuid), Some(&9.87));
+    /// assert_eq!(qt.get(handle), Some(&9.87));
     ///
     /// ```
     ///
     /// [`insert`]: struct.Quadtree.html#method.insert
-    pub fn get<'a>(&'a self, uuid: &Uuid) -> Option<&'a V> {
+    pub fn get<'a>(&'a self, handle: u64) -> Option<&'a V> {
         self.store
-            .get(uuid)
+            .get(&handle)
             .map_or(None, |entry| Some(entry.value_ref()))
     }
 
@@ -377,24 +375,23 @@ where
     ///
     /// ```
     /// use quadtree_impl::Quadtree;
-    /// use uuid::Uuid;
     ///
     /// let mut qt = Quadtree::<u32, f32>::new(4);
     ///
-    /// let uuid: Uuid = qt.insert((0, 1), (2, 3), 9.87);
+    /// let handle: u64 = qt.insert((0, 1), (2, 3), 9.87);
     ///
-    /// if let Some(val) = qt.get_mut(&uuid) {
+    /// if let Some(val) = qt.get_mut(handle) {
     ///   *val += 1.0;
     /// }
     ///
-    /// assert_eq!(qt.get(&uuid), Some(&10.87));
+    /// assert_eq!(qt.get(handle), Some(&10.87));
     ///
     /// ```
     ///
     /// [`.get()`]: struct.Quadtree.html#method.get
-    pub fn get_mut<'a>(&'a mut self, uuid: &Uuid) -> Option<&'a mut V> {
+    pub fn get_mut<'a>(&'a mut self, handle: u64) -> Option<&'a mut V> {
         self.store
-            .get_mut(uuid)
+            .get_mut(&handle)
             .map_or(None, |entry| Some(entry.value_mut()))
     }
 
@@ -523,9 +520,9 @@ where
         F: Fn(Area<U>) -> bool,
         M: Fn(&mut V) + Copy,
     {
-        let relevant_uuids: Vec<Uuid> = UuidIter::new(&self.inner).collect();
-        for uuid in relevant_uuids {
-            if let Some(entry) = self.store.get_mut(&uuid) {
+        let relevant_handles: Vec<u64> = HandleIter::new(&self.inner).collect();
+        for i in relevant_handles {
+            if let Some(entry) = self.store.get_mut(&i) {
                 if filter(entry.area()) {
                     modify(&mut entry.value_mut());
                 }
@@ -575,43 +572,43 @@ where
     /// [`Entry<U, V>`]: entry/struct.Entry.html
     /// [`.delete_strict()`]: struct.Quadtree.html#method.delete_strict
     pub fn delete(&mut self, anchor: PointType<U>, dimensions: (U, U)) -> IntoIter<U, V> {
-        self.delete_uuids_and_return(self.query(anchor, dimensions).map(|e| e.uuid()).collect())
+        self.delete_handles_and_return(self.query(anchor, dimensions).map(|e| e.handle()).collect())
     }
 
     ///  `delete_strict()` behaves the same as `delete()`, except that the regions deleted and
     ///  returned are guaranteed to be totally contained within the delete region.
     pub fn delete_strict(&mut self, anchor: PointType<U>, dimensions: (U, U)) -> IntoIter<U, V> {
-        self.delete_uuids_and_return(
+        self.delete_handles_and_return(
             self.query_strict(anchor, dimensions)
-                .map(|e| e.uuid())
+                .map(|e| e.handle())
                 .collect(),
         )
     }
 
-    fn delete_uuids_and_return(&mut self, uuids: HashSet<Uuid>) -> IntoIter<U, V> {
-        let error: &'static str = "I tried to look up a Uuid in the store which I found in the tree, but it wasn't there!";
+    fn delete_handles_and_return(&mut self, handles: HashSet<u64>) -> IntoIter<U, V> {
+        let error: &'static str = "I tried to look up an handle in the store which I found in the tree, but it wasn't there!";
 
         let mut entries: Vec<Entry<U, V>> = vec![];
 
-        uuids.iter().for_each(|u| {
-            entries.push(self.store.remove(&u).expect(&error));
+        handles.iter().for_each(|u| {
+            entries.push(self.store.remove(u).expect(&error));
         });
 
         IntoIter { entries }
     }
 
-    /// Given a `Uuid`, deletes a single item from the Quadtree. If that `Uuid` was found,
-    /// `delete_uuid()` returns an `Entry<U, V>` containing its former region and value. Otherwise,
+    /// Given an handle, deletes a single item from the Quadtree. If that handle was found,
+    /// `delete_by_handle()` returns an `Entry<U, V>` containing its former region and value. Otherwise,
     /// returns `None`.
-    pub fn delete_uuid(&mut self, uuid: Uuid) -> Option<Entry<U, V>> {
+    pub fn delete_by_handle(&mut self, handle: u64) -> Option<Entry<U, V>> {
         // Pop the Entry<U, V> out of the @store,
-        if let Some(entry) = self.store.remove(&uuid) {
+        if let Some(entry) = self.store.remove(&handle) {
             // Use the now-known region to descend into the tree efficiently,
-            self.inner.delete_uuid(uuid, entry.area());
+            self.inner.delete_by_handle(handle, entry.area());
             // And return the Entry.
             return Some(entry);
         }
-        // If the Uuid wasn't in the @store, we don't need to perform a descent.
+        // If the handle wasn't in the @store, we don't need to perform a descent.
         None
     }
 
@@ -626,18 +623,18 @@ where
     {
         // TODO(ambuc): I think this is technically correct but it seems to be interweaving three
         // routines. Is there a way to simplify this?
-        let mut doomed: HashSet<(Uuid, Area<U>)> = HashSet::new();
-        for (uuid, entry) in self.store.iter_mut() {
+        let mut doomed: HashSet<(u64, Area<U>)> = HashSet::new();
+        for (handle, entry) in self.store.iter_mut() {
             if f(entry.value_mut()) {
-                doomed.insert((*uuid, entry.area()));
+                doomed.insert((*handle, entry.area()));
             }
         }
         // TODO(ambuc): There is an optimization here to do one traversal with many matches, over
         // many traversals i.e. one per match.
         let mut entries: Vec<Entry<U, V>> = vec![];
-        for (uuid, region) in doomed {
-            entries.push(self.store.remove(&uuid).unwrap());
-            self.inner.delete_uuid(uuid, region);
+        for (handle, region) in doomed {
+            entries.push(self.store.remove(&handle).unwrap());
+            self.inner.delete_by_handle(handle, region);
         }
 
         IntoIter { entries }
@@ -684,7 +681,7 @@ where
     U: PrimInt,
 {
     store: &'a StoreType<U, V>,
-    uuid_iter: UuidIter<'a, U>,
+    handle_iter: HandleIter<'a, U>,
 }
 
 impl<'a, U, V> Iter<'a, U, V>
@@ -694,7 +691,7 @@ where
     pub(crate) fn new(qt: &'a QTInner<U>, store: &'a StoreType<U, V>) -> Iter<'a, U, V> {
         Iter {
             store,
-            uuid_iter: UuidIter::new(qt),
+            handle_iter: HandleIter::new(qt),
         }
     }
 }
@@ -707,12 +704,12 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        match self.uuid_iter.next() {
-            Some(uuid) => {
+        match self.handle_iter.next() {
+            Some(handle) => {
                 return Some(
                     self.store
-                        .get(&uuid)
-                        .expect("Shouldn't have a uuid in the tree which isn't in the store."),
+                        .get(&handle)
+                        .expect("Shouldn't have an handle in the tree which isn't in the store."),
                 );
             }
             None => None,
@@ -746,7 +743,7 @@ where
     U: PrimInt,
 {
     query_region: Area<U>,
-    uuid_iter: UuidIter<'a, U>,
+    handle_iter: HandleIter<'a, U>,
     store: &'a StoreType<U, V>,
     traversal_method: Traversal,
 }
@@ -764,17 +761,17 @@ where
     where
         U: PrimInt,
     {
-        // Construct the UuidIter first...
-        let mut uuid_iter = UuidIter::new(qt);
+        // Construct the HandleIter first...
+        let mut handle_iter = HandleIter::new(qt);
 
         // ...and descend it to the appropriate level. Depending on the type of @traversal_method,
         // this will potentially collect intersecting regions along the way. Avoiding combing the
         // entire Quadtree is essential for the efficiency of a query.
-        uuid_iter.query_optimization(query_region, traversal_method);
+        handle_iter.query_optimization(query_region, traversal_method);
 
         Query {
             query_region,
-            uuid_iter,
+            handle_iter,
             store,
             traversal_method,
         }
@@ -789,8 +786,8 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(uuid) = self.uuid_iter.next() {
-            if let Some(entry) = self.store.get(&uuid) {
+        if let Some(handle) = self.handle_iter.next() {
+            if let Some(entry) = self.store.get(&handle) {
                 if self.traversal_method.eval(entry.area(), self.query_region) {
                     return Some(entry);
                 }
@@ -987,7 +984,11 @@ where
 
     fn into_iter(self) -> IntoIter<U, V> {
         IntoIter {
-            entries: self.store.into_iter().map(|(_uuid, entry)| entry).collect(),
+            entries: self
+                .store
+                .into_iter()
+                .map(|(_handle, entry)| entry)
+                .collect(),
         }
     }
 }

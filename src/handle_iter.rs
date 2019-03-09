@@ -16,51 +16,43 @@ use {
     crate::{geometry::area::Area, qtinner::QTInner, traversal::Traversal},
     num::PrimInt,
     std::{collections::HashSet, iter::FusedIterator, ops::Deref},
-    uuid::Uuid,
 };
 
-// db    db db    db d888888b d8888b. d888888b d888888b d88888b d8888b.
-// 88    88 88    88   `88'   88  `8D   `88'   `~~88~~' 88'     88  `8D
-// 88    88 88    88    88    88   88    88       88    88ooooo 88oobY'
-// 88    88 88    88    88    88   88    88       88    88~~~~~ 88`8b
-// 88b  d88 88b  d88   .88.   88  .8D   .88.      88    88.     88 `88.
-// ~Y8888P' ~Y8888P' Y888888P Y8888D' Y888888P    YP    Y88888P 88   YD
-
 #[derive(Clone, Debug)]
-pub(crate) struct UuidIter<'a, U>
+pub(crate) struct HandleIter<'a, U>
 where
     U: PrimInt,
 {
-    uuid_stack: Vec<&'a Uuid>,
+    handle_stack: Vec<u64>,
     qt_stack: Vec<&'a QTInner<U>>,
-    visited: HashSet<Uuid>,
+    visited: HashSet<u64>,
 }
 
-impl<'a, U> UuidIter<'a, U>
+impl<'a, U> HandleIter<'a, U>
 where
     U: PrimInt,
 {
-    pub(crate) fn new(qt: &'a QTInner<U>) -> UuidIter<'a, U> {
-        UuidIter {
-            uuid_stack: vec![],
+    pub(crate) fn new(qt: &'a QTInner<U>) -> HandleIter<'a, U> {
+        HandleIter {
+            handle_stack: vec![],
             qt_stack: vec![qt],
             visited: HashSet::new(),
         }
     }
 
     // Descent is an optimization for queries. We don't want to traverse the entire tree searching
-    // for uuids which (mostly) correspond to regions our @req doesn't intersect with.
+    // for handles which (mostly) correspond to regions our @req doesn't intersect with.
     //
     // Instead, we can make a beeline for the lowest region which totally contains the @req (but no
-    // lower). We then have to actually evaluate every uuid below that node.
+    // lower). We then have to actually evaluate every handle below that node.
     //
     // Along the way, if our query is meant to be of type Traversal::Overlapping, we collect the
-    // uuids we meet along the way. They are guaranteed to intersect @req.
+    // handles we meet along the way. They are guaranteed to intersect @req.
     pub(crate) fn query_optimization(&mut self, req: Area<U>, traversal_method: Traversal) {
-        // This method expects to be called at a point in time when the UuidIter has just been
+        // This method expects to be called at a point in time when the HandleIter has just been
         // created but has not yet been called.
         assert!(self.qt_stack.len() == 1);
-        assert!(self.uuid_stack.is_empty());
+        assert!(self.handle_stack.is_empty());
         assert!(self.visited.is_empty());
 
         self.descend_recurse_step(req, traversal_method);
@@ -69,7 +61,7 @@ where
     fn descend_recurse_step(&mut self, req: Area<U>, traversal_method: Traversal) {
         assert!(self.qt_stack.len() == 1);
         // Peek into the stack. We have to peek rather than pop, because if we are about to go too
-        // far down we'd rather stop and return the UuidIter as-is.
+        // far down we'd rather stop and return the HandleIter as-is.
         if let Some(qt) = self.qt_stack.last() {
             // If the region doesn't contain our @req, we're already too far down. Return here.
             if !qt.region.contains(req) {
@@ -83,7 +75,7 @@ where
                     // that our new sole qt.
                     if sq.region.contains(req) {
                         if traversal_method == Traversal::Overlapping {
-                            self.uuid_stack.extend(&qt.kept_uuids);
+                            self.handle_stack.extend(&qt.kept_handles);
                         }
 
                         // TODO(ambuc): Could this be done with Vec::swap() or std::mem::replace()?
@@ -102,26 +94,26 @@ where
     }
 }
 
-impl<U> Iterator for UuidIter<'_, U>
+impl<U> Iterator for HandleIter<'_, U>
 where
     U: PrimInt,
 {
-    type Item = Uuid;
+    type Item = u64;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        // Check the uuid_stack.
-        if let Some(uuid) = self.uuid_stack.pop() {
-            if !self.visited.insert(uuid.clone()) {
+        // Check the handle_stack.
+        if let Some(handle) = self.handle_stack.pop() {
+            if !self.visited.insert(handle) {
                 return self.next();
             }
-            return Some(uuid.clone());
+            return Some(handle);
         }
 
         // Then check the qt_stack.
         if let Some(qt) = self.qt_stack.pop() {
             // Push my regions onto the region stack
-            self.uuid_stack.extend(&qt.kept_uuids);
+            self.handle_stack.extend(&qt.kept_handles);
 
             // Push my subquadrants onto the qt_stack too.
             if let Some(sqs) = qt.subquadrants.as_ref() {
@@ -140,4 +132,4 @@ where
     }
 }
 
-impl<U> FusedIterator for UuidIter<'_, U> where U: PrimInt {}
+impl<U> FusedIterator for HandleIter<'_, U> where U: PrimInt {}
