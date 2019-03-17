@@ -32,10 +32,12 @@ use crate::geometry::point::{Point, PointType};
 pub type AreaType<U> = (PointType<U>, (U, U));
 
 // Lightweight data type to represent a region.
-// The top-left anchor may be positive or negative in either coordinate.
-// Defined by a top-left anchor and a width/height.
-// The width/height must both be positive and nonzero.
-// Should be passed by value.
+//   - The top-left anchor may be positive or negative in either coordinate.
+//   - Defined by a top-left anchor and a width/height.
+//   - The width/height must both be positive and nonzero.
+//   - Should be passed by value.
+//
+// There is a potential for panic if negative values are used at Area construction time.
 #[derive(PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Area<U> {
     inner: AreaType<U>,
@@ -105,6 +107,9 @@ where
     pub fn anchor(&self) -> Point<U> {
         self.inner.0.into()
     }
+
+    // NB: The center point is an integer and thus rounded, i.e. a 2x2 region at (0,0) has a center
+    // at (0,0), when in reality the center would be at (0.5, 0.5).
     pub fn center_pt(&self) -> Point<U> {
         self.anchor() + (self.width() / Self::two(), self.height() / Self::two()).into()
     }

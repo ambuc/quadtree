@@ -76,3 +76,4 @@ This is not an official Google product.
    preference for 
     - association rather than insertion,
     - handle over index/pointer/reference,
+ - Do away with `((x,y),(w,h))` pattern.
