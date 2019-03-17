@@ -1,16 +1,17 @@
-# quadtree-impl
-General purpose [point/region Quadtree](https://en.wikipedia.org/wiki/Quadtree)
-implementation for Rust.
+# quadtree
+
+[Point/region Quadtree](https://en.wikipedia.org/wiki/Quadtree) with support for 
+overlapping regions.
 
 Under active development.
 
 # Example Usage
 
 ```rust
-extern crate quadtree_impl;
+extern crate quadtree_rs;
 
-use quadtree_impl::Quadtree;
-use quadtree_impl::Entry;
+use quadtree_rs::Quadtree;
+use quadtree_rs::Entry;
 
 // Create a new Quadtree with (u64, u64) x/y coordinates, String values, and a
 // depth of four layers. Since 2^4 = 16, this grid will be of width and
@@ -26,11 +27,11 @@ let mut qt = Quadtree::<u64, String>::new(4);
 // 1 ░░░░░░░--+
 //   |  |  |  |
 // 2 +--+--+--+
-let index = qt.insert((0, 0), (2, 1), "foo".to_string());
+let handle = qt.insert((0, 0), (2, 1), "foo".to_string());
 
-// We've received an index for our insertion which can be used to get (and mutate) 
-// the value in-place.
-assert_eq!(qt.get(index), Some("foo"));
+// We've received an handle for our insertion which can be used to get (and 
+// mutate) the value in-place.
+assert_eq!(qt.get(handle), Some("foo"));
 
 // A Quadtree can be queried by region. 
 //
@@ -68,3 +69,10 @@ This project is licensed under the Apache 2.0 license.
 # Disclaimer
 
 This is not an official Google product. 
+
+# TODOS
+ - Run `cargo clippy` over the whole repo.
+ - Do a final pass over all public-facing documentation and language with a
+   preference for 
+    - association rather than insertion,
+    - handle over index/pointer/reference,

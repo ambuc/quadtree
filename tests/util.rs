@@ -23,7 +23,7 @@ where
 }
 
 #[allow(dead_code)]
-pub fn print_quadtree<U, V>(qt: &quadtree_impl::Quadtree<U, V>)
+pub fn print_quadtree<U, V>(qt: &quadtree_rs::Quadtree<U, V>)
 where
     U: PrimInt + FromPrimitive + std::fmt::Debug,
     V: std::fmt::Debug,

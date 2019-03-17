@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! [Point/region Quadtree](https://en.wikipedia.org/wiki/Quadtree) implementation
-//! for Rust.
+//! [Point/region Quadtree](https://en.wikipedia.org/wiki/Quadtree) with support for overlapping
+//! regions.
 //!
 //! # Quick Start
 //!
-//! Add `quadtree_impl` to your `Cargo.toml`, and then add it to your main.
+//! Add `quadtree_rs` to your `Cargo.toml`, and then add it to your main.
 //! ```
-//! extern crate quadtree_impl;
-//! use quadtree_impl::Quadtree;
+//! extern crate quadtree_rs;
+//! use quadtree_rs::Quadtree;
 //!
 //! // Create a new Quadtree with u64 coordinates and String values. Quadtree::new(4) initializes a
 //! // tree with a depth of four layers, or a height and width of 2^4 = 16 .
@@ -57,7 +57,7 @@
 //! ```
 //! // The Quadtree is a tree where every node has four children, representing the four
 //! // evenly-divided subquadrants beneath it in the grid.
-//! let mut qt = quadtree_impl::Quadtree::<u8, f32>::new(2);
+//! let mut qt = quadtree_rs::Quadtree::<u8, f32>::new(2);
 //!
 //! // Inserting a point (a.k.a. a region of dimensions 1x1) means traversing that tree all the way
 //! // to the bottom.
@@ -205,7 +205,7 @@ where
     /// - The default anchor is `(0, 0)`, and the default width and height are both `2^depth`.
     /// - The Quadtree must be explicitly typed, since will contain items of a type.
     /// ```
-    /// use quadtree_impl::Quadtree;
+    /// use quadtree_rs::Quadtree;
     ///
     /// let qt = Quadtree::<u32, u8>::new(/*depth=*/ 2);
     ///
@@ -220,7 +220,7 @@ where
 
     /// Creates a new Quadtree with the requested anchor and depth.
     /// ```
-    /// use quadtree_impl::Quadtree;
+    /// use quadtree_rs::Quadtree;
     ///
     /// let qt = Quadtree::<u32, u8>::new_with_anchor(/*anchor=*/ (2, 4), /*depth=*/ 3);
     ///
@@ -264,7 +264,7 @@ where
 
     /// Returns the number of elements in the quadtree.
     /// ```
-    /// use quadtree_impl::Quadtree;
+    /// use quadtree_rs::Quadtree;
     ///
     /// let mut qt = Quadtree::<u32, f32>::new(4);
     /// assert_eq!(qt.len(), 0);
@@ -281,7 +281,7 @@ where
 
     /// Whether or not the quadtree is empty.
     /// ```
-    /// use quadtree_impl::Quadtree;
+    /// use quadtree_rs::Quadtree;
     ///
     /// let mut qt = Quadtree::<u32, f64>::new(3);
     /// assert!(qt.is_empty());
@@ -301,7 +301,7 @@ where
     /// Perhaps before inserting a region, the callsite would like to check to see if that region
     /// could fit in the area represented by the quadtree.
     /// ```
-    /// use quadtree_impl::Quadtree;
+    /// use quadtree_rs::Quadtree;
     ///
     /// let qt = Quadtree::<u32, u32>::new_with_anchor((1, 0), 1);
     /// // This is a very small quadtree. It has an anchor at (1, 0) and dimensions 2x2.
@@ -334,7 +334,7 @@ where
     /// must have positive, nonzero values for its width and height.
     ///
     /// ```
-    /// use quadtree_impl::Quadtree;
+    /// use quadtree_rs::Quadtree;
     ///
     /// let mut qt = Quadtree::<u32, String>::new(2);
     ///
@@ -354,7 +354,7 @@ where
     /// handle might have been saved by value at [`insert`].
     ///
     /// ```
-    /// use quadtree_impl::Quadtree;
+    /// use quadtree_rs::Quadtree;
     ///
     /// let mut qt = Quadtree::<u32, f32>::new(4);
     ///
@@ -374,7 +374,7 @@ where
     /// A mutable variant of `.get()`.
     ///
     /// ```
-    /// use quadtree_impl::Quadtree;
+    /// use quadtree_rs::Quadtree;
     ///
     /// let mut qt = Quadtree::<u32, f32>::new(4);
     ///
@@ -405,7 +405,7 @@ where
     /// must have positive, nonzero values for its width and height.
     ///
     /// ```
-    /// use quadtree_impl::Quadtree;
+    /// use quadtree_rs::Quadtree;
     ///
     /// //   0123456
     /// // 0 ░░░░░░░
@@ -476,7 +476,7 @@ where
     /// the Quadtree which intersecting the described region.
     ///
     /// ```
-    /// use quadtree_impl::{Quadtree, entry::Entry};
+    /// use quadtree_rs::{Quadtree, entry::Entry};
     ///
     /// let mut qt = Quadtree::<u8, f64>::new(3);
     ///
@@ -543,7 +543,7 @@ where
     /// points, but the callsite could use [`.delete_strict()`] instead.
     ///
     /// ```
-    /// use quadtree_impl::{IntoIter, Quadtree, entry::Entry};
+    /// use quadtree_rs::{IntoIter, Quadtree, entry::Entry};
     ///
     /// let mut qt = Quadtree::<u32, f64>::new(4);
     ///
@@ -641,7 +641,7 @@ where
     }
     // TODO(ambuc): retain_within
 
-    /// Returns an iterator over all `(&((U, U), (U, U)), &V)` region/value pairs in the
+    /// Returns an iterator over all `(&((U, U), (U, U)), &V)` region/value associations in the
     /// Quadtree.
     pub fn iter(&self) -> Iter<U, V> {
         Iter::new(&self.inner, &self.store)
@@ -894,7 +894,7 @@ impl<U, V> FusedIterator for Values<'_, U, V> where U: PrimInt {}
 //   .88.   88  V888    88    `8b  d8'   .88.      88    88.     88 `88.
 // Y888888P VP   V8P    YP     `Y88P'  Y888888P    YP    Y88888P 88   YD
 
-/// A consuming iterator over all region/value pairs held in a [`Quadtree`].
+/// A consuming iterator over all region/value associations held in a [`Quadtree`].
 ///
 /// This struct is created by the `into_iter()` method on the [`IntoIterator`] trait.
 ///

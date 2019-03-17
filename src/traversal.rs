@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use {crate::geometry::area::Area, num::PrimInt};
+
 // d888888b d8888b.  .d8b.  db    db d88888b d8888b. .d8888.  .d8b.  db
 // `~~88~~' 88  `8D d8' `8b 88    88 88'     88  `8D 88'  YP d8' `8b 88
 //    88    88oobY' 88ooo88 Y8    8P 88ooooo 88oobY' `8bo.   88ooo88 88
 //    88    88`8b   88~~~88 `8b  d8' 88~~~~~ 88`8b     `Y8b. 88~~~88 88
 //    88    88 `88. 88   88  `8bd8'  88.     88 `88. db   8D 88   88 88booo.
 //    YP    88   YD YP   YP    YP    Y88888P 88   YD `8888Y' YP   YP Y88888P
-
-use {crate::geometry::area::Area, num::PrimInt};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Traversal {

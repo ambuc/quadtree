@@ -12,6 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//  d888b  d88888b  .d88b.  .88b  d88. d88888b d888888b d8888b. db    db      dD
+// 88' Y8b 88'     .8P  Y8. 88'YbdP`88 88'     `~~88~~' 88  `8D `8b  d8'     d8'
+// 88      88ooooo 88    88 88  88  88 88ooooo    88    88oobY'  `8bd8'     d8'
+// 88  ooo 88~~~~~ 88    88 88  88  88 88~~~~~    88    88`8b      88      d8'
+// 88. ~8~ 88.     `8b  d8' 88  88  88 88.        88    88 `88.    88     d8'
+//  Y888P  Y88888P  `Y88P'  YP  YP  YP Y88888P    YP    88   YD    YP    C8'
+//
+// d8888b.  .d88b.  d888888b d8b   db d888888b
+// 88  `8D .8P  Y8.   `88'   888o  88 `~~88~~'
+// 88oodD' 88    88    88    88V8o 88    88
+// 88~~~   88    88    88    88 V8o88    88
+// 88      `8b  d8'   .88.   88  V888    88
+// 88       `Y88P'  Y888888P VP   V8P    YP
+
 // Transparent alias. In docs and user-facing APIs, this resolves to (U, U).
 pub type PointType<U> = (U, U);
 

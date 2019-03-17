@@ -18,6 +18,13 @@ use {
     std::{collections::HashSet, iter::FusedIterator, ops::Deref},
 };
 
+// db   db  .d8b.  d8b   db d8888b. db      d88888b d888888b d888888b d88888b d8888b.
+// 88   88 d8' `8b 888o  88 88  `8D 88      88'       `88'   `~~88~~' 88'     88  `8D
+// 88ooo88 88ooo88 88V8o 88 88   88 88      88ooooo    88       88    88ooooo 88oobY'
+// 88~~~88 88~~~88 88 V8o88 88   88 88      88~~~~~    88       88    88~~~~~ 88`8b
+// 88   88 88   88 88  V888 88  .8D 88booo. 88.       .88.      88    88.     88 `88.
+// YP   YP YP   YP VP   V8P Y8888D' Y88888P Y88888P Y888888P    YP    Y88888P 88   YD
+
 #[derive(Clone, Debug)]
 pub(crate) struct HandleIter<'a, U>
 where

@@ -14,6 +14,20 @@
 
 use crate::geometry::point::{Point, PointType};
 
+//  d888b  d88888b  .d88b.  .88b  d88. d88888b d888888b d8888b. db    db      dD
+// 88' Y8b 88'     .8P  Y8. 88'YbdP`88 88'     `~~88~~' 88  `8D `8b  d8'     d8'
+// 88      88ooooo 88    88 88  88  88 88ooooo    88    88oobY'  `8bd8'     d8'
+// 88  ooo 88~~~~~ 88    88 88  88  88 88~~~~~    88    88`8b      88      d8'
+// 88. ~8~ 88.     `8b  d8' 88  88  88 88.        88    88 `88.    88     d8'
+//  Y888P  Y88888P  `Y88P'  YP  YP  YP Y88888P    YP    88   YD    YP    C8'
+//
+//  .d8b.  d8888b. d88888b  .d8b.
+//  d8' `8b 88  `8D 88'     d8' `8b
+//  88ooo88 88oobY' 88ooooo 88ooo88
+//  88~~~88 88`8b   88~~~~~ 88~~~88
+//  88   88 88 `88. 88.     88   88
+//  YP   YP 88   YD Y88888P YP   YP
+
 // Transparent alias. In docs and user-facing APIs, this resolves to ((U, U), (U, U)).
 pub type AreaType<U> = (PointType<U>, (U, U));
 
@@ -49,7 +63,7 @@ where
     fn from((xy, (w, h)): AreaType<U>) -> Self {
         assert!(!w.is_zero());
         assert!(!h.is_zero());
-        // Regions shouldn't be negative in dimenision. I guess there's a way to handle the math by
+        // Regions shouldn't be negative in dimension. I guess there's a way to handle the math by
         // going in the (-x,-y) direction, but it seems better to communicate that they shouldn't
         // be.
         assert!(w > U::zero());

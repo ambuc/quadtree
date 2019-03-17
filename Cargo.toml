@@ -1,15 +1,15 @@
 [package]
-name = "quadtree_impl"
+name = "quadtree_rs"
 version = "0.1.1"
 authors = ["James Adam Buckland <james.adam.buckland@gmail.com>"]
 edition = "2018"
-description = "A data structure for storing and accessing data by x/y coordinates."
+description = "Point/region Quadtree with support for overlapping regions."
 
 # TODO(ambuc): Push to docs.rs
 publish = false
 
-# documentation = "..."
-# homepage = "..."
+documentation = "https://docs.rs/quadtree_rs/"
+homepage = "https://github.com/ambuc/quadtree"
 repository = "https://github.com/ambuc/quadtree"
 
 readme = "README.md"

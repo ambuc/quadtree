@@ -14,7 +14,7 @@
 
 mod util; // For unordered_elements_are.
 
-use quadtree_impl::Quadtree;
+use quadtree_rs::Quadtree;
 
 mod new {
     use super::*;
@@ -295,7 +295,7 @@ fn debug() {
 fn test_print_quadtree() {
     use crate::util::print_quadtree;
 
-    let mut qt = quadtree_impl::Quadtree::<u8, f64>::new(3);
+    let mut qt = quadtree_rs::Quadtree::<u8, f64>::new(3);
     qt.insert((0, 0), (2, 2), 1.35);
     qt.insert((2, 3), (1, 1), 2.46);
     qt.insert((1, 1), (2, 2), 3.69);

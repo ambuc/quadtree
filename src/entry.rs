@@ -20,18 +20,19 @@ use {
     num::PrimInt,
 };
 
-/// Lightweight encapsulation representing a region/value pair being returned by value from the
-/// [`Quadtree`].
+/// Lightweight encapsulation representing a region/value association being returned by value from
+/// the [`Quadtree`].
 ///
 /// ```
-/// use quadtree_impl::{IntoIter, Quadtree, entry::Entry};
+/// use quadtree_rs::{Quadtree, entry::Entry};
 ///
 /// let mut qt = Quadtree::<u32, f64>::new(4);
 /// qt.insert((1, 1), (3, 2), 4.56);
 ///
-/// let mut returned_entries: IntoIter<u32, f64> = qt.delete((2, 1), (1, 1));
+/// // @returned_entries is of type IntoIter<u32, f64>.
+/// let mut returned_entries  = qt.delete((2, 1), (1, 1));
 ///
-/// let mut hit: Entry<u32, f64> = returned_entries.next().unwrap();
+/// let hit: Entry<u32, f64> = returned_entries.next().unwrap();
 /// assert_eq!(hit.region(), ((1, 1), (3, 2)));
 /// assert_eq!(hit.anchor(), (1, 1));
 /// assert_eq!(hit.width(), 3);
@@ -39,19 +40,11 @@ use {
 ///
 /// // The held value can be accessed by reference.
 /// assert_eq!(hit.value_ref(), &4.56);
-///
-/// // The held value can be transferred out once:
-/// let value: f64 = hit.value();
-/// assert_eq!(value, 4.56);
-///
-/// // But the next time, it will have reverted to the default.
-/// assert_ne!(hit.value_ref(), &4.56);
-///
 /// ```
 ///
 /// [`Quadtree`]: ../struct.Quadtree.html
 // TODO(ambuc): Entry should hold Box<V> for better return-by-value semantics.
-#[derive(Debug, Hash, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Entry<U, V>
 where
     U: PrimInt,
@@ -98,15 +91,6 @@ where
     /// The height of the held region.
     pub fn height(&self) -> U {
         self.dimensions().1
-    }
-
-    /// The held value, returned by-value. `V` must implement `std::default::Default` (for now).
-    pub fn value(&mut self) -> V
-    where
-        V: std::default::Default,
-    {
-        let elem = std::mem::replace(&mut self.value, V::default());
-        elem
     }
 
     pub fn value_mut<'a>(&'a mut self) -> &'a mut V {
