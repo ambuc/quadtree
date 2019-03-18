@@ -38,8 +38,11 @@ where
         for j in 0..qt.height() {
             match qt
                 .query(
-                    (U::from_usize(i).unwrap(), U::from_usize(j).unwrap()),
-                    (U::one(), U::one()),
+                    (
+                        (U::from_usize(i).unwrap(), U::from_usize(j).unwrap()),
+                        (U::one(), U::one()),
+                    )
+                        .into(),
                 )
                 .count()
             {

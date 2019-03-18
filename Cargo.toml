@@ -31,6 +31,7 @@ maintenance = { status = "actively-developed" }
 
 [dependencies]
 num = "*"
+derive_builder = "*"
 
 # Run cargo tests and cargo-clippy as a precommit-hook, per the example in
 # https://github.com/rhysd/cargo-husky#customize-behavior.

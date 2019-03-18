@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! An entry in a Quadtree.
+
 use {
-    crate::geometry::{
-        area::{Area, AreaType},
-        point::PointType,
-    },
+    crate::{area::Area, point::Point},
     num::PrimInt,
 };
 
@@ -27,14 +26,14 @@ use {
 /// use quadtree_rs::{Quadtree, entry::Entry};
 ///
 /// let mut qt = Quadtree::<u32, f64>::new(4);
-/// qt.insert((1, 1), (3, 2), 4.56);
+/// qt.insert(((1, 1), (3, 2)).into(), 4.56);
 ///
 /// // @returned_entries is of type IntoIter<u32, f64>.
-/// let mut returned_entries  = qt.delete((2, 1), (1, 1));
+/// let mut returned_entries  = qt.delete(((2, 1), (1, 1)).into());
 ///
 /// let hit: Entry<u32, f64> = returned_entries.next().unwrap();
-/// assert_eq!(hit.region(), ((1, 1), (3, 2)));
-/// assert_eq!(hit.anchor(), (1, 1));
+/// assert_eq!(hit.anchor().x(), 1);
+/// assert_eq!(hit.anchor().y(), 1);
 /// assert_eq!(hit.width(), 3);
 /// assert_eq!(hit.height(), 2);
 ///
@@ -65,22 +64,17 @@ where
         }
     }
 
-    /// The held region, in standard (anchor, dimensions) form.
-    pub fn region(&self) -> AreaType<U> {
-        self.region.into()
-    }
-
-    pub(crate) fn area(&self) -> Area<U> {
+    pub fn area(&self) -> Area<U> {
         self.region
     }
 
     /// The top-left coordinate of the held region.
-    pub fn anchor(&self) -> PointType<U> {
-        self.region().0
+    pub fn anchor(&self) -> Point<U> {
+        self.area().anchor()
     }
 
     fn dimensions(&self) -> (U, U) {
-        self.region().1
+        self.area().dimensions()
     }
 
     /// The width of the held region.

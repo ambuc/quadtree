@@ -12,15 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::geometry::point::{Point, PointType};
+//! A type representing an area in space.
 
-//  d888b  d88888b  .d88b.  .88b  d88. d88888b d888888b d8888b. db    db      dD
-// 88' Y8b 88'     .8P  Y8. 88'YbdP`88 88'     `~~88~~' 88  `8D `8b  d8'     d8'
-// 88      88ooooo 88    88 88  88  88 88ooooo    88    88oobY'  `8bd8'     d8'
-// 88  ooo 88~~~~~ 88    88 88  88  88 88~~~~~    88    88`8b      88      d8'
-// 88. ~8~ 88.     `8b  d8' 88  88  88 88.        88    88 `88.    88     d8'
-//  Y888P  Y88888P  `Y88P'  YP  YP  YP Y88888P    YP    88   YD    YP    C8'
-//
+use crate::point::{Point, PointType};
+
 //  .d8b.  d8888b. d88888b  .d8b.
 //  d8' `8b 88  `8D 88'     d8' `8b
 //  88ooo88 88oobY' 88ooooo 88ooo88
@@ -31,16 +26,41 @@ use crate::geometry::point::{Point, PointType};
 // Transparent alias. In docs and user-facing APIs, this resolves to ((U, U), (U, U)).
 pub type AreaType<U> = (PointType<U>, (U, U));
 
-// Lightweight data type to represent a region.
-//   - The top-left anchor may be positive or negative in either coordinate.
-//   - Defined by a top-left anchor and a width/height.
-//   - The width/height must both be positive and nonzero.
-//   - Should be passed by value.
-//
-// There is a potential for panic if negative values are used at Area construction time.
-#[derive(PartialEq, Eq, Clone, Copy, Hash)]
-pub struct Area<U> {
-    inner: AreaType<U>,
+/// Lightweight data type to represent a region.
+///   - The top-left anchor may be positive or negative in either coordinate.
+///   - Defined by a top-left anchor and a width/height.
+///   - The width/height must both be positive and nonzero.
+///   - Should be passed by value.
+///
+/// There is a potential for panic if negative values are used at Area construction time.
+#[derive(PartialEq, Eq, Clone, Copy, Hash, Builder)]
+#[builder(build_fn(validate = "Self::validate"))]
+pub struct Area<U>
+where
+    U: num::PrimInt + std::cmp::PartialOrd,
+{
+    anchor: Point<U>,
+    width: U,
+    height: U,
+}
+
+impl<U> AreaBuilder<U>
+where
+    U: num::PrimInt + std::cmp::PartialOrd,
+{
+    fn validate(&self) -> Result<(), String> {
+        if let Some(w) = self.width {
+            if w <= U::zero() {
+                return Err("Areas may not have nonpositive widths.".to_string());
+            }
+        }
+        if let Some(h) = self.height {
+            if h <= U::zero() {
+                return Err("Areas may not have nonpositive heights.".to_string());
+            }
+        }
+        Ok(())
+    }
 }
 
 impl<U> std::fmt::Debug for Area<U>
@@ -71,7 +91,9 @@ where
         assert!(w > U::zero());
         assert!(h > U::zero());
         Area {
-            inner: (xy, (w, h)),
+            anchor: xy.into(),
+            width: w,
+            height: h,
         }
     }
 }
@@ -89,14 +111,19 @@ where
         assert!(*w > U::zero());
         assert!(*h > U::zero());
         Area {
-            inner: (*xy, (*w, *h)),
+            anchor: xy.into(),
+            width: *w,
+            height: *h,
         }
     }
 }
 
-impl<U> Into<AreaType<U>> for Area<U> {
+impl<U> Into<AreaType<U>> for Area<U>
+where
+    U: num::PrimInt,
+{
     fn into(self) -> AreaType<U> {
-        self.inner
+        (self.anchor.into(), (self.width, self.height))
     }
 }
 
@@ -105,7 +132,7 @@ where
     U: num::PrimInt,
 {
     pub fn anchor(&self) -> Point<U> {
-        self.inner.0.into()
+        self.anchor
     }
 
     // NB: The center point is an integer and thus rounded, i.e. a 2x2 region at (0,0) has a center
@@ -114,14 +141,14 @@ where
         self.anchor() + (self.width() / Self::two(), self.height() / Self::two()).into()
     }
 
-    fn dimensions(&self) -> PointType<U> {
-        self.inner.1
+    pub fn dimensions(&self) -> (U, U) {
+        (self.width, self.height)
     }
     pub fn width(&self) -> U {
-        self.dimensions().0
+        self.width
     }
     pub fn height(&self) -> U {
-        self.dimensions().1
+        self.height
     }
 
     fn top_edge(&self) -> U {
@@ -168,7 +195,24 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::Area;
+    use super::{Area, AreaBuilder};
+    use crate::point::{Point, PointBuilder};
+
+    mod builder {
+        use super::*;
+
+        #[test]
+        fn builder() {
+            let p: Point<i8> = PointBuilder::default().x(0).y(0).build().unwrap();
+            let a: Area<i8> = AreaBuilder::default()
+                .anchor(p)
+                .width(2)
+                .height(2)
+                .build()
+                .unwrap();
+            debug_assert_eq!(a.width(), 2);
+        }
+    }
 
     mod invalid_area_creation {
         use super::*;
@@ -231,7 +275,6 @@ mod tests {
         fn properties() {
             let a = mk();
             debug_assert_eq!(a.anchor(), (3, 4).into());
-            debug_assert_eq!(a.dimensions(), (5, 7));
             debug_assert_eq!(a.width(), 5);
             debug_assert_eq!(a.height(), 7);
 

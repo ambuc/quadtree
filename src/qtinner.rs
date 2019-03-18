@@ -13,14 +13,7 @@
 // limitations under the License.
 
 use {
-    crate::{
-        entry::Entry,
-        geometry::{
-            area::Area,
-            point::{Point, PointType},
-        },
-        types::StoreType,
-    },
+    crate::{area::Area, entry::Entry, point::Point, types::StoreType},
     num::PrimInt,
 };
 
@@ -70,10 +63,10 @@ impl<U> QTInner<U>
 where
     U: PrimInt,
 {
-    pub(crate) fn new(anchor: PointType<U>, depth: usize) -> QTInner<U> {
+    pub(crate) fn new(anchor: Point<U>, depth: usize) -> QTInner<U> {
         let width: U = Self::two().pow(depth as u32);
         let height: U = width;
-        Self::new_with_area((anchor, (width, height)).into(), depth)
+        Self::new_with_area((anchor.into(), (width, height)).into(), depth)
     }
 
     fn new_with_area(region: Area<U>, depth: usize) -> QTInner<U> {
@@ -159,10 +152,10 @@ where
         let anchor_se: (U, U) = p.into();
 
         self.subquadrants = Some([
-            Box::new(Self::new(anchor_ne, self.depth - 1)),
-            Box::new(Self::new(anchor_nw, self.depth - 1)),
-            Box::new(Self::new(anchor_se, self.depth - 1)),
-            Box::new(Self::new(anchor_sw, self.depth - 1)),
+            Box::new(Self::new(anchor_ne.into(), self.depth - 1)),
+            Box::new(Self::new(anchor_nw.into(), self.depth - 1)),
+            Box::new(Self::new(anchor_se.into(), self.depth - 1)),
+            Box::new(Self::new(anchor_sw.into(), self.depth - 1)),
         ]);
     }
 

@@ -12,13 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//  d888b  d88888b  .d88b.  .88b  d88. d88888b d888888b d8888b. db    db      dD
-// 88' Y8b 88'     .8P  Y8. 88'YbdP`88 88'     `~~88~~' 88  `8D `8b  d8'     d8'
-// 88      88ooooo 88    88 88  88  88 88ooooo    88    88oobY'  `8bd8'     d8'
-// 88  ooo 88~~~~~ 88    88 88  88  88 88~~~~~    88    88`8b      88      d8'
-// 88. ~8~ 88.     `8b  d8' 88  88  88 88.        88    88 `88.    88     d8'
-//  Y888P  Y88888P  `Y88P'  YP  YP  YP Y88888P    YP    88   YD    YP    C8'
-//
+//! A type representing an point in space.
+
 // d8888b.  .d88b.  d888888b d8b   db d888888b
 // 88  `8D .8P  Y8.   `88'   888o  88 `~~88~~'
 // 88oodD' 88    88    88    88V8o 88    88
@@ -29,18 +24,20 @@
 // Transparent alias. In docs and user-facing APIs, this resolves to (U, U).
 pub type PointType<U> = (U, U);
 
-// Lightweight data type to represent a point. Should be passed by value.
-#[derive(PartialEq, Clone, Copy)]
+/// A type representing a point in space. Should be passed by value.
+#[derive(PartialEq, Eq, Clone, Copy, Hash, Builder)]
 pub struct Point<U> {
-    inner: PointType<U>,
+    x: U,
+    y: U,
 }
 
+/// foo
 impl<U> std::fmt::Debug for Point<U>
 where
     U: num::PrimInt + std::fmt::Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self.inner)
+        write!(f, "{:?}x{:?}", self.x, self.y)
     }
 }
 
@@ -48,8 +45,17 @@ impl<U> From<PointType<U>> for Point<U>
 where
     U: num::PrimInt,
 {
-    fn from(xy: PointType<U>) -> Self {
-        Point { inner: xy }
+    fn from((x, y): PointType<U>) -> Self {
+        Point { x, y }
+    }
+}
+
+impl<U> From<&PointType<U>> for Point<U>
+where
+    U: num::PrimInt,
+{
+    fn from((x, y): &PointType<U>) -> Self {
+        Point { x: *x, y: *y }
     }
 }
 
@@ -58,7 +64,7 @@ where
     U: num::PrimInt,
 {
     fn into(self) -> PointType<U> {
-        self.inner
+        (self.x, self.y)
     }
 }
 
@@ -68,10 +74,9 @@ where
 {
     type Output = Point<U>;
     fn add(self, other: Point<U>) -> Point<U> {
-        let new_x: U = self.x() + other.x();
-        let new_y: U = self.y() + other.y();
         Point {
-            inner: (new_x, new_y),
+            x: self.x() + other.x(),
+            y: self.y() + other.y(),
         }
     }
 }
@@ -82,10 +87,9 @@ where
 {
     type Output = Point<U>;
     fn sub(self, other: Point<U>) -> Point<U> {
-        let new_x: U = self.x() - other.x();
-        let new_y: U = self.y() - other.y();
         Point {
-            inner: (new_x, new_y),
+            x: self.x() - other.x(),
+            y: self.y() - other.y(),
         }
     }
 }
@@ -96,17 +100,24 @@ where
 {
     // Accessors //
     pub fn x(&self) -> U {
-        self.inner.0
+        self.x
     }
 
     pub fn y(&self) -> U {
-        self.inner.1
+        self.y
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::Point;
+    use super::{Point, PointBuilder};
+
+    #[test]
+    fn builder() {
+        let p: Point<i8> = PointBuilder::default().x(1).y(2).build().unwrap();
+        debug_assert_eq!(p.x(), 1);
+        debug_assert_eq!(p.y(), 2);
+    }
 
     #[test]
     fn xy_addition() {

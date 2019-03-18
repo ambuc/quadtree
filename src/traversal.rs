@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use {crate::geometry::area::Area, num::PrimInt};
+use {crate::area::Area, num::PrimInt};
 
 // d888888b d8888b.  .d8b.  db    db d88888b d8888b. .d8888.  .d8b.  db
 // `~~88~~' 88  `8D d8' `8b 88    88 88'     88  `8D 88'  YP d8' `8b 88

@@ -16,10 +16,18 @@ mod util; // For unordered_elements_are.
 
 // For testing .iter(), .iter_mut(), .regions(), .values(), .values_mut().
 mod iterator_tests {
-    use {crate::util::unordered_elements_are, quadtree_rs::entry::Entry, quadtree_rs::Quadtree};
+    use {
+        crate::util::unordered_elements_are,
+        quadtree_rs::{
+            area::{Area, AreaBuilder},
+            entry::Entry,
+            point::{Point, PointBuilder},
+            Quadtree,
+        },
+    };
 
     fn mk_quadtree_for_iter_tests() -> Quadtree<i32, i8> {
-        let mut qt = Quadtree::<i32, i8>::new_with_anchor((-35, -35), 8);
+        let mut qt = Quadtree::<i32, i8>::new_with_anchor((-35, -35).into(), 8);
         qt.extend(vec![((0, -5), 10), ((-15, 20), -25), ((30, -35), 40)]);
         qt
     }
@@ -51,7 +59,7 @@ mod iterator_tests {
     fn regions() {
         let qt = mk_quadtree_for_iter_tests();
         debug_assert!(unordered_elements_are(
-            qt.regions(),
+            qt.regions().map(|a| a.into()),
             vec![((0, -5), (1, 1)), ((-15, 20), (1, 1)), ((30, -35), (1, 1))],
         ));
     }
@@ -80,7 +88,7 @@ mod iterator_tests {
     fn delete_everything() {
         let mut qt = mk_quadtree_for_iter_tests();
         debug_assert_eq!(qt.len(), 3);
-        qt.delete((-35, -35), (80, 80));
+        qt.delete(((-35, -35), (80, 80)).into());
         debug_assert_eq!(qt.len(), 0);
     }
 
@@ -89,15 +97,23 @@ mod iterator_tests {
         let mut qt = mk_quadtree_for_iter_tests();
         debug_assert_eq!(qt.len(), 3);
         // Near miss.
-        qt.delete((29, -36), (1, 1));
+        qt.delete(((29, -36), (1, 1)).into());
         debug_assert_eq!(qt.len(), 3);
 
         // Direct hit!
-        let mut returned_entries = qt.delete((30, -35), (1, 1));
+        let mut returned_entries = qt.delete(((30, -35), (1, 1)).into());
         debug_assert_eq!(qt.len(), 2);
         let hit = returned_entries.next().unwrap();
         debug_assert_eq!(hit.value_ref(), &40);
-        debug_assert_eq!(hit.region(), ((30, -35), (1, 1)));
+        debug_assert_eq!(
+            hit.area(),
+            AreaBuilder::default()
+                .anchor(PointBuilder::default().x(30).y(-35).build().unwrap())
+                .width(1)
+                .height(1)
+                .build()
+                .unwrap()
+        );
     }
 
     #[test]
@@ -106,7 +122,8 @@ mod iterator_tests {
         debug_assert_eq!(qt.len(), 3);
 
         // Just large enough to encompass the two points.
-        let returned_entries: Vec<Entry<i32, i8>> = qt.delete((-15, -5), (16, 26)).collect();
+        let returned_entries: Vec<Entry<i32, i8>> =
+            qt.delete(((-15, -5), (16, 26)).into()).collect();
         debug_assert_eq!(qt.len(), 1);
 
         debug_assert!(unordered_elements_are(

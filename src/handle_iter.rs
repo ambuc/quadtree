@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use {
-    crate::{geometry::area::Area, qtinner::QTInner, traversal::Traversal},
+    crate::{area::Area, qtinner::QTInner, traversal::Traversal},
     num::PrimInt,
     std::{collections::HashSet, iter::FusedIterator, ops::Deref},
 };
