@@ -13,14 +13,19 @@
 // limitations under the License.
 
 use {
-    crate::{area::Area, entry::Entry, point::Point, types::StoreType},
+    crate::{
+        area::{Area, AreaBuilder},
+        entry::Entry,
+        point::Point,
+        types::StoreType,
+    },
     num::PrimInt,
 };
 
 #[derive(Clone, PartialEq, Eq)]
 pub(crate) struct QTInner<U>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     // The depth of the current cell in its tree. Zero means it's at the very bottom.
     pub(crate) depth: usize,
@@ -42,7 +47,7 @@ where
 
 impl<U> std::fmt::Debug for QTInner<U>
 where
-    U: PrimInt + std::fmt::Debug,
+    U: PrimInt + std::default::Default + std::fmt::Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         if self.subquadrants.is_some() {
@@ -61,12 +66,19 @@ where
 
 impl<U> QTInner<U>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     pub(crate) fn new(anchor: Point<U>, depth: usize) -> QTInner<U> {
         let width: U = Self::two().pow(depth as u32);
         let height: U = width;
-        Self::new_with_area((anchor.into(), (width, height)).into(), depth)
+        Self::new_with_area(
+            AreaBuilder::default()
+                .anchor(anchor)
+                .dimensions((width, height))
+                .build()
+                .expect("Unexpected error in QTINner::new()."),
+            depth,
+        )
     }
 
     fn new_with_area(region: Area<U>, depth: usize) -> QTInner<U> {

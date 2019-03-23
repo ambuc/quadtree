@@ -25,13 +25,12 @@
 pub type PointType<U> = (U, U);
 
 /// A type representing a point in space. Should be passed by value.
-#[derive(PartialEq, Eq, Clone, Copy, Hash, Builder)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Point<U> {
     x: U,
     y: U,
 }
 
-/// foo
 impl<U> std::fmt::Debug for Point<U>
 where
     U: num::PrimInt + std::fmt::Debug,
@@ -110,11 +109,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{Point, PointBuilder};
+    use super::Point;
 
     #[test]
     fn builder() {
-        let p: Point<i8> = PointBuilder::default().x(1).y(2).build().unwrap();
+        let p: Point<i8> = (1, 2).into();
         debug_assert_eq!(p.x(), 1);
         debug_assert_eq!(p.y(), 2);
     }

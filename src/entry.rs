@@ -19,17 +19,25 @@ use {
     num::PrimInt,
 };
 
-/// Lightweight encapsulation representing a region/value association being returned by value from
-/// the [`Quadtree`].
+/// Lightweight encapsulation representing a region/value
+/// association being returned by value from the [`Quadtree`].
 ///
 /// ```
-/// use quadtree_rs::{Quadtree, entry::Entry};
+/// use quadtree_rs::{Quadtree, entry::Entry, area::AreaBuilder};
 ///
 /// let mut qt = Quadtree::<u32, f64>::new(4);
-/// qt.insert(((1, 1), (3, 2)).into(), 4.56);
+/// qt.insert(AreaBuilder::default().anchor((1, 1).into())
+///                                 .dimensions((3, 2))
+///                                 .build()
+///                                 .unwrap(),
+///           4.56);
 ///
 /// // @returned_entries is of type IntoIter<u32, f64>.
-/// let mut returned_entries  = qt.delete(((2, 1), (1, 1)).into());
+/// let mut returned_entries  = qt.delete(
+///     AreaBuilder::default().anchor((2, 1).into())
+///                           .dimensions((1, 1))
+///                           .build()
+///                           .unwrap());
 ///
 /// let hit: Entry<u32, f64> = returned_entries.next().unwrap();
 /// assert_eq!(hit.anchor().x(), 1);
@@ -46,7 +54,7 @@ use {
 #[derive(Debug, PartialEq, Eq)]
 pub struct Entry<U, V>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     region: Area<U>,
     value: V,
@@ -54,7 +62,7 @@ where
 }
 impl<U, V> Entry<U, V>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     pub(crate) fn new(inner: (Area<U>, V), handle: u64) -> Entry<U, V> {
         Entry {

@@ -28,7 +28,7 @@ use {
 #[derive(Clone, Debug)]
 pub(crate) struct HandleIter<'a, U>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     handle_stack: Vec<u64>,
     qt_stack: Vec<&'a QTInner<U>>,
@@ -37,7 +37,7 @@ where
 
 impl<'a, U> HandleIter<'a, U>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     pub(crate) fn new(qt: &'a QTInner<U>) -> HandleIter<'a, U> {
         HandleIter {
@@ -103,7 +103,7 @@ where
 
 impl<U> Iterator for HandleIter<'_, U>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     type Item = u64;
 
@@ -139,4 +139,4 @@ where
     }
 }
 
-impl<U> FusedIterator for HandleIter<'_, U> where U: PrimInt {}
+impl<U> FusedIterator for HandleIter<'_, U> where U: PrimInt + std::default::Default {}

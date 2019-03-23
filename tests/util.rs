@@ -1,5 +1,6 @@
 use {
     num::{cast::FromPrimitive, PrimInt},
+    quadtree_rs::area::AreaBuilder,
     std::hash::Hash,
 };
 
@@ -25,7 +26,7 @@ where
 #[allow(dead_code)]
 pub fn print_quadtree<U, V>(qt: &quadtree_rs::Quadtree<U, V>)
 where
-    U: PrimInt + FromPrimitive + std::fmt::Debug,
+    U: PrimInt + std::default::Default + FromPrimitive + std::fmt::Debug,
     V: std::fmt::Debug,
 {
     print!("┌");
@@ -38,11 +39,10 @@ where
         for j in 0..qt.height() {
             match qt
                 .query(
-                    (
-                        (U::from_usize(i).unwrap(), U::from_usize(j).unwrap()),
-                        (U::one(), U::one()),
-                    )
-                        .into(),
+                    AreaBuilder::default()
+                        .anchor((U::from_usize(i).unwrap(), U::from_usize(j).unwrap()).into())
+                        .build()
+                        .unwrap(),
                 )
                 .count()
             {

@@ -30,7 +30,7 @@ pub(crate) enum Traversal {
 impl Traversal {
     pub(crate) fn eval<U>(&self, bounding_box: Area<U>, query_region: Area<U>) -> bool
     where
-        U: PrimInt,
+        U: PrimInt + std::default::Default,
     {
         match self {
             Traversal::Overlapping => query_region.intersects(bounding_box),

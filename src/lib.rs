@@ -20,10 +20,11 @@
 //! Add `quadtree_rs` to your `Cargo.toml`, and then add it to your main.
 //! ```
 //! extern crate quadtree_rs;
-//! use quadtree_rs::Quadtree;
+//! use quadtree_rs::{area::AreaBuilder, Quadtree};
 //!
-//! // Create a new Quadtree with u64 coordinates and String values. Quadtree::new(4) initializes a
-//! // tree with a depth of four layers, or a height and width of 2^4 = 16 .
+//! // Create a new Quadtree with u64 coordinates and String
+//! // values. Quadtree::new(4) initializes a tree with a
+//! // depth of four layers, or a height and width of 2^4 = 16.
 //! let mut qt = Quadtree::<u64, String>::new(4);
 //!
 //! // Insert "foo" in the tree at the rectangle with
@@ -35,9 +36,14 @@
 //! // 1 ░░░░░░░--+
 //! //   |  |  |  |
 //! // 2 +--+--+--+
-//! qt.insert(((0, 0), (2, 1)).into(), "foo".to_string());
+//! qt.insert(AreaBuilder::default().anchor((0, 0).into())
+//!                                 .dimensions((2, 1))
+//!                                 .build()
+//!                                 .unwrap(),
+//!           "foo".to_string());
 //!
-//! // Perform a query over a region with top-left corner (1, 0), width 1, and height 1.
+//! // Perform a query over a region with top-left corner
+//! // (1, 0), width 1, and height 1.
 //! //
 //! //   0  1  2  3
 //! // 0 ░░░▓▓▓▓▒▒▒
@@ -45,7 +51,10 @@
 //! // 1 ░░░▓▓▓▓▒▒▒
 //! //   |  ▒▒▒▒▒▒▒
 //! // 2 +--▒▒▒▒▒▒▒
-//! let mut query = qt.query(((1, 0), (2, 2)).into());
+//! let mut query = qt.query(AreaBuilder::default().anchor((1, 0).into())
+//!                                                .dimensions((2, 2))
+//!                                                .build()
+//!                                                .unwrap());
 //!
 //! // @query implements `Iterator` over `Entry<u64, String>` entries, so we can call
 //! // `Entry::value_ref()` and see that our query region contains the rectangle at which "foo" was
@@ -55,13 +64,18 @@
 //!
 //! # Implementation
 //! ```
+//! use quadtree_rs::{area::AreaBuilder, Quadtree};
 //! // The Quadtree is a tree where every node has four children, representing the four
 //! // evenly-divided subquadrants beneath it in the grid.
-//! let mut qt = quadtree_rs::Quadtree::<u8, f32>::new(2);
+//! let mut qt = Quadtree::<u8, f32>::new(2);
 //!
 //! // Inserting a point (a.k.a. a region of dimensions 1x1) means traversing that tree all the way
 //! // to the bottom.
-//! qt.insert(((0, 0), (1, 1)).into(), 1.23456);
+//! qt.insert(AreaBuilder::default().anchor((0, 0).into())
+//!                                 .dimensions((1, 1))
+//!                                 .build()
+//!                                 .unwrap(),
+//!           1.23456);
 //! // (0,0)->4x4 ─┬─ (0,0)->2x2 ─┬─ (0,0)->1x1
 //! //             │              │    └ [1.23456]
 //! //             │              ├─ (0,2)->1x1
@@ -73,7 +87,11 @@
 //!
 //! // But inserting a region which coincides with a quadrant means inserting that value somewhere
 //! // higher in the tree.
-//! qt.insert(((0, 0), (2, 2)).into(), 2.46810);
+//! qt.insert(AreaBuilder::default().anchor((0, 0).into())
+//!                                 .dimensions((2, 2))
+//!                                 .build()
+//!                                 .unwrap(),
+//!           2.46810);
 //! // (0,0)->4x4 ─┬─ (0,0)->2x2 ─────┬─ (0,0)->1x1
 //! //             │    └ [2.46810]   │    └ [1.23456]
 //! //             │                  ├─ (0,2)->1x1
@@ -85,7 +103,11 @@
 //!
 //! // Inserting a region which overlaps a few quadrants means inserting that value (actually, a
 //! // key which points to that value in a store) in multiple places.
-//! qt.insert(((0, 0), (3, 3)).into(), 3.6912);
+//! qt.insert(AreaBuilder::default().anchor((0, 0).into())
+//!                                 .dimensions((3, 3))
+//!                                 .build()
+//!                                 .unwrap(),
+//!           3.6912);
 //! // (0,0)->4x4 ─┬─ (0,0)->2x2 ─────┬─ (0,0)->1x1
 //! //             │    └ [ 2.46810,  │    └ [1.23456]
 //! //             │        3.6912 ]  ├─ (0,1)->1x1
@@ -140,7 +162,7 @@ mod types;
 
 use {
     crate::{
-        area::{Area, AreaType},
+        area::{Area, AreaBuilder},
         entry::Entry,
         handle_iter::HandleIter,
         point::{Point, PointType},
@@ -191,7 +213,7 @@ use {
 #[derive(Debug, PartialEq, Eq)]
 pub struct Quadtree<U, V>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     depth: usize,
     inner: QTInner<U>,
@@ -200,7 +222,7 @@ where
 
 impl<U, V> Quadtree<U, V>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     /// Creates a new, empty Quadtree with the requested depth.
     /// - The default anchor is `(0, 0)`, and the default width and height are both `2^depth`.
@@ -223,7 +245,9 @@ where
     /// ```
     /// use quadtree_rs::Quadtree;
     ///
-    /// let qt = Quadtree::<u32, u8>::new_with_anchor(/*anchor=*/ (2, 4).into(), /*depth=*/ 3);
+    /// let qt = Quadtree::<u32, u8>::new_with_anchor(
+    ///     /*anchor=*/ (2, 4).into(),
+    ///     /*depth=*/ 3);
     ///
     /// assert_eq!(qt.depth(), 3);
     /// assert_eq!(qt.anchor(), (2, 4).into());
@@ -254,26 +278,36 @@ where
     }
 
     /// The depth of the quadtree.
-    /// - A quadtree created with depth 0 will have one node and no possibility for subdivision;
-    /// - a quadtree created with depth 1 will have one node and four
-    /// potential subquadrants.
+    /// - A quadtree created with depth 0 will have one node
+    ///   and no possibility for subdivision;
+    /// - a quadtree created with depth 1 will have one node
+    ///   and four potential subquadrants.
     ///
-    /// Thus both the width and height of a quadtree with depth `n` are `2^n`.
+    /// Thus both the width and height of a quadtree with
+    /// depth `n` are `2^n`.
     pub fn depth(&self) -> usize {
         self.inner.depth
     }
 
     /// Returns the number of elements in the quadtree.
     /// ```
-    /// use quadtree_rs::Quadtree;
+    /// use quadtree_rs::{area::AreaBuilder, Quadtree};
     ///
     /// let mut qt = Quadtree::<u32, f32>::new(4);
     /// assert_eq!(qt.len(), 0);
     ///
-    /// qt.insert(((3, 1), (1, 1)).into(), 3.14159);
+    /// qt.insert(AreaBuilder::default().anchor((3, 1).into())
+    ///                                 .dimensions((1, 1))
+    ///                                 .build()
+    ///                                 .unwrap(),
+    ///           3.14159);
     /// assert_eq!(qt.len(), 1);
     ///
-    /// qt.insert(((2, 7), (1, 1)).into(), 2.71828);
+    /// qt.insert(AreaBuilder::default().anchor((2, 7).into())
+    ///                                 .dimensions((1, 1))
+    ///                                 .build()
+    ///                                 .unwrap(),
+    ///           2.71828);
     /// assert_eq!(qt.len(), 2);
     /// ```
     pub fn len(&self) -> usize {
@@ -282,65 +316,96 @@ where
 
     /// Whether or not the quadtree is empty.
     /// ```
-    /// use quadtree_rs::Quadtree;
+    /// use quadtree_rs::{area::AreaBuilder, Quadtree};
     ///
     /// let mut qt = Quadtree::<u32, f64>::new(3);
     /// assert!(qt.is_empty());
     ///
-    /// qt.insert(((1, 4), (1, 4)).into(), 1.4142135);
+    /// qt.insert(AreaBuilder::default().anchor((1, 4).into())
+    ///                                 .dimensions((1, 4))
+    ///                                 .build()
+    ///                                 .unwrap(),
+    ///           1.4142135);
     /// assert!(!qt.is_empty());
     /// ```
     pub fn is_empty(&self) -> bool {
         self.store.is_empty()
     }
 
-    /// Whether or not the region represented by this quadtree could contain the given region.
+    /// Whether or not the region represented by this quadtree
+    /// could contain the given region.
     ///
-    /// The region described may have an anchor anywhere on the plane, but it
-    /// must have positive, nonzero values for its width and height.
+    /// The region described may have an anchor anywhere on
+    /// the plane, but it must have positive, nonzero values
+    /// for its width and height.
     ///
-    /// Perhaps before inserting a region, the callsite would like to check to see if that region
-    /// could fit in the area represented by the quadtree.
+    /// Perhaps before inserting a region, the callsite would
+    /// like to check to see if that region could fit in the
+    /// area represented by the quadtree.
     /// ```
-    /// use quadtree_rs::Quadtree;
+    /// use quadtree_rs::{area::AreaBuilder, Quadtree};
     ///
-    /// let qt = Quadtree::<u32, u32>::new_with_anchor((1, 0).into(), 1);
-    /// // This is a very small quadtree. It has an anchor at (1, 0) and dimensions 2x2.
+    /// let qt = Quadtree::<u32, u32>::new_with_anchor(
+    ///   (1, 0).into(), 1);
+    /// // This is a very small quadtree. It has an anchor
+    /// // at (1, 0) and dimensions 2x2.
     /// assert_eq!(qt.anchor(), (1, 0).into());
     /// assert_eq!(qt.width(), 2);
     /// assert_eq!(qt.height(), 2);
     ///
     /// //  012
-    /// // 0 ▓░ // The quadtree contains a region which is totally within it.
-    /// // 1 ░░
-    /// assert!(qt.contains(((1, 0), (1, 1)).into()));
+    /// // 0 ▓░ // The quadtree contains a region which is
+    /// // 1 ░░ //  totally within it.
+    /// assert!(qt.contains(
+    ///     AreaBuilder::default().anchor((1, 0).into())
+    ///                           .dimensions((1, 1))
+    ///                           .build()
+    ///                           .unwrap()));
     ///
     /// //  012
-    /// // 0▓░░ // ...and the quadtree does not contains a region which is not totally within it.
-    /// // 1 ░░
-    /// assert!(!qt.contains(((0, 0), (1, 1)).into()));
+    /// // 0▓░░ // ...and the quadtree does not contains a
+    /// // 1 ░░ //    region which is not totally within it.
+    /// assert!(!qt.contains(
+    ///     AreaBuilder::default().anchor((0, 0).into())
+    ///                           .dimensions((1, 1))
+    ///                           .build()
+    ///                           .unwrap()));
     /// ```
     pub fn contains(&self, area: Area<U>) -> bool {
         self.inner.region.contains(area)
     }
 
-    /// Inserts the value at the requested region. Returns a unique `handle` representing this
-    /// instance of the object in the Quadtree.
-    ///   - If the requested region does not fit totally in the Quadtree, `.insert()` will fail
-    ///     silently. Callsites may want to use `.contains()` first.
-    ///   - If the requested region only fits partially in the Quadtree, `.insert()` will mark the
-    ///     in-bounds regions and drop the rest of the requested region.
+    /// Inserts the value at the requested region. Returns
+    /// a unique `handle` representing this instance of the
+    /// object in the Quadtree.
+    ///   - If the requested region does not fit totally in
+    ///     the Quadtree, `.insert()` will fail silently.
+    ///     Callsites may want to use `.contains()` first.
+    ///   - If the requested region only fits partially in
+    ///     the Quadtree, `.insert()` will mark the in-bounds
+    ///     regions and drop the rest of the requested region.
     ///
-    /// The region described may have an anchor anywhere on the plane, but it
-    /// must have positive, nonzero values for its width and height.
+    /// The region described may have an anchor anywhere on
+    /// the plane, but it must have positive, nonzero values
+    /// for its width and height.
     ///
     /// ```
-    /// use quadtree_rs::Quadtree;
+    /// use quadtree_rs::{area::AreaBuilder, Quadtree};
     ///
     /// let mut qt = Quadtree::<u32, String>::new(2);
     ///
-    /// let handle_a_1 = qt.insert(((0, 0), (1, 1)).into(), "a".to_string());
-    /// let handle_a_2 = qt.insert(((0, 0), (1, 1)).into(), "a".to_string());
+    /// let handle_a_1 = qt.insert(
+    ///     AreaBuilder::default().anchor((0, 0).into())
+    ///                           .dimensions((1, 1))
+    ///                           .build()
+    ///                           .unwrap(),
+    ///     "a".to_string());
+    /// let handle_a_2 = qt.insert(
+    ///     AreaBuilder::default().anchor((0, 0).into())
+    ///                           .dimensions((1, 1))
+    ///                           .build()
+    ///                           .unwrap(),
+    ///     "a".to_string());
     ///
     /// // Even though we inserted "a" at the same point in the Quadtree, the two handles returned
     /// // were not the same.
@@ -351,15 +416,20 @@ where
             .insert_val_at_region(region, val, &mut self.store)
     }
 
-    /// Provides access to a single value in the Quadtree, given a previously known handle. This
+    /// Provides access to a single value in the Quadtree,
+    /// given a previously known handle. This
     /// handle might have been saved by value at [`insert`].
     ///
     /// ```
-    /// use quadtree_rs::Quadtree;
+    /// use quadtree_rs::{area::AreaBuilder, Quadtree};
     ///
     /// let mut qt = Quadtree::<u32, f32>::new(4);
     ///
-    /// let handle: u64 = qt.insert(((0, 1), (2, 3)).into(), 9.87);
+    /// let handle: u64 = qt.insert(
+    ///     AreaBuilder::default().anchor((0, 1).into())
+    ///                           .dimensions((2, 3))
+    ///                           .build()
+    ///                           .unwrap(), 9.87);
     ///
     /// assert_eq!(qt.get(handle), Some(&9.87));
     ///
@@ -375,11 +445,16 @@ where
     /// A mutable variant of `.get()`.
     ///
     /// ```
-    /// use quadtree_rs::Quadtree;
+    /// use quadtree_rs::{area::AreaBuilder, Quadtree};
     ///
     /// let mut qt = Quadtree::<u32, f32>::new(4);
     ///
-    /// let handle: u64 = qt.insert(((0, 1), (2, 3)).into(), 9.87);
+    /// let handle: u64 = qt.insert(
+    ///     AreaBuilder::default().anchor((0, 1).into())
+    ///                           .dimensions((2, 3))
+    ///                           .build()
+    ///                           .unwrap(),
+    ///     9.87);
     ///
     /// if let Some(val) = qt.get_mut(handle) {
     ///   *val += 1.0;
@@ -396,17 +471,19 @@ where
             .map_or(None, |entry| Some(entry.value_mut()))
     }
 
-    /// Returns an iterator over [`&Entry<U, V>`] structs representing values
-    /// within the query region.
+    /// Returns an iterator over [`&Entry<U, V>`] structs
+    /// representing values within the query region.
     ///
-    /// The default behavior of `.query()` is to return any intersecting regions or points, but
+    /// The default behavior of `.query()` is to return any
+    /// intersecting regions or points, but
     /// the callsite could use [`.query_strict()`] instead.
     ///
-    /// The query region described may have an anchor anywhere on the plane, but it
-    /// must have positive, nonzero values for its width and height.
+    /// The query region described may have an anchor anywhere
+    /// on the plane, but it must have positive, nonzero
+    /// values for its width and height.
     ///
     /// ```
-    /// use quadtree_rs::Quadtree;
+    /// use quadtree_rs::{area::AreaBuilder, Quadtree};
     ///
     /// //   0123456
     /// // 0 ░░░░░░░
@@ -416,8 +493,16 @@ where
     /// // 4 ░▒▒▒░░░
     /// // 5 ░░░░░░░
     /// let mut qt = Quadtree::<u32, i16>::new(4);
-    /// qt.insert(((2, 1), (3, 2)).into(), 21);
-    /// qt.insert(((1, 4), (3, 1)).into(), 57);
+    /// qt.insert(AreaBuilder::default().anchor((2, 1).into())
+    ///                                 .dimensions((3, 2))
+    ///                                 .build()
+    ///                                 .unwrap(),
+    ///           21);
+    /// qt.insert(AreaBuilder::default().anchor((1, 4).into())
+    ///                                 .dimensions((3, 1))
+    ///                                 .build()
+    ///                                 .unwrap(),
+    ///           57);
     ///
     /// //   0123456
     /// // 0 ░░░░░░░
@@ -427,7 +512,11 @@ where
     /// // 4 ░▒▒▒░░░
     /// // 5 ░░░░░░░
     /// // Query over the region anchored at (2, 1) with area 1x1.
-    /// let mut query_a = qt.query(((2, 1), (1, 1)).into());
+    /// let mut query_a = qt.query(
+    ///     AreaBuilder::default().anchor((2, 1).into())
+    ///                           .dimensions((1, 1))
+    ///                           .build()
+    ///                           .unwrap());
     ///
     /// // We can use the Entry API to destructure the result.
     /// let entry = query_a.next().unwrap();
@@ -447,9 +536,14 @@ where
     /// // 4 ░▓▓▓▒▒░  <--
     /// // 5 ░░░░░░░
     /// // Query over the region anchored at (0, 0) with area 6x6.
-    /// let query_b = qt.query(((1, 1), (4, 4)).into());
+    /// let query_b = qt.query(
+    ///     AreaBuilder::default().anchor((1, 1).into())
+    ///                           .dimensions((4, 4))
+    ///                           .build()
+    ///                           .unwrap());
     ///
-    /// // It's unclear what order the regions should return in, but there will be two of them.
+    /// // It's unclear what order the regions should
+    /// // return in, but there will be two of them.
     /// assert_eq!(query_b.count(), 2);
     /// ```
     ///
@@ -459,22 +553,30 @@ where
         Query::new(area, &self.inner, &self.store, Traversal::Overlapping)
     }
 
-    ///  `query_strict()` behaves the same as `query()`, except that the regions returned are
-    ///  guaranteed to be totally contained within the query region. (In the example above, the
-    ///  first query would have been empty, since it only intersected the region in question.)
+    ///  `query_strict()` behaves the same as `query()`,
+    ///  except that the regions returned are guaranteed
+    ///  to be totally contained within the query region.
+    ///  (In the example above, the first query would
+    ///  have been empty, since it only intersected the
+    ///  region in question.)
     pub fn query_strict(&self, area: Area<U>) -> Query<U, V> {
         Query::new(area, &self.inner, &self.store, Traversal::Strict)
     }
 
-    /// Accepts a modification lambda and applies it to all elements in
-    /// the Quadtree which intersecting the described region.
+    /// Accepts a modification lambda and applies it to all
+    /// elements in the Quadtree which intersecting the
+    /// described region.
     ///
     /// ```
-    /// use quadtree_rs::{Quadtree, entry::Entry};
+    /// use quadtree_rs::{area::AreaBuilder, Quadtree, entry::Entry};
     ///
     /// let mut qt = Quadtree::<u8, f64>::new(3);
     ///
-    /// qt.insert(((0, 0), (1, 1)).into(), 1.23);
+    /// qt.insert(AreaBuilder::default().anchor((0, 0).into())
+    ///                                 .dimensions((1, 1))
+    ///                                 .build()
+    ///                                 .unwrap(),
+    ///           1.23);
     /// qt.modify_all(|i| *i += 2.0);
     ///
     /// let e: &Entry<u8, f64> = qt.iter().next().unwrap();
@@ -491,8 +593,9 @@ where
         self.modify_region(|a| a.intersects(area), f);
     }
 
-    ///  `modify_strict()` behaves the same as `modify()`, except that the regions modified are
-    ///  guaranteed to be totally contained within the query region.
+    ///  `modify_strict()` behaves the same as `modify()`,
+    ///  except that the regions modified are guaranteed to
+    ///  be totally contained within the query region.
     pub fn modify_strict<F>(&mut self, area: Area<U>, f: F)
     where
         F: Fn(&mut V) + Copy,
@@ -500,7 +603,8 @@ where
         self.modify_region(|a| area.contains(a), f);
     }
 
-    /// Alias for [`.modify()`] which runs over the entire quadtree.
+    /// Alias for [`.modify()`] which runs over the entire
+    /// quadtree.
     ///
     /// [`.modify()`]: struct.Quadtree.html#method.modify
     pub fn modify_all<F>(&mut self, f: F)
@@ -531,33 +635,47 @@ where
         self.inner.reset();
     }
 
-    /// Deletes a described region in the tree, consuming along the way and returning an iterator
+    /// Deletes a described region in the tree, consuming
+    /// along the way and returning an iterator
     /// ([`IntoIter<U, V>`]) over type [`Entry<U, V>`].
     ///
-    /// The default behavior of `.delete()` is to delete and return any intersecting regions or
-    /// points, but the callsite could use [`.delete_strict()`] instead.
+    /// The default behavior of `.delete()` is to delete
+    /// and return any intersecting regions or points, but
+    /// the callsite could use [`.delete_strict()`] instead.
     ///
     /// ```
-    /// use quadtree_rs::{IntoIter, Quadtree, entry::Entry};
+    /// use quadtree_rs::{area::AreaBuilder, IntoIter, Quadtree, entry::Entry};
     ///
     /// let mut qt = Quadtree::<u32, f64>::new(4);
     ///
-    /// qt.insert(((0, 0), (2, 2)).into(), 1.23);
-    /// qt.insert(((1, 1), (3, 2)).into(), 4.56);
+    /// qt.insert(AreaBuilder::default().anchor((0, 0).into())
+    ///                                 .dimensions((2, 2))
+    ///                                 .build()
+    ///                                 .unwrap(),
+    ///           1.23);
+    /// qt.insert(AreaBuilder::default().anchor((1, 1).into())
+    ///                                 .dimensions((3, 2))
+    ///                                 .build()
+    ///                                 .unwrap(),
+    ///           4.56);
     /// //   0123
     /// // 0 ░░
     /// // 1 ░▓╳░  <-- ╳ is the deletion region
     /// // 2  ░░░
     ///
-    /// let mut returned_entries: IntoIter<u32, f64> = qt.delete(((2, 1), (1, 1)).into());
+    /// let mut returned_entries: IntoIter<u32, f64> = qt.delete(
+    ///     AreaBuilder::default().anchor((2, 1).into())
+    ///                           .dimensions((1, 1))
+    ///                           .build()
+    ///                           .unwrap());
     /// // We've removed one object from the Quadtree.
     /// assert_eq!(qt.len(), 1);
     ///
     /// // qt.delete() returns a struct of type IntoIter<u32, f64>.
     /// let hit: Entry<u32, f64> = returned_entries.next().unwrap();
     ///
-    /// // IntoIter is an iterator over type Entry<u32, f64>, which makes accessible the returned
-    /// // region and value.
+    /// // IntoIter is an iterator over type Entry<u32, f64>, which
+    /// // makes accessible the returned region and value.
     /// assert_eq!(hit.value_ref(), &4.56);
     /// assert_eq!(hit.area().anchor(), (1, 1).into());
     /// assert_eq!(hit.area().width(), 3);
@@ -572,8 +690,10 @@ where
         self.delete_handles_and_return(self.query(area).map(|e| e.handle()).collect())
     }
 
-    ///  `delete_strict()` behaves the same as `delete()`, except that the regions deleted and
-    ///  returned are guaranteed to be totally contained within the delete region.
+    ///  `delete_strict()` behaves the same as `delete()`,
+    ///  except that the regions deleted and returned are
+    ///  guaranteed to be totally contained within the
+    ///  delete region.
     pub fn delete_strict(&mut self, area: Area<U>) -> IntoIter<U, V> {
         self.delete_handles_and_return(self.query_strict(area).map(|e| e.handle()).collect())
     }
@@ -590,8 +710,10 @@ where
         IntoIter { entries }
     }
 
-    /// Given an handle, deletes a single item from the Quadtree. If that handle was found,
-    /// `delete_by_handle()` returns an `Entry<U, V>` containing its former region and value. Otherwise,
+    /// Given an handle, deletes a single item from the
+    /// Quadtree. If that handle was found,
+    /// `delete_by_handle()` returns an `Entry<U, V>`
+    /// containing its former region and value. Otherwise,
     /// returns `None`.
     pub fn delete_by_handle(&mut self, handle: u64) -> Option<Entry<U, V>> {
         // Pop the Entry<U, V> out of the @store,
@@ -671,7 +793,7 @@ where
 #[derive(Clone, Debug)]
 pub struct Iter<'a, U, V>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     store: &'a StoreType<U, V>,
     handle_iter: HandleIter<'a, U>,
@@ -679,7 +801,7 @@ where
 
 impl<'a, U, V> Iter<'a, U, V>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     pub(crate) fn new(qt: &'a QTInner<U>, store: &'a StoreType<U, V>) -> Iter<'a, U, V> {
         Iter {
@@ -691,7 +813,7 @@ where
 
 impl<'a, U, V> Iterator for Iter<'a, U, V>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     type Item = &'a Entry<U, V>;
 
@@ -715,7 +837,7 @@ where
     }
 }
 
-impl<U, V> FusedIterator for Iter<'_, U, V> where U: PrimInt {}
+impl<U, V> FusedIterator for Iter<'_, U, V> where U: PrimInt + std::default::Default {}
 
 //  .d88b.  db    db d88888b d8888b. db    db
 // .8P  Y8. 88    88 88'     88  `8D `8b  d8'
@@ -733,7 +855,7 @@ impl<U, V> FusedIterator for Iter<'_, U, V> where U: PrimInt {}
 #[derive(Clone, Debug)]
 pub struct Query<'a, U, V>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     query_region: Area<U>,
     handle_iter: HandleIter<'a, U>,
@@ -743,7 +865,7 @@ where
 
 impl<'a, U, V> Query<'a, U, V>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     pub(crate) fn new(
         query_region: Area<U>,
@@ -752,7 +874,7 @@ where
         traversal_method: Traversal,
     ) -> Query<'a, U, V>
     where
-        U: PrimInt,
+        U: PrimInt + std::default::Default,
     {
         // Construct the HandleIter first...
         let mut handle_iter = HandleIter::new(qt);
@@ -773,7 +895,7 @@ where
 
 impl<'a, U, V> Iterator for Query<'a, U, V>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     type Item = &'a Entry<U, V>;
 
@@ -796,7 +918,7 @@ where
     }
 }
 
-impl<U, V> FusedIterator for Query<'_, U, V> where U: PrimInt {}
+impl<U, V> FusedIterator for Query<'_, U, V> where U: PrimInt + std::default::Default {}
 
 // d8888b. d88888b  d888b  d888888b  .d88b.  d8b   db .d8888.
 // 88  `8D 88'     88' Y8b   `88'   .8P  Y8. 888o  88 88'  YP
@@ -814,14 +936,14 @@ impl<U, V> FusedIterator for Query<'_, U, V> where U: PrimInt {}
 #[derive(Clone, Debug)]
 pub struct Regions<'a, U, V>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     pub(crate) inner: Iter<'a, U, V>,
 }
 
 impl<'a, U, V> Iterator for Regions<'a, U, V>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     type Item = Area<U>;
 
@@ -836,7 +958,7 @@ where
     }
 }
 
-impl<U, V> FusedIterator for Regions<'_, U, V> where U: PrimInt {}
+impl<U, V> FusedIterator for Regions<'_, U, V> where U: PrimInt + std::default::Default {}
 
 // db    db  .d8b.  db      db    db d88888b .d8888.
 // 88    88 d8' `8b 88      88    88 88'     88'  YP
@@ -854,14 +976,14 @@ impl<U, V> FusedIterator for Regions<'_, U, V> where U: PrimInt {}
 #[derive(Clone, Debug)]
 pub struct Values<'a, U, V>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     pub(crate) inner: Iter<'a, U, V>,
 }
 
 impl<'a, U, V> Iterator for Values<'a, U, V>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     type Item = (&'a V);
 
@@ -878,7 +1000,7 @@ where
     }
 }
 
-impl<U, V> FusedIterator for Values<'_, U, V> where U: PrimInt {}
+impl<U, V> FusedIterator for Values<'_, U, V> where U: PrimInt + std::default::Default {}
 
 // d888888b d8b   db d888888b  .d88b.  d888888b d888888b d88888b d8888b.
 //   `88'   888o  88 `~~88~~' .8P  Y8.   `88'   `~~88~~' 88'     88  `8D
@@ -897,14 +1019,14 @@ impl<U, V> FusedIterator for Values<'_, U, V> where U: PrimInt {}
 #[derive(Debug)]
 pub struct IntoIter<U, V>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     entries: Vec<Entry<U, V>>,
 }
 
 impl<U, V> Iterator for IntoIter<U, V>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     type Item = Entry<U, V>;
 
@@ -919,38 +1041,24 @@ where
     }
 }
 
-impl<U, V> FusedIterator for IntoIter<U, V> where U: PrimInt {}
-
-/// `Extend<(((U, U), (U, U), V)>` will silently drop values whose coordinates do not fit in the
-/// region represented by the Quadtree. It is the responsibility of the callsite to ensure these
-/// points fit.
-impl<U, V> Extend<(AreaType<U>, V)> for Quadtree<U, V>
-where
-    U: PrimInt,
-{
-    fn extend<T>(&mut self, iter: T)
-    where
-        T: IntoIterator<Item = (AreaType<U>, V)>,
-    {
-        for ((anchor, dimensions), val) in iter {
-            self.insert((anchor, dimensions).into(), val);
-        }
-    }
-}
+impl<U, V> FusedIterator for IntoIter<U, V> where U: PrimInt + std::default::Default {}
 
 /// `Extend<((U, U), V)>` will silently drop values whose coordinates do not fit in the region
 /// represented by the Quadtree. It is the responsibility of the callsite to ensure these points
 /// fit.
 impl<U, V> Extend<(PointType<U>, V)> for Quadtree<U, V>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     fn extend<T>(&mut self, iter: T)
     where
         T: IntoIterator<Item = (PointType<U>, V)>,
     {
         for (pt, val) in iter {
-            self.insert((pt, (U::one(), U::one())).into(), val);
+            self.insert(
+                AreaBuilder::default().anchor(pt.into()).build().unwrap(),
+                val,
+            );
         }
     }
 }
@@ -958,7 +1066,7 @@ where
 // Immutable iterator for the Quadtree, returning by-reference.
 impl<'a, U, V> IntoIterator for &'a Quadtree<U, V>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     type Item = &'a Entry<U, V>;
     type IntoIter = Iter<'a, U, V>;
@@ -970,7 +1078,7 @@ where
 
 impl<U, V> IntoIterator for Quadtree<U, V>
 where
-    U: PrimInt,
+    U: PrimInt + std::default::Default,
 {
     type Item = Entry<U, V>;
     type IntoIter = IntoIter<U, V>;
