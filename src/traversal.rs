@@ -28,7 +28,7 @@ pub(crate) enum Traversal {
 }
 
 impl Traversal {
-    pub(crate) fn eval<U>(&self, bounding_box: Area<U>, query_region: Area<U>) -> bool
+    pub(crate) fn eval<U>(self, bounding_box: Area<U>, query_region: Area<U>) -> bool
     where
         U: PrimInt + std::default::Default,
     {

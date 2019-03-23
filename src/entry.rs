@@ -64,8 +64,8 @@ impl<U, V> Entry<U, V>
 where
     U: PrimInt + std::default::Default,
 {
-    pub(crate) fn new(inner: (Area<U>, V), handle: u64) -> Entry<U, V> {
-        Entry {
+    pub(crate) fn new(inner: (Area<U>, V), handle: u64) -> Self {
+        Self {
             region: inner.0,
             value: inner.1,
             handle,
@@ -95,12 +95,12 @@ where
         self.dimensions().1
     }
 
-    pub fn value_mut<'a>(&'a mut self) -> &'a mut V {
+    pub fn value_mut(&mut self) -> &mut V {
         &mut self.value
     }
 
     /// The held value, returned by-reference.
-    pub fn value_ref<'a>(&'a self) -> &'a V {
+    pub fn value_ref(&self) -> &V {
         &self.value
     }
 

@@ -68,7 +68,7 @@ impl<U> QTInner<U>
 where
     U: PrimInt + std::default::Default,
 {
-    pub(crate) fn new(anchor: Point<U>, depth: usize) -> QTInner<U> {
+    pub(crate) fn new(anchor: Point<U>, depth: usize) -> Self {
         let width: U = Self::two().pow(depth as u32);
         let height: U = width;
         Self::new_with_area(
@@ -76,13 +76,13 @@ where
                 .anchor(anchor)
                 .dimensions((width, height))
                 .build()
-                .expect("Unexpected error in QTINner::new()."),
+                .expect("Unexpected error in QTInner::new()."),
             depth,
         )
     }
 
-    fn new_with_area(region: Area<U>, depth: usize) -> QTInner<U> {
-        QTInner {
+    fn new_with_area(region: Area<U>, depth: usize) -> Self {
+        Self {
             depth,
             region,
             kept_handles: Vec::new(),
@@ -158,16 +158,21 @@ where
     fn expand_subquadrants_by_pt(&mut self, p: Point<U>) {
         assert!(self.region.contains_pt(p));
 
-        let anchor_nw: (U, U) = self.region.anchor().into();
-        let anchor_ne: (U, U) = (p.x(), self.region.anchor().y());
-        let anchor_sw: (U, U) = (self.region.anchor().x(), p.y());
-        let anchor_se: (U, U) = p.into();
-
         self.subquadrants = Some([
-            Box::new(Self::new(anchor_ne.into(), self.depth - 1)),
-            Box::new(Self::new(anchor_nw.into(), self.depth - 1)),
-            Box::new(Self::new(anchor_se.into(), self.depth - 1)),
-            Box::new(Self::new(anchor_sw.into(), self.depth - 1)),
+            // Northeast
+            Box::new(Self::new(
+                (p.x(), self.region.anchor().y()).into(),
+                self.depth - 1,
+            )),
+            // Northwest
+            Box::new(Self::new(self.region.anchor(), self.depth - 1)),
+            // Southeast
+            Box::new(Self::new(p, self.depth - 1)),
+            // Southwest
+            Box::new(Self::new(
+                (self.region.anchor().x(), p.y()).into(),
+                self.depth - 1,
+            )),
         ]);
     }
 

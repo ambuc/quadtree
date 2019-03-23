@@ -22,7 +22,7 @@
 // 88       `Y88P'  Y888888P VP   V8P    YP
 
 // Transparent alias. In docs and user-facing APIs, this resolves to (U, U).
-pub type PointType<U> = (U, U);
+pub(crate) type Type<U> = (U, U);
 
 /// A type representing a point in space. Should be passed by value.
 #[derive(PartialEq, Eq, Clone, Copy, Hash)]
@@ -40,29 +40,29 @@ where
     }
 }
 
-impl<U> From<PointType<U>> for Point<U>
+impl<U> From<Type<U>> for Point<U>
 where
     U: num::PrimInt,
 {
-    fn from((x, y): PointType<U>) -> Self {
-        Point { x, y }
+    fn from((x, y): Type<U>) -> Self {
+        Self { x, y }
     }
 }
 
-impl<U> From<&PointType<U>> for Point<U>
+impl<U> From<&Type<U>> for Point<U>
 where
     U: num::PrimInt,
 {
-    fn from((x, y): &PointType<U>) -> Self {
-        Point { x: *x, y: *y }
+    fn from((x, y): &Type<U>) -> Self {
+        Self { x: *x, y: *y }
     }
 }
 
-impl<U> Into<PointType<U>> for Point<U>
+impl<U> Into<Type<U>> for Point<U>
 where
     U: num::PrimInt,
 {
-    fn into(self) -> PointType<U> {
+    fn into(self) -> Type<U> {
         (self.x, self.y)
     }
 }
@@ -71,9 +71,9 @@ impl<U> std::ops::Add for Point<U>
 where
     U: num::PrimInt,
 {
-    type Output = Point<U>;
-    fn add(self, other: Point<U>) -> Point<U> {
-        Point {
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
+        Self {
             x: self.x() + other.x(),
             y: self.y() + other.y(),
         }
@@ -84,9 +84,9 @@ impl<U> std::ops::Sub for Point<U>
 where
     U: num::PrimInt,
 {
-    type Output = Point<U>;
-    fn sub(self, other: Point<U>) -> Point<U> {
-        Point {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self {
+        Self {
             x: self.x() - other.x(),
             y: self.y() - other.y(),
         }

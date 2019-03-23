@@ -165,7 +165,6 @@ use {
         area::{Area, AreaBuilder},
         entry::Entry,
         handle_iter::HandleIter,
-        point::{Point, PointType},
         qtinner::QTInner,
         traversal::Traversal,
         types::StoreType,
@@ -237,8 +236,8 @@ where
     /// assert_eq!(qt.width(), 4);
     /// assert_eq!(qt.height(), 4);
     /// ```
-    pub fn new(depth: usize) -> Quadtree<U, V> {
-        Quadtree::new_with_anchor((U::zero(), U::zero()).into(), depth)
+    pub fn new(depth: usize) -> Self {
+        Self::new_with_anchor((U::zero(), U::zero()).into(), depth)
     }
 
     /// Creates a new Quadtree with the requested anchor and depth.
@@ -254,8 +253,8 @@ where
     /// assert_eq!(qt.width(), 8);
     /// assert_eq!(qt.height(), 8);
     /// ```
-    pub fn new_with_anchor(anchor: Point<U>, depth: usize) -> Quadtree<U, V> {
-        Quadtree {
+    pub fn new_with_anchor(anchor: point::Point<U>, depth: usize) -> Self {
+        Self {
             depth,
             inner: QTInner::new(anchor, depth),
             store: HashMap::new(),
@@ -263,7 +262,7 @@ where
     }
 
     /// The coordinate of the top-left corner of the represented region.
-    pub fn anchor(&self) -> Point<U> {
+    pub fn anchor(&self) -> point::Point<U> {
         self.inner.region.anchor()
     }
 
@@ -436,10 +435,8 @@ where
     /// ```
     ///
     /// [`insert`]: struct.Quadtree.html#method.insert
-    pub fn get<'a>(&'a self, handle: u64) -> Option<&'a V> {
-        self.store
-            .get(&handle)
-            .map_or(None, |entry| Some(entry.value_ref()))
+    pub fn get(&self, handle: u64) -> Option<&V> {
+        self.store.get(&handle).and_then(|e| Some(e.value_ref()))
     }
 
     /// A mutable variant of `.get()`.
@@ -465,10 +462,10 @@ where
     /// ```
     ///
     /// [`.get()`]: struct.Quadtree.html#method.get
-    pub fn get_mut<'a>(&'a mut self, handle: u64) -> Option<&'a mut V> {
+    pub fn get_mut(&mut self, handle: u64) -> Option<&mut V> {
         self.store
             .get_mut(&handle)
-            .map_or(None, |entry| Some(entry.value_mut()))
+            .and_then(|e| Some(e.value_mut()))
     }
 
     /// Returns an iterator over [`&Entry<U, V>`] structs
@@ -820,13 +817,11 @@ where
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         match self.handle_iter.next() {
-            Some(handle) => {
-                return Some(
-                    self.store
-                        .get(&handle)
-                        .expect("Shouldn't have an handle in the tree which isn't in the store."),
-                );
-            }
+            Some(handle) => Some(
+                self.store
+                    .get(&handle)
+                    .expect("Shouldn't have an handle in the tree which isn't in the store."),
+            ),
             None => None,
         }
     }
@@ -1046,13 +1041,13 @@ impl<U, V> FusedIterator for IntoIter<U, V> where U: PrimInt + std::default::Def
 /// `Extend<((U, U), V)>` will silently drop values whose coordinates do not fit in the region
 /// represented by the Quadtree. It is the responsibility of the callsite to ensure these points
 /// fit.
-impl<U, V> Extend<(PointType<U>, V)> for Quadtree<U, V>
+impl<U, V> Extend<(point::Type<U>, V)> for Quadtree<U, V>
 where
     U: PrimInt + std::default::Default,
 {
     fn extend<T>(&mut self, iter: T)
     where
-        T: IntoIterator<Item = (PointType<U>, V)>,
+        T: IntoIterator<Item = (point::Type<U>, V)>,
     {
         for (pt, val) in iter {
             self.insert(

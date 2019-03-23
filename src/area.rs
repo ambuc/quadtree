@@ -14,7 +14,7 @@
 
 //! A type representing an area in space.
 
-use crate::point::{Point, PointType};
+use crate::point;
 
 //  .d8b.  d8888b. d88888b  .d8b.
 //  d8' `8b 88  `8D 88'     d8' `8b
@@ -24,7 +24,7 @@ use crate::point::{Point, PointType};
 //  YP   YP 88   YD Y88888P YP   YP
 
 // Transparent alias. In docs and user-facing APIs, this resolves to ((U, U), (U, U)).
-pub type AreaType<U> = (PointType<U>, (U, U));
+pub type Type<U> = (point::Type<U>, (U, U));
 
 /// Lightweight data type to represent a region.
 ///   - The top-left anchor may be positive or negative in either coordinate.
@@ -38,7 +38,7 @@ pub struct Area<U>
 where
     U: num::PrimInt + std::default::Default + std::cmp::PartialOrd,
 {
-    anchor: Point<U>,
+    anchor: point::Point<U>,
     #[builder(default = "(U::one(), U::one())")]
     dimensions: (U, U),
 }
@@ -75,11 +75,11 @@ where
     }
 }
 
-impl<U> Into<AreaType<U>> for Area<U>
+impl<U> Into<Type<U>> for Area<U>
 where
     U: num::PrimInt + std::default::Default,
 {
-    fn into(self) -> AreaType<U> {
+    fn into(self) -> Type<U> {
         (self.anchor.into(), self.dimensions())
     }
 }
@@ -88,13 +88,13 @@ impl<U> Area<U>
 where
     U: num::PrimInt + std::default::Default,
 {
-    pub fn anchor(&self) -> Point<U> {
+    pub fn anchor(&self) -> point::Point<U> {
         self.anchor
     }
 
     // NB: The center point is an integer and thus rounded, i.e. a 2x2 region at (0,0) has a center
     // at (0,0), when in reality the center would be at (0.5, 0.5).
-    pub fn center_pt(&self) -> Point<U> {
+    pub fn center_pt(&self) -> point::Point<U> {
         self.anchor() + (self.width() / Self::two(), self.height() / Self::two()).into()
     }
 
@@ -122,14 +122,14 @@ where
     }
 
     // Whether or not an area intersects another area.
-    pub fn intersects(self, other: Area<U>) -> bool {
+    pub fn intersects(self, other: Self) -> bool {
         self.left_edge() < other.right_edge()
             && self.right_edge() > other.left_edge()
             && self.top_edge() < other.bottom_edge()
             && self.bottom_edge() > other.top_edge()
     }
     // Whether or not an area wholly contains another area.
-    pub fn contains(self, other: Area<U>) -> bool {
+    pub fn contains(self, other: Self) -> bool {
         other.right_edge() <= self.right_edge()
             && other.left_edge() >= self.left_edge()
             && other.top_edge() >= self.top_edge()
@@ -140,7 +140,7 @@ where
     //
     // This only gets used in tests at the moment.
     #[allow(dead_code)]
-    pub fn contains_pt(self, pt: Point<U>) -> bool {
+    pub fn contains_pt(self, pt: point::Point<U>) -> bool {
         self.contains(
             AreaBuilder::default()
                 .anchor(pt)

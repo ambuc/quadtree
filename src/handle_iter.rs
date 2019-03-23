@@ -130,7 +130,7 @@ where
         }
 
         // Else there's nothing left to search.
-        return None;
+        None
     }
 
     #[inline]
