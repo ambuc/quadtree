@@ -695,6 +695,7 @@ where
         self.delete_handles_and_return(self.query_strict(area).map(|e| e.handle()).collect())
     }
 
+    #[allow(clippy::needless_pass_by_value)]
     fn delete_handles_and_return(&mut self, handles: HashSet<u64>) -> IntoIter<U, V> {
         let error: &'static str = "I tried to look up an handle in the store which I found in the tree, but it wasn't there!";
 
@@ -736,7 +737,7 @@ where
         // TODO(ambuc): I think this is technically correct but it seems to be interweaving three
         // routines. Is there a way to simplify this?
         let mut doomed: HashSet<(u64, Area<U>)> = HashSet::new();
-        for (handle, entry) in self.store.iter_mut() {
+        for (handle, entry) in &mut self.store {
             if f(entry.value_mut()) {
                 doomed.insert((*handle, entry.area()));
             }
@@ -944,7 +945,7 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map_or(None, |entry| Some(entry.area()))
+        self.inner.next().and_then(|e| Some(e.area()))
     }
 
     #[inline]
@@ -984,9 +985,7 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner
-            .next()
-            .map_or(None, |entry| Some(entry.value_ref()))
+        self.inner.next().and_then(|e| Some(e.value_ref()))
     }
 
     #[inline]

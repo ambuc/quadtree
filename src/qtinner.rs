@@ -69,6 +69,7 @@ where
     U: PrimInt + std::default::Default,
 {
     pub(crate) fn new(anchor: Point<U>, depth: usize) -> Self {
+        #[allow(clippy::cast_possible_truncation)]
         let width: U = Self::two().pow(depth as u32);
         let height: U = width;
         Self::new_with_area(
