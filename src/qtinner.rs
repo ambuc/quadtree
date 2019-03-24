@@ -162,7 +162,10 @@ where
         self.subquadrants = Some([
             // Northeast
             Box::new(Self::new(
-                (p.x(), self.region.anchor().y()).into(),
+                Point {
+                    x: p.x(),
+                    y: self.region.anchor().y(),
+                },
                 self.depth - 1,
             )),
             // Northwest
@@ -171,7 +174,10 @@ where
             Box::new(Self::new(p, self.depth - 1)),
             // Southwest
             Box::new(Self::new(
-                (self.region.anchor().x(), p.y()).into(),
+                Point {
+                    x: self.region.anchor().x(),
+                    y: p.y(),
+                },
                 self.depth - 1,
             )),
         ]);

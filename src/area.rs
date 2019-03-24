@@ -156,7 +156,11 @@ where
     // NB: The center point is an integer and thus rounded, i.e. a 2x2 region at (0,0) has a center
     // at (0,0), when in reality the center would be at (0.5, 0.5).
     pub(crate) fn center_pt(&self) -> point::Point<U> {
-        self.anchor() + (self.width() / Self::two(), self.height() / Self::two()).into()
+        self.anchor()
+            + point::Point {
+                x: self.width() / Self::two(),
+                y: self.height() / Self::two(),
+            }
     }
 
     pub(crate) fn dimensions(&self) -> (U, U) {

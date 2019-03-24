@@ -24,12 +24,13 @@ use {
 /// ```
 /// use quadtree_rs::{area::AreaBuilder,
 ///                   entry::Entry,
+///                   point::Point,
 ///                   Quadtree};
 ///
 /// let mut qt = Quadtree::<u32, f64>::new(4);
 /// assert!(
 ///   qt.insert(
-///     /*region=*/AreaBuilder::default().anchor((1, 1).into())
+///     /*region=*/AreaBuilder::default().anchor(Point {x: 1, y: 1})
 ///                                      .dimensions((3, 2))
 ///                                      .build()
 ///                                      .unwrap(),
@@ -41,7 +42,7 @@ use {
 /// // region/value associations which were deleted.
 ///
 /// let mut returned_entries = qt.delete(
-///     /*region=*/AreaBuilder::default().anchor((2, 1).into())
+///     /*region=*/AreaBuilder::default().anchor(Point {x: 2, y: 1})
 ///                                      .build()
 ///                                      .unwrap());
 ///

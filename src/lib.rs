@@ -475,13 +475,14 @@ where
     ///                           .dimensions((4, 4))
     ///                           .build().unwrap());
     ///
-    /// // It's unclear what order the regions should
+    /// // It's unspecified what order the regions should
     /// // return in, but there will be two of them.
     /// assert_eq!(query_b.count(), 2);
     /// ```
     ///
     /// [`Entry<U, V>`]: entry/struct.Entry.html
     /// [`.query_strict()`]: struct.Quadtree.html#method.query_strict
+    // TODO(ambuc): Settle on a stable return order to avoid breaking callers.
     pub fn query(&self, area: Area<U>) -> Query<U, V> {
         Query::new(area, &self.inner, &self.store, Traversal::Overlapping)
     }
@@ -544,21 +545,8 @@ where
     where
         F: Fn(&mut V) + Copy,
     {
-        self.modify_region(|_| true, f);
-    }
-
-    fn modify_region<F, M>(&mut self, filter: F, modify: M)
-    where
-        F: Fn(Area<U>) -> bool,
-        M: Fn(&mut V) + Copy,
-    {
-        let relevant_handles: Vec<u64> = HandleIter::new(&self.inner).collect();
-        for i in relevant_handles {
-            if let Some(entry) = self.store.get_mut(&i) {
-                if filter(entry.area()) {
-                    modify(&mut entry.value_mut());
-                }
-            }
+        for entry in self.store.values_mut() {
+            f(&mut entry.value_mut());
         }
     }
 
@@ -633,6 +621,8 @@ where
         let mut entries: Vec<Entry<U, V>> = vec![];
 
         handles.iter().for_each(|u| {
+            // We were just passed a hashset of handles taken from this quadtree, so it is safe to
+            // assume they all still exist.
             entries.push(self.store.remove(u).expect(&error));
         });
 
@@ -704,6 +694,23 @@ where
             inner: Iter::new(&self.inner, &self.store),
         }
     }
+
+    // fn
+
+    fn modify_region<F, M>(&mut self, filter: F, modify: M)
+    where
+        F: Fn(Area<U>) -> bool,
+        M: Fn(&mut V) + Copy,
+    {
+        let relevant_handles: Vec<u64> = HandleIter::new(&self.inner).collect();
+        for i in relevant_handles {
+            if let Some(entry) = self.store.get_mut(&i) {
+                if filter(entry.area()) {
+                    modify(&mut entry.value_mut());
+                }
+            }
+        }
+    }
 }
 
 // d888888b d888888b d88888b d8888b.
@@ -760,7 +767,7 @@ where
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, None)
+        (0, Some(self.store.len()))
     }
 }
 
@@ -841,7 +848,7 @@ where
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, None)
+        (0, Some(self.store.len()))
     }
 }
 
@@ -979,10 +986,13 @@ where
     where
         T: IntoIterator<Item = (point::Type<U>, V)>,
     {
-        for (pt, val) in iter {
+        for ((x, y), val) in iter {
             // Ignore errors.
             self.insert(
-                AreaBuilder::default().anchor(pt.into()).build().unwrap(),
+                AreaBuilder::default()
+                    .anchor(point::Point { x, y })
+                    .build()
+                    .unwrap(),
                 val,
             )
             .ok();
