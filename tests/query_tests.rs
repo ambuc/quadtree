@@ -37,20 +37,20 @@ mod query_tests {
     #[test]
     fn query_on_point() {
         let mut qt = Quadtree::<u32, u8>::new(1);
-        qt.insert(
-            AreaBuilder::default()
-                .anchor((0, 0).into())
-                .dimensions((1, 1))
-                .build()
-                .unwrap(),
-            49,
-        );
+        assert!(qt
+            .insert(
+                AreaBuilder::default()
+                    .anchor((0, 0).into())
+                    .build()
+                    .unwrap(),
+                49,
+            )
+            .is_ok());
 
         // Requesting a region which does contain '49'.
         let mut iter1 = qt.query(
             AreaBuilder::default()
                 .anchor((0, 0).into())
-                .dimensions((1, 1))
                 .build()
                 .unwrap(),
         );
@@ -69,7 +69,6 @@ mod query_tests {
         let mut iter2 = qt.query(
             AreaBuilder::default()
                 .anchor((0, 1).into())
-                .dimensions((1, 1))
                 .build()
                 .unwrap(),
         );
@@ -78,7 +77,6 @@ mod query_tests {
         let mut iter3 = qt.query(
             AreaBuilder::default()
                 .anchor((1, 0).into())
-                .dimensions((1, 1))
                 .build()
                 .unwrap(),
         );
@@ -87,7 +85,6 @@ mod query_tests {
         let mut iter4 = qt.query(
             AreaBuilder::default()
                 .anchor((1, 1).into())
-                .dimensions((1, 1))
                 .build()
                 .unwrap(),
         );
@@ -111,28 +108,31 @@ mod query_tests {
         // 5 +--+--+--x x x x--+
         //   |  |  |  |  |  |  |
         // 6 +--+--+--+--+--+--+
-        qt.insert(
-            AreaBuilder::default()
-                .anchor((2, 2).into())
-                .dimensions((2, 2))
-                .build()
-                .unwrap(),
-            10,
-        );
-        qt.insert(
-            AreaBuilder::default()
-                .anchor((3, 3).into())
-                .dimensions((2, 2))
-                .build()
-                .unwrap(),
-            55,
-        );
+        assert!(qt
+            .insert(
+                AreaBuilder::default()
+                    .anchor((2, 2).into())
+                    .dimensions((2, 2))
+                    .build()
+                    .unwrap(),
+                10,
+            )
+            .is_ok());
+        assert!(qt
+            .insert(
+                AreaBuilder::default()
+                    .anchor((3, 3).into())
+                    .dimensions((2, 2))
+                    .build()
+                    .unwrap(),
+                55,
+            )
+            .is_ok());
 
         // Queries which turn up empty:
         let mut empty1 = qt.query(
             AreaBuilder::default()
                 .anchor((1, 1).into())
-                .dimensions((1, 1))
                 .build()
                 .unwrap(),
         );
@@ -169,7 +169,6 @@ mod query_tests {
         let mut ten1 = qt.query(
             AreaBuilder::default()
                 .anchor((2, 2).into())
-                .dimensions((1, 1))
                 .build()
                 .unwrap(),
         );
@@ -179,7 +178,6 @@ mod query_tests {
         let mut ten2 = qt.query(
             AreaBuilder::default()
                 .anchor((2, 3).into())
-                .dimensions((1, 1))
                 .build()
                 .unwrap(),
         );
@@ -189,7 +187,6 @@ mod query_tests {
         let mut ten3 = qt.query(
             AreaBuilder::default()
                 .anchor((3, 2).into())
-                .dimensions((1, 1))
                 .build()
                 .unwrap(),
         );
@@ -210,7 +207,6 @@ mod query_tests {
         let mut ten5 = qt.query(
             AreaBuilder::default()
                 .anchor((2, 2).into())
-                .dimensions((1, 2))
                 .build()
                 .unwrap(),
         );
@@ -221,7 +217,6 @@ mod query_tests {
         let mut fiftyfive1 = qt.query(
             AreaBuilder::default()
                 .anchor((3, 4).into())
-                .dimensions((1, 1))
                 .build()
                 .unwrap(),
         );
@@ -231,7 +226,6 @@ mod query_tests {
         let mut fiftyfive2 = qt.query(
             AreaBuilder::default()
                 .anchor((4, 3).into())
-                .dimensions((1, 1))
                 .build()
                 .unwrap(),
         );
@@ -241,7 +235,6 @@ mod query_tests {
         let mut fiftyfive3 = qt.query(
             AreaBuilder::default()
                 .anchor((4, 4).into())
-                .dimensions((1, 1))
                 .build()
                 .unwrap(),
         );
@@ -253,7 +246,6 @@ mod query_tests {
         let mut fiftyfive4 = qt.query(
             AreaBuilder::default()
                 .anchor((4, 3).into())
-                .dimensions((1, 2))
                 .build()
                 .unwrap(),
         );
@@ -276,7 +268,6 @@ mod query_tests {
             qt.query(
                 AreaBuilder::default()
                     .anchor((3, 3).into())
-                    .dimensions((1, 1))
                     .build()
                     .unwrap()
             )
@@ -350,29 +341,32 @@ mod query_tests {
         // 5 +--+--+--x x x x--+
         //   |  |  |  |  |  |  |
         // 6 +--+--+--+--+--+--+
-        qt.insert(
-            AreaBuilder::default()
-                .anchor((2, 2).into())
-                .dimensions((2, 2))
-                .build()
-                .unwrap(),
-            10,
-        );
-        qt.insert(
-            AreaBuilder::default()
-                .anchor((3, 3).into())
-                .dimensions((2, 2))
-                .build()
-                .unwrap(),
-            55,
-        );
+        assert!(qt
+            .insert(
+                AreaBuilder::default()
+                    .anchor((2, 2).into())
+                    .dimensions((2, 2))
+                    .build()
+                    .unwrap(),
+                10,
+            )
+            .is_ok());
+        assert!(qt
+            .insert(
+                AreaBuilder::default()
+                    .anchor((3, 3).into())
+                    .dimensions((2, 2))
+                    .build()
+                    .unwrap(),
+                55,
+            )
+            .is_ok());
 
         // Queries which turn up empty:
         debug_assert_eq!(
             qt.query_strict(
                 AreaBuilder::default()
                     .anchor((1, 1).into())
-                    .dimensions((1, 1))
                     .build()
                     .unwrap()
             )
@@ -418,7 +412,6 @@ mod query_tests {
             qt.query_strict(
                 AreaBuilder::default()
                     .anchor((2, 2).into())
-                    .dimensions((1, 1))
                     .build()
                     .unwrap()
             )
@@ -429,7 +422,6 @@ mod query_tests {
             qt.query_strict(
                 AreaBuilder::default()
                     .anchor((2, 3).into())
-                    .dimensions((1, 1))
                     .build()
                     .unwrap()
             )
@@ -440,7 +432,6 @@ mod query_tests {
             qt.query_strict(
                 AreaBuilder::default()
                     .anchor((3, 2).into())
-                    .dimensions((1, 1))
                     .build()
                     .unwrap()
             )
@@ -462,7 +453,6 @@ mod query_tests {
             qt.query_strict(
                 AreaBuilder::default()
                     .anchor((2, 2).into())
-                    .dimensions((1, 2))
                     .build()
                     .unwrap()
             )
@@ -475,7 +465,6 @@ mod query_tests {
             qt.query_strict(
                 AreaBuilder::default()
                     .anchor((3, 4).into())
-                    .dimensions((1, 1))
                     .build()
                     .unwrap()
             )
@@ -486,7 +475,6 @@ mod query_tests {
             qt.query_strict(
                 AreaBuilder::default()
                     .anchor((4, 3).into())
-                    .dimensions((1, 1))
                     .build()
                     .unwrap()
             )
@@ -497,7 +485,6 @@ mod query_tests {
             qt.query_strict(
                 AreaBuilder::default()
                     .anchor((4, 4).into())
-                    .dimensions((1, 1))
                     .build()
                     .unwrap()
             )
@@ -508,7 +495,6 @@ mod query_tests {
             qt.query_strict(
                 AreaBuilder::default()
                     .anchor((4, 3).into())
-                    .dimensions((1, 2))
                     .build()
                     .unwrap()
             )
@@ -533,7 +519,6 @@ mod query_tests {
             qt.query_strict(
                 AreaBuilder::default()
                     .anchor((3, 3).into())
-                    .dimensions((1, 1))
                     .build()
                     .unwrap()
             )
@@ -649,19 +634,20 @@ mod query_tests {
     #[test]
     fn query_exhibiting_collection() {
         let mut qt: Quadtree<u8, f32> = Quadtree::new(2);
-        qt.insert(
-            AreaBuilder::default()
-                .anchor((0, 0).into())
-                .dimensions((2, 2))
-                .build()
-                .unwrap(),
-            1.234,
-        );
+        assert!(qt
+            .insert(
+                AreaBuilder::default()
+                    .anchor((0, 0).into())
+                    .dimensions((2, 2))
+                    .build()
+                    .unwrap(),
+                1.234,
+            )
+            .is_ok());
 
         let mut query_obj = qt.query(
             AreaBuilder::default()
                 .anchor((0, 0).into())
-                .dimensions((1, 1))
                 .build()
                 .unwrap(),
         );
@@ -689,18 +675,18 @@ mod query_tests {
         let mut qt = Quadtree::<u32, u8>::new(3);
 
         // Insert #49 at (0, 0)->1x1.
-        qt.insert(
-            AreaBuilder::default()
-                .anchor((0, 0).into())
-                .dimensions((1, 1))
-                .build()
-                .unwrap(),
-            49,
-        );
+        assert!(qt
+            .insert(
+                AreaBuilder::default()
+                    .anchor((0, 0).into())
+                    .build()
+                    .unwrap(),
+                49,
+            )
+            .is_ok());
         qt.modify(
             AreaBuilder::default()
                 .anchor((0, 0).into())
-                .dimensions((1, 1))
                 .build()
                 .unwrap(),
             |i| *i += 1,
@@ -710,7 +696,6 @@ mod query_tests {
         let mut tmp_iter_1 = qt.query(
             AreaBuilder::default()
                 .anchor((0, 0).into())
-                .dimensions((1, 1))
                 .build()
                 .unwrap(),
         );
@@ -718,14 +703,17 @@ mod query_tests {
         debug_assert_eq!(tmp_iter_1.next(), None);
 
         // Insert #17 at (2, 2)->3x3.
-        qt.insert(
-            AreaBuilder::default()
-                .anchor((2, 2).into())
-                .dimensions((3, 3))
-                .build()
-                .unwrap(),
-            17,
-        );
+        assert!(qt
+            .insert(
+                AreaBuilder::default()
+                    .anchor((2, 2).into())
+                    .dimensions((3, 3))
+                    .build()
+                    .unwrap(),
+                17,
+            )
+            .is_ok());
+
         // Up it to 18,
         qt.modify(
             AreaBuilder::default()
@@ -739,7 +727,6 @@ mod query_tests {
         let mut tmp_iter_2 = qt.query(
             AreaBuilder::default()
                 .anchor((2, 2).into())
-                .dimensions((1, 1))
                 .build()
                 .unwrap(),
         );

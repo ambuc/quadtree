@@ -19,34 +19,41 @@ use {
     num::PrimInt,
 };
 
-/// Lightweight encapsulation representing a region/value
-/// association being returned by value from the [`Quadtree`].
+/// A region/value association being returned (by value) from the [`Quadtree`].
 ///
 /// ```
-/// use quadtree_rs::{Quadtree, entry::Entry, area::AreaBuilder};
+/// use quadtree_rs::{area::AreaBuilder,
+///                   entry::Entry,
+///                   Quadtree};
 ///
 /// let mut qt = Quadtree::<u32, f64>::new(4);
-/// qt.insert(AreaBuilder::default().anchor((1, 1).into())
-///                                 .dimensions((3, 2))
-///                                 .build()
-///                                 .unwrap(),
-///           4.56);
+/// assert!(
+///   qt.insert(
+///     /*region=*/AreaBuilder::default().anchor((1, 1).into())
+///                                      .dimensions((3, 2))
+///                                      .build()
+///                                      .unwrap(),
+///     /*val=*/4.56)
+///   .is_ok());
 ///
-/// // @returned_entries is of type IntoIter<u32, f64>.
-/// let mut returned_entries  = qt.delete(
-///     AreaBuilder::default().anchor((2, 1).into())
-///                           .dimensions((1, 1))
-///                           .build()
-///                           .unwrap());
+/// // Calling Quadtree::delete() on a region in the tree
+/// // clears that region of the tree and returns the
+/// // region/value associations which were deleted.
 ///
-/// let hit: Entry<u32, f64> = returned_entries.next().unwrap();
-/// assert_eq!(hit.anchor().x(), 1);
-/// assert_eq!(hit.anchor().y(), 1);
-/// assert_eq!(hit.width(), 3);
-/// assert_eq!(hit.height(), 2);
+/// let mut returned_entries = qt.delete(
+///     /*region=*/AreaBuilder::default().anchor((2, 1).into())
+///                                      .build()
+///                                      .unwrap());
 ///
-/// // The held value can be accessed by reference.
-/// assert_eq!(hit.value_ref(), &4.56);
+/// // The iterator contains Entry<U, V> structs.
+/// let entry: Entry<u32, f64> = returned_entries.next().unwrap();
+///
+/// assert_eq!(entry.anchor().x(), 1);
+/// assert_eq!(entry.anchor().y(), 1);
+/// assert_eq!(entry.width(), 3);
+/// assert_eq!(entry.height(), 2);
+///
+/// assert_eq!(entry.value_ref(), &4.56);
 /// ```
 ///
 /// [`Quadtree`]: ../struct.Quadtree.html
@@ -64,6 +71,40 @@ impl<U, V> Entry<U, V>
 where
     U: PrimInt + std::default::Default,
 {
+    // pub
+
+    /// The returned region.
+    pub fn area(&self) -> Area<U> {
+        self.region
+    }
+
+    /// The top-left coordinate of the returned region.
+    pub fn anchor(&self) -> Point<U> {
+        self.area().anchor()
+    }
+
+    /// The width of the returned region.
+    pub fn width(&self) -> U {
+        self.dimensions().0
+    }
+
+    /// The height of the returned region.
+    pub fn height(&self) -> U {
+        self.dimensions().1
+    }
+
+    /// A mutable accessor to the returned value.
+    pub fn value_mut(&mut self) -> &mut V {
+        &mut self.value
+    }
+
+    /// A reference to the returned value.
+    pub fn value_ref(&self) -> &V {
+        &self.value
+    }
+
+    // pub(crate)
+
     pub(crate) fn new(inner: (Area<U>, V), handle: u64) -> Self {
         Self {
             region: inner.0,
@@ -72,36 +113,8 @@ where
         }
     }
 
-    pub fn area(&self) -> Area<U> {
-        self.region
-    }
-
-    /// The top-left coordinate of the held region.
-    pub fn anchor(&self) -> Point<U> {
-        self.area().anchor()
-    }
-
-    fn dimensions(&self) -> (U, U) {
+    pub(crate) fn dimensions(&self) -> (U, U) {
         self.area().dimensions()
-    }
-
-    /// The width of the held region.
-    pub fn width(&self) -> U {
-        self.dimensions().0
-    }
-
-    /// The height of the held region.
-    pub fn height(&self) -> U {
-        self.dimensions().1
-    }
-
-    pub fn value_mut(&mut self) -> &mut V {
-        &mut self.value
-    }
-
-    /// The held value, returned by-reference.
-    pub fn value_ref(&self) -> &V {
-        &self.value
     }
 
     pub(crate) fn handle(&self) -> u64 {

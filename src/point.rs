@@ -27,8 +27,8 @@ pub(crate) type Type<U> = (U, U);
 /// A type representing a point in space. Should be passed by value.
 #[derive(PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Point<U> {
-    x: U,
-    y: U,
+    pub x: U,
+    pub y: U,
 }
 
 impl<U> std::fmt::Debug for Point<U>
@@ -74,8 +74,8 @@ where
     type Output = Self;
     fn add(self, other: Self) -> Self {
         Self {
-            x: self.x() + other.x(),
-            y: self.y() + other.y(),
+            x: self.x().saturating_add(other.x()),
+            y: self.y().saturating_add(other.y()),
         }
     }
 }
@@ -87,8 +87,8 @@ where
     type Output = Self;
     fn sub(self, other: Self) -> Self {
         Self {
-            x: self.x() - other.x(),
-            y: self.y() - other.y(),
+            x: self.x().saturating_sub(other.x()),
+            y: self.y().saturating_sub(other.y()),
         }
     }
 }
@@ -97,64 +97,15 @@ impl<U> Point<U>
 where
     U: num::PrimInt,
 {
-    // Accessors //
+    // pub
+
+    /// The x-coordinate of the point.
     pub fn x(&self) -> U {
         self.x
     }
 
+    /// The y-coordinate of the point.
     pub fn y(&self) -> U {
         self.y
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::Point;
-
-    #[test]
-    fn builder() {
-        let p: Point<i8> = (1, 2).into();
-        debug_assert_eq!(p.x(), 1);
-        debug_assert_eq!(p.y(), 2);
-    }
-
-    #[test]
-    fn xy_addition() {
-        debug_assert_eq!(Point::from((0, 0)) + Point::from((0, 1)), (0, 1).into());
-        debug_assert_eq!(Point::from((0, 1)) + Point::from((0, 1)), (0, 2).into());
-        debug_assert_eq!(Point::from((1, 1)) + Point::from((0, 0)), (1, 1).into());
-        debug_assert_eq!(Point::from((1, 0)) + Point::from((0, 1)), (1, 1).into());
-        debug_assert_eq!(Point::from((0, 0)) + Point::from((4, 5)), (4, 5).into());
-        debug_assert_eq!(Point::from((4, 5)) + Point::from((0, 0)), (4, 5).into());
-    }
-
-    #[test]
-    fn xy_subtraction() {
-        debug_assert_eq!(Point::from((0, 1)) - Point::from((0, 0)), (0, 1).into());
-        debug_assert_eq!(Point::from((0, 1)) - Point::from((0, 1)), (0, 0).into());
-        debug_assert_eq!(Point::from((1, 1)) - Point::from((0, 0)), (1, 1).into());
-        debug_assert_eq!(Point::from((1, 1)) - Point::from((0, 1)), (1, 0).into());
-        debug_assert_eq!(Point::from((4, 5)) - Point::from((2, 2)), (2, 3).into());
-        debug_assert_eq!(Point::from((4, 5)) - Point::from((0, 0)), (4, 5).into());
-    }
-
-    // Test addition / subtraction which reaches into the realm of negative numbers.
-
-    #[test]
-    fn subtracting_positive_numbers() {
-        debug_assert_eq!(Point::from((0, 0)) - (1, 1).into(), (-1, -1).into());
-        debug_assert_eq!(Point::from((0, 0)) - (0, 1).into(), (0, -1).into());
-        debug_assert_eq!(Point::from((0, 0)) - (1, 0).into(), (-1, 0).into());
-
-        debug_assert_eq!(Point::from((1, 10)) - (2, 20).into(), (-1, -10).into());
-    }
-
-    #[test]
-    fn adding_negative_numbers() {
-        debug_assert_eq!(Point::from((0, 0)) + (-1, 0).into(), (-1, 0).into());
-        debug_assert_eq!(Point::from((0, 0)) + (-1, -1).into(), (-1, -1).into());
-        debug_assert_eq!(Point::from((0, 0)) + (0, -1).into(), (0, -1).into());
-
-        debug_assert_eq!(Point::from((1, 10)) + (-2, -20).into(), (-1, -10).into());
     }
 }

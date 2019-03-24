@@ -101,7 +101,6 @@ mod iterator_tests {
         qt.delete(
             AreaBuilder::default()
                 .anchor((29, -36).into())
-                .dimensions((1, 1))
                 .build()
                 .unwrap(),
         );
@@ -111,7 +110,6 @@ mod iterator_tests {
         let mut returned_entries = qt.delete(
             AreaBuilder::default()
                 .anchor((30, -35).into())
-                .dimensions((1, 1))
                 .build()
                 .unwrap(),
         );

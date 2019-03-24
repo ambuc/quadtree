@@ -20,127 +20,123 @@
 //! Add `quadtree_rs` to your `Cargo.toml`, and then add it to your main.
 //! ```
 //! extern crate quadtree_rs;
-//! use quadtree_rs::{area::AreaBuilder, Quadtree};
+//! use quadtree_rs::{area::AreaBuilder,
+//!                   point::Point,
+//!                   Quadtree};
 //!
-//! // Create a new Quadtree with u64 coordinates and String
-//! // values. Quadtree::new(4) initializes a tree with a
-//! // depth of four layers, or a height and width of 2^4 = 16.
+//! // A new Quadtree with u64 coordinates and String values.
+//! // ::new(4) means a depth of 4 layers, i.e. sides of length 2^4.
 //! let mut qt = Quadtree::<u64, String>::new(4);
 //!
-//! // Insert "foo" in the tree at the rectangle with
-//! // top-left corner (0, 0), width 2, and height 1.
-//! //
-//! //   0  1  2  3
-//! // 0 ░░░░░░░--+
-//! //   ░░░░░░░ <--foo
-//! // 1 ░░░░░░░--+
-//! //   |  |  |  |
-//! // 2 +--+--+--+
-//! qt.insert(AreaBuilder::default().anchor((0, 0).into())
-//!                                 .dimensions((2, 1))
-//!                                 .build()
-//!                                 .unwrap(),
-//!           "foo".to_string());
+//! //   0  1  2
+//! // 0 ░░░░░░░    Insert the string "foo"
+//! //   ░░foo░░    at a region in the tree.
+//! // 1 ░░░░░░░
+//! assert!(
+//!   qt.insert(
+//!     /*region=*/
+//!     AreaBuilder::default().anchor(Point {x: 0, y: 0})
+//!                           .dimensions((2, 1))
+//!                           .build().unwrap(),
+//!     /*val=*/
+//!     "foo".to_string())
+//!   .is_ok());
 //!
-//! // Perform a query over a region with top-left corner
-//! // (1, 0), width 1, and height 1.
 //! //
 //! //   0  1  2  3
-//! // 0 ░░░▓▓▓▓▒▒▒
-//! //   ░░░▓▓▓▓▒▒▒ <--query region
-//! // 1 ░░░▓▓▓▓▒▒▒
+//! // 0 ░░░▓▓▓▓▒▒▒     
+//! //   ░░░▓▓▓▓▒▒▒ <-- Query over a region
+//! // 1 ░░░▓▓▓▓▒▒▒     which overlaps foo.
 //! //   |  ▒▒▒▒▒▒▒
 //! // 2 +--▒▒▒▒▒▒▒
-//! let mut query = qt.query(AreaBuilder::default().anchor((1, 0).into())
-//!                                                .dimensions((2, 2))
-//!                                                .build()
-//!                                                .unwrap());
+//! let mut query = qt.query(
+//!     /*region=*/
+//!     AreaBuilder::default().anchor(Point {x: 1, y: 0})
+//!                           .dimensions((2, 2))
+//!                           .build().unwrap());
 //!
-//! // @query implements `Iterator` over `Entry<u64, String>` entries, so we can call
-//! // `Entry::value_ref()` and see that our query region contains the rectangle at which "foo" was
-//! // inserted.
+//! // Take the first entry in the query results and check its' value.
 //! assert_eq!(query.next().unwrap().value_ref(), "foo");
 //! ```
 //!
 //! # Implementation
 //! ```
-//! use quadtree_rs::{area::AreaBuilder, Quadtree};
-//! // The Quadtree is a tree where every node has four children, representing the four
-//! // evenly-divided subquadrants beneath it in the grid.
+//! use quadtree_rs::{area::AreaBuilder,
+//!                   point::Point,
+//!                   Quadtree};
+//!
 //! let mut qt = Quadtree::<u8, f32>::new(2);
 //!
-//! // Inserting a point (a.k.a. a region of dimensions 1x1) means traversing that tree all the way
-//! // to the bottom.
-//! qt.insert(AreaBuilder::default().anchor((0, 0).into())
-//!                                 .dimensions((1, 1))
-//!                                 .build()
-//!                                 .unwrap(),
-//!           1.23456);
-//! // (0,0)->4x4 ─┬─ (0,0)->2x2 ─┬─ (0,0)->1x1
-//! //             │              │    └ [1.23456]
-//! //             │              ├─ (0,2)->1x1
-//! //             │              ├─ (2,0)->1x1
-//! //             │              └─ (2,2)->1x1
-//! //             ├─ (0,2)->2x2
-//! //             ├─ (2,0)->2x2
-//! //             └─ (2,2)->2x2
+//! // In a quadtree, every region is subdivided lazily into four subqudrants.
 //!
-//! // But inserting a region which coincides with a quadrant means inserting that value somewhere
-//! // higher in the tree.
-//! qt.insert(AreaBuilder::default().anchor((0, 0).into())
+//! // Inserting a point, represented as a region with width and height one,
+//! // means traversing the full height of the tree.
+//! assert!(
+//!   qt.insert(
+//!     /*region=*/
+//!     AreaBuilder::default().anchor(Point {x: 0, y: 0})
+//!                           .build().unwrap(),
+//!     /*val=*/
+//!     1.23456)
+//!   .is_ok());
+//!
+//! // (0,0)->4x4 ─── (0,0)->2x2 ─── (0,0)->1x1
+//! //                               [1.23456]
+//!
+//! // Inserting a region means traversing only as far down
+//! // the tree as necessary to fully cover that region.
+//! assert!(
+//!   qt.insert(
+//!     /*region=*/
+//!     AreaBuilder::default().anchor(Point {x: 0, y: 0})
 //!                                 .dimensions((2, 2))
-//!                                 .build()
-//!                                 .unwrap(),
-//!           2.46810);
-//! // (0,0)->4x4 ─┬─ (0,0)->2x2 ─────┬─ (0,0)->1x1
-//! //             │    └ [2.46810]   │    └ [1.23456]
-//! //             │                  ├─ (0,2)->1x1
-//! //             │                  ├─ (2,0)->1x1
-//! //             │                  └─ (2,2)->1x1
-//! //             ├─ (0,2)->2x2
-//! //             ├─ (2,0)->2x2
-//! //             └─ (2,2)->2x2
+//!                                 .build().unwrap(),
+//!     /*val=*/
+//!     2.46810)
+//!   .is_ok());
 //!
-//! // Inserting a region which overlaps a few quadrants means inserting that value (actually, a
-//! // key which points to that value in a store) in multiple places.
-//! qt.insert(AreaBuilder::default().anchor((0, 0).into())
-//!                                 .dimensions((3, 3))
-//!                                 .build()
-//!                                 .unwrap(),
-//!           3.6912);
-//! // (0,0)->4x4 ─┬─ (0,0)->2x2 ─────┬─ (0,0)->1x1
-//! //             │    └ [ 2.46810,  │    └ [1.23456]
-//! //             │        3.6912 ]  ├─ (0,1)->1x1
-//! //             │                  ├─ (1,0)->1x1
-//! //             │                  └─ (1,1)->1x1
+//! // (0,0)->4x4 ─── (0,0)->2x2 ─── (0,0)->1x1
+//! //                [2.46810]      [1.23456]
+//!
+//! // Often that means inserting the value in multiple places.
+//! // (The implementation duplicates not the stored value,
+//! // which need not implement Copy, but a handle to the
+//! // value in a storage map.)
+//!
+//! assert!(
+//!   qt.insert(
+//!     AreaBuilder::default().anchor(Point {x: 0, y: 0})
+//!                           .dimensions((3, 3))
+//!                           .build().unwrap(),
+//!     3.6912)
+//!   .is_ok());
+//!
+//! // (0,0)->4x4 ─┬─ (0,0)->2x2 ─── (0,0)->1x1
+//! //             │  [ 2.46810,      [1.23456]
+//! //             │    3.6912 ]  
 //! //             │
-//! //             ├─ (0,2)->2x2 ─────┬─ (0,2)->1x1
-//! //             │                  │    └ [3.6912]
-//! //             │                  ├─ (0,3)->1x1
-//! //             │                  ├─ (1,2)->1x1
-//! //             │                  │    └ [3.6912]
-//! //             │                  └─ (1,3)->1x1
+//! //             ├─ (0,2)->2x2 ─┬─ (0,2)->1x1
+//! //             │              │  [3.6912]
+//! //             │              │
+//! //             │              └─ (1,2)->1x1
+//! //             │                 [3.6912]
 //! //             │
-//! //             ├─ (2,0)->2x2 ─────┬─ (2,0)->1x1
-//! //             │                  │    └ [3.6912]
-//! //             │                  ├─ (2,1)->1x1
-//! //             │                  │    └ [3.6912]
-//! //             │                  ├─ (3,0)->1x1
-//! //             │                  └─ (3,1)->1x1
+//! //             ├─ (2,0)->2x2 ─┬─ (2,0)->1x1
+//! //             │              │  [3.6912]
+//! //             │              │
+//! //             │              └─ (2,1)->1x1
+//! //             │                 [3.6912]
 //! //             │
-//! //             └─ (2,2)->2x2 ─────┬─ (2,2)->1x1
-//! //                                │    └ [3.6912]
-//! //                                ├─ (2,3)->1x1
-//! //                                ├─ (3,2)->1x1
-//! //                                └─ (3,3)->1x1
+//! //             └─ (2,2)->2x2 ─── (2,2)->1x1
+//! //                                [3.6912]
 //! ```
-//! In practice this is relatively efficient. It allows for fast regional lookups at the cost of
-//! more expensive insertions and deletions. This library optimizes for many small items which
-//! don't overlap much as opposed to large items.
+//! Duplicating the storage handle is expensive, but allows for fast lookups and fast insertions at
+//! the cost of slower deletions. This means that `quadtree_rs` is well-suited for maps which hold
+//! many items with small regions.
 //!
 //! # Usage
 //!
-//! For usage details, see [`Quadtree`].
+//! For further usage details, see [`Quadtree`].
 //!
 //! [`Quadtree`]: struct.Quadtree.html
 
@@ -190,23 +186,11 @@ use {
 ///  - `U`, where `U` is the index type of the x/y coordinate, and
 ///  - `V`, where `V` is the value being stored in the data structure.
 ///
-/// Regions are represented by the type
-/// ```
-/// type U = u64; // Or any primitive integer, signed or unsigned.
+/// Points and areas are respresented by the [`point`] and [`area`] structs. Both are parameterized
+/// over `U`.
 ///
-/// //   01234567
-/// // 0 ░░░░░░░░
-/// // 1 ░░▓▓▓░░░ (2,1)->3x1
-/// // 2 ░░░░░░░░
-/// let _region: ((U, U), (U, U)) = ((2, 1), (3, 1));
-/// //             x  y    w  h
-/// //            anchor  dimensions
-/// ```
-/// where
-///  - `anchor` is the x/y coordinate of the top-left corner, and
-///  - `dimensions` is a tuple containing the width and height of the region.
-///
-/// Points should be represented by regions with dimensions `(1, 1)`.
+/// [`point`]: point/struct.Point.html
+/// [`area`]: area/struct.Area.html
 // TODO(ambuc): Implement `.delete_by(anchor, dimensions, fn)`: `.retain()` is the inverse.
 // TODO(ambuc): Implement `FromIterator<(K, V)>` for `Quadtree`.
 #[derive(Debug, PartialEq, Eq)]
@@ -223,33 +207,43 @@ impl<U, V> Quadtree<U, V>
 where
     U: PrimInt + std::default::Default,
 {
+    // pub
+
     /// Creates a new, empty Quadtree with the requested depth.
-    /// - The default anchor is `(0, 0)`, and the default width and height are both `2^depth`.
-    /// - The Quadtree must be explicitly typed, since will contain items of a type.
+    ///
+    /// *NB:* A quadtree with depth `n` can only handle regions with coordinates between `0` and
+    /// `2^n`.
     /// ```
-    /// use quadtree_rs::Quadtree;
+    /// use quadtree_rs::{point::Point, Quadtree};
     ///
     /// let qt = Quadtree::<u32, u8>::new(/*depth=*/ 2);
     ///
+    /// assert_eq!(qt.anchor(), Point {x: 0, y: 0});
     /// assert_eq!(qt.depth(), 2);
-    /// assert_eq!(qt.anchor(), (0, 0).into());
     /// assert_eq!(qt.width(), 4);
     /// assert_eq!(qt.height(), 4);
     /// ```
     pub fn new(depth: usize) -> Self {
-        Self::new_with_anchor((U::zero(), U::zero()).into(), depth)
+        Self::new_with_anchor(
+            point::Point {
+                x: U::zero(),
+                y: U::zero(),
+            },
+            depth,
+        )
     }
 
     /// Creates a new Quadtree with the requested anchor and depth.
     /// ```
-    /// use quadtree_rs::Quadtree;
+    /// use quadtree_rs::{point::Point, Quadtree};
     ///
     /// let qt = Quadtree::<u32, u8>::new_with_anchor(
-    ///     /*anchor=*/ (2, 4).into(),
+    ///     /*anchor=*/ Point {x: 2, y: 4},
     ///     /*depth=*/ 3);
+    /// // NB: Points can also be coerced, i.e. `(2,4).into()`.
     ///
     /// assert_eq!(qt.depth(), 3);
-    /// assert_eq!(qt.anchor(), (2, 4).into());
+    /// assert_eq!(qt.anchor(), Point {x: 2, y: 4});
     /// assert_eq!(qt.width(), 8);
     /// assert_eq!(qt.height(), 8);
     /// ```
@@ -261,158 +255,103 @@ where
         }
     }
 
-    /// The coordinate of the top-left corner of the represented region.
+    /// The top-left corner of the region covered by the quadtree.
     pub fn anchor(&self) -> point::Point<U> {
         self.inner.region.anchor()
     }
 
-    /// The width of the represented region.
+    /// The width of the region covered by the quadtree.
     pub fn width(&self) -> usize {
         self.inner.region.width().to_usize().unwrap()
     }
 
-    /// The height of the represented region.
+    /// The height of the region covered by the quadtree.
     pub fn height(&self) -> usize {
         self.inner.region.height().to_usize().unwrap()
     }
 
     /// The depth of the quadtree.
-    /// - A quadtree created with depth 0 will have one node
-    ///   and no possibility for subdivision;
-    /// - a quadtree created with depth 1 will have one node
-    ///   and four potential subquadrants.
-    ///
-    /// Thus both the width and height of a quadtree with
-    /// depth `n` are `2^n`.
     pub fn depth(&self) -> usize {
         self.inner.depth
     }
 
-    /// Returns the number of elements in the quadtree.
-    /// ```
-    /// use quadtree_rs::{area::AreaBuilder, Quadtree};
-    ///
-    /// let mut qt = Quadtree::<u32, f32>::new(4);
-    /// assert_eq!(qt.len(), 0);
-    ///
-    /// qt.insert(AreaBuilder::default().anchor((3, 1).into())
-    ///                                 .dimensions((1, 1))
-    ///                                 .build()
-    ///                                 .unwrap(),
-    ///           3.14159);
-    /// assert_eq!(qt.len(), 1);
-    ///
-    /// qt.insert(AreaBuilder::default().anchor((2, 7).into())
-    ///                                 .dimensions((1, 1))
-    ///                                 .build()
-    ///                                 .unwrap(),
-    ///           2.71828);
-    /// assert_eq!(qt.len(), 2);
-    /// ```
+    /// The number of elements in the quadtree.
     pub fn len(&self) -> usize {
         self.store.len()
     }
 
     /// Whether or not the quadtree is empty.
-    /// ```
-    /// use quadtree_rs::{area::AreaBuilder, Quadtree};
-    ///
-    /// let mut qt = Quadtree::<u32, f64>::new(3);
-    /// assert!(qt.is_empty());
-    ///
-    /// qt.insert(AreaBuilder::default().anchor((1, 4).into())
-    ///                                 .dimensions((1, 4))
-    ///                                 .build()
-    ///                                 .unwrap(),
-    ///           1.4142135);
-    /// assert!(!qt.is_empty());
-    /// ```
     pub fn is_empty(&self) -> bool {
         self.store.is_empty()
     }
 
-    /// Whether or not the region represented by this quadtree
-    /// could contain the given region.
-    ///
-    /// The region described may have an anchor anywhere on
-    /// the plane, but it must have positive, nonzero values
-    /// for its width and height.
-    ///
-    /// Perhaps before inserting a region, the callsite would
-    /// like to check to see if that region could fit in the
-    /// area represented by the quadtree.
+    /// Test whether some region could fit in the region
+    /// covered by the quadtree.
     /// ```
-    /// use quadtree_rs::{area::AreaBuilder, Quadtree};
+    /// use quadtree_rs::{area::AreaBuilder, point::Point, Quadtree};
     ///
+    /// // This is a very small quadtree.
     /// let qt = Quadtree::<u32, u32>::new_with_anchor(
-    ///   (1, 0).into(), 1);
-    /// // This is a very small quadtree. It has an anchor
-    /// // at (1, 0) and dimensions 2x2.
-    /// assert_eq!(qt.anchor(), (1, 0).into());
+    ///   /*anchor=*/Point {x: 1, y: 0},
+    ///   /*depth=*/1);
+    ///
+    /// // It is anchored at (1, 0) and has height and width 2.
+    /// assert_eq!(qt.anchor(), Point{ x: 1, y: 0});
     /// assert_eq!(qt.width(), 2);
     /// assert_eq!(qt.height(), 2);
     ///
-    /// //  012
-    /// // 0 ▓░ // The quadtree contains a region which is
-    /// // 1 ░░ //  totally within it.
+    /// //  012    This quadtree _does_ contain
+    /// // 0.▓░    a point at (1,0).
+    /// // 1.░░
     /// assert!(qt.contains(
-    ///     AreaBuilder::default().anchor((1, 0).into())
-    ///                           .dimensions((1, 1))
-    ///                           .build()
-    ///                           .unwrap()));
+    ///     AreaBuilder::default().anchor(Point {x: 1, y: 0})
+    ///                           .build().unwrap()));
     ///
-    /// //  012
-    /// // 0▓░░ // ...and the quadtree does not contains a
-    /// // 1 ░░ //    region which is not totally within it.
+    /// //  012     This quadtree does _not_ contain
+    /// // 0▓░░     a point at (0,0).
+    /// // 1 ░░
     /// assert!(!qt.contains(
-    ///     AreaBuilder::default().anchor((0, 0).into())
-    ///                           .dimensions((1, 1))
-    ///                           .build()
-    ///                           .unwrap()));
+    ///     AreaBuilder::default().anchor(Point {x: 0, y: 0})
+    ///                           .build().unwrap()));
     /// ```
     pub fn contains(&self, area: Area<U>) -> bool {
         self.inner.region.contains(area)
     }
 
-    /// Inserts the value at the requested region. Returns
-    /// a unique `handle` representing this instance of the
-    /// object in the Quadtree.
-    ///   - If the requested region does not fit totally in
-    ///     the Quadtree, `.insert()` will fail silently.
-    ///     Callsites may want to use `.contains()` first.
-    ///   - If the requested region only fits partially in
-    ///     the Quadtree, `.insert()` will mark the in-bounds
-    ///     regions and drop the rest of the requested region.
+    /// Associates the passed value with the passed region.
     ///
-    /// The region described may have an anchor anywhere on
-    /// the plane, but it must have positive, nonzero values
-    /// for its width and height.
+    /// If the quadtree can contain the region, the value
+    /// is inserted and a unique handle representing this
+    /// instance of the object is returned.
     ///
+    /// If the region cannot be wholly contained,
+    /// `::insert()` will return an `Err`.
     /// ```
-    /// use quadtree_rs::{area::AreaBuilder, Quadtree};
+    /// use quadtree_rs::{area::AreaBuilder,
+    ///                   point::Point,
+    ///                   Quadtree};
     ///
-    /// let mut qt = Quadtree::<u32, String>::new(2);
+    /// let mut qt = Quadtree::<u32, i8>::new(2);
     ///
-    /// let handle_a_1 = qt.insert(
-    ///     AreaBuilder::default().anchor((0, 0).into())
-    ///                           .dimensions((1, 1))
-    ///                           .build()
-    ///                           .unwrap(),
-    ///     "a".to_string());
-    /// let handle_a_2 = qt.insert(
-    ///     AreaBuilder::default().anchor((0, 0).into())
-    ///                           .dimensions((1, 1))
-    ///                           .build()
-    ///                           .unwrap(),
-    ///     "a".to_string());
+    /// let some_area = AreaBuilder::default().anchor(Point {x: 0, y: 0})
+    ///                                       .build().unwrap();
+    /// let some_value = 5_i8;
     ///
-    /// // Even though we inserted "a" at the same point in the Quadtree, the two handles returned
-    /// // were not the same.
+    /// let handle_a_1 = qt.insert(some_area, some_value).unwrap();
+    /// let handle_a_2 = qt.insert(some_area, some_value).unwrap();
+    ///
+    /// // Even though we inserted 5 at the same point in
+    /// // the Quadtree, the two handles returned were not
+    /// // the same.
     /// assert_ne!(handle_a_1, handle_a_2);
     /// ```
-    pub fn insert(&mut self, region: Area<U>, val: V) -> u64 {
-        self.inner
-            .insert_val_at_region(region, val, &mut self.store)
+    pub fn insert(&mut self, region: Area<U>, val: V) -> Result<u64, &'static str> {
+        if self.contains(region) {
+            return Ok(self
+                .inner
+                .insert_val_at_region(region, val, &mut self.store));
+        }
+        Err("The requested region does not fit in this quadtree.")
     }
 
     /// Provides access to a single value in the Quadtree,
@@ -420,15 +359,19 @@ where
     /// handle might have been saved by value at [`insert`].
     ///
     /// ```
-    /// use quadtree_rs::{area::AreaBuilder, Quadtree};
+    /// use quadtree_rs::{area::AreaBuilder,
+    ///                   point::Point,
+    ///                   Quadtree};
     ///
     /// let mut qt = Quadtree::<u32, f32>::new(4);
     ///
     /// let handle: u64 = qt.insert(
-    ///     AreaBuilder::default().anchor((0, 1).into())
+    ///     /*region=*/
+    ///     AreaBuilder::default().anchor(Point {x: 0, y: 1})
     ///                           .dimensions((2, 3))
-    ///                           .build()
-    ///                           .unwrap(), 9.87);
+    ///                           .build().unwrap(),
+    ///     /*value=*/
+    ///     9.87).expect("This insert succeeds.");
     ///
     /// assert_eq!(qt.get(handle), Some(&9.87));
     ///
@@ -442,16 +385,17 @@ where
     /// A mutable variant of `.get()`.
     ///
     /// ```
-    /// use quadtree_rs::{area::AreaBuilder, Quadtree};
+    /// use quadtree_rs::{area::AreaBuilder,
+    ///                   point::Point,
+    ///                   Quadtree};
     ///
     /// let mut qt = Quadtree::<u32, f32>::new(4);
     ///
     /// let handle: u64 = qt.insert(
-    ///     AreaBuilder::default().anchor((0, 1).into())
+    ///     AreaBuilder::default().anchor(Point {x: 0, y: 1})
     ///                           .dimensions((2, 3))
-    ///                           .build()
-    ///                           .unwrap(),
-    ///     9.87);
+    ///                           .build().unwrap(),
+    ///     9.87).unwrap();
     ///
     /// if let Some(val) = qt.get_mut(handle) {
     ///   *val += 1.0;
@@ -474,70 +418,62 @@ where
     /// The default behavior of `.query()` is to return any
     /// intersecting regions or points, but
     /// the callsite could use [`.query_strict()`] instead.
-    ///
-    /// The query region described may have an anchor anywhere
-    /// on the plane, but it must have positive, nonzero
-    /// values for its width and height.
-    ///
     /// ```
-    /// use quadtree_rs::{area::AreaBuilder, Quadtree};
+    /// use quadtree_rs::{area::AreaBuilder,
+    ///                   point::Point,
+    ///                   Quadtree};
     ///
     /// //   0123456
     /// // 0 ░░░░░░░
-    /// // 1 ░░▒▒▒░░
+    /// // 1 ░░▒▒▒░░    (2,1)->3x2
     /// // 2 ░░▒▒▒░░
     /// // 3 ░░░░░░░
-    /// // 4 ░▒▒▒░░░
+    /// // 4 ░▒▒▒░░░    (1,4)->3x1
     /// // 5 ░░░░░░░
     /// let mut qt = Quadtree::<u32, i16>::new(4);
-    /// qt.insert(AreaBuilder::default().anchor((2, 1).into())
-    ///                                 .dimensions((3, 2))
-    ///                                 .build()
-    ///                                 .unwrap(),
-    ///           21);
-    /// qt.insert(AreaBuilder::default().anchor((1, 4).into())
-    ///                                 .dimensions((3, 1))
-    ///                                 .build()
-    ///                                 .unwrap(),
-    ///           57);
+    /// assert!(
+    ///   qt.insert(AreaBuilder::default().anchor(Point {x: 2, y: 1})
+    ///                                   .dimensions((3, 2))
+    ///                                   .build().unwrap(),
+    ///             21)
+    ///   .is_ok());
+    /// assert!(
+    ///   qt.insert(AreaBuilder::default().anchor(Point {x: 1, y: 4})
+    ///                                   .dimensions((3, 1))
+    ///                                   .build().unwrap(),
+    ///             57)
+    ///   .is_ok());
     ///
     /// //   0123456
     /// // 0 ░░░░░░░
-    /// // 1 ░░▓▒▒░░  <-- query
-    /// // 2 ░░▒▒▒░░
+    /// // 1 ░░▓▒▒░░  <-- Query over the region
+    /// // 2 ░░▒▒▒░░      (2,1)->1x1
     /// // 3 ░░░░░░░
     /// // 4 ░▒▒▒░░░
     /// // 5 ░░░░░░░
-    /// // Query over the region anchored at (2, 1) with area 1x1.
     /// let mut query_a = qt.query(
-    ///     AreaBuilder::default().anchor((2, 1).into())
-    ///                           .dimensions((1, 1))
-    ///                           .build()
-    ///                           .unwrap());
+    ///     AreaBuilder::default().anchor(Point {x: 2, y: 1})
+    ///                           .build().unwrap());
     ///
     /// // We can use the Entry API to destructure the result.
     /// let entry = query_a.next().unwrap();
-    /// assert_eq!(entry.area().anchor(), (2, 1).into());
-    /// assert_eq!(entry.area().width(), 3);
     /// assert_eq!(entry.area().height(), 2);
-    ///
     /// assert_eq!(entry.value_ref(), &21);
     ///
-    /// assert_eq!(query_a.next(), None);
+    /// // But that was the only result.
+    /// assert!(query_a.next().is_none());
     ///
     /// //   0123456
     /// // 0 ░░░░░░░
-    /// // 1 ░▒▓▓▓▒░  <-- query
-    /// // 2 ░▒▓▓▓▒░  <--
-    /// // 3 ░▒▒▒▒▒░  <--
-    /// // 4 ░▓▓▓▒▒░  <--
+    /// // 1 ░▒▓▓▓▒░  <-- query over the region
+    /// // 2 ░▒▓▓▓▒░      (0,0)->6x6.
+    /// // 3 ░▒▒▒▒▒░
+    /// // 4 ░▓▓▓▒▒░
     /// // 5 ░░░░░░░
-    /// // Query over the region anchored at (0, 0) with area 6x6.
     /// let query_b = qt.query(
-    ///     AreaBuilder::default().anchor((1, 1).into())
+    ///     AreaBuilder::default().anchor(Point {x: 1, y: 1})
     ///                           .dimensions((4, 4))
-    ///                           .build()
-    ///                           .unwrap());
+    ///                           .build().unwrap());
     ///
     /// // It's unclear what order the regions should
     /// // return in, but there will be two of them.
@@ -565,23 +501,23 @@ where
     /// described region.
     ///
     /// ```
-    /// use quadtree_rs::{area::AreaBuilder, Quadtree, entry::Entry};
+    /// use quadtree_rs::{area::AreaBuilder,
+    ///                   point::Point,
+    ///                   Quadtree};
     ///
     /// let mut qt = Quadtree::<u8, f64>::new(3);
     ///
-    /// qt.insert(AreaBuilder::default().anchor((0, 0).into())
-    ///                                 .dimensions((1, 1))
-    ///                                 .build()
-    ///                                 .unwrap(),
-    ///           1.23);
+    /// // Insert 1.23 at (0,0)->1x1.
+    /// let handle = qt.insert(
+    ///     AreaBuilder::default().anchor(Point {x: 0, y: 0})
+    ///                           .build().unwrap(),
+    ///     1.23).unwrap();
+    ///
+    /// // Run a modification lambda over all points,
     /// qt.modify_all(|i| *i += 2.0);
     ///
-    /// let e: &Entry<u8, f64> = qt.iter().next().unwrap();
-    /// assert_eq!(e.area().anchor(), (0, 0).into());
-    /// assert_eq!(e.area().width(), 1);
-    /// assert_eq!(e.area().height(), 1);
-    ///
-    /// assert_eq!(e.value_ref(), &3.23);
+    /// // ...and verify that the value was applied.
+    /// assert_eq!(qt.get(handle), Some(&3.23));
     /// ```
     pub fn modify<F>(&mut self, area: Area<U>, f: F)
     where
@@ -641,43 +577,38 @@ where
     /// the callsite could use [`.delete_strict()`] instead.
     ///
     /// ```
-    /// use quadtree_rs::{area::AreaBuilder, IntoIter, Quadtree, entry::Entry};
+    /// use quadtree_rs::{area::AreaBuilder, point::Point, Quadtree};
     ///
     /// let mut qt = Quadtree::<u32, f64>::new(4);
     ///
-    /// qt.insert(AreaBuilder::default().anchor((0, 0).into())
-    ///                                 .dimensions((2, 2))
-    ///                                 .build()
-    ///                                 .unwrap(),
-    ///           1.23);
-    /// qt.insert(AreaBuilder::default().anchor((1, 1).into())
-    ///                                 .dimensions((3, 2))
-    ///                                 .build()
-    ///                                 .unwrap(),
-    ///           4.56);
+    /// assert!(
+    ///   qt.insert(AreaBuilder::default().anchor(Point {x: 0, y: 0})
+    ///                                   .dimensions((2, 2))
+    ///                                   .build().unwrap(),
+    ///             1.23)
+    ///   .is_ok());
+    /// assert!(
+    ///   qt.insert(AreaBuilder::default().anchor(Point {x: 1, y: 1})
+    ///                                   .dimensions((3, 2))
+    ///                                   .build().unwrap(),
+    ///             4.56)
+    ///   .is_ok());
+    ///
     /// //   0123
     /// // 0 ░░
     /// // 1 ░▓╳░  <-- ╳ is the deletion region
     /// // 2  ░░░
     ///
-    /// let mut returned_entries: IntoIter<u32, f64> = qt.delete(
-    ///     AreaBuilder::default().anchor((2, 1).into())
-    ///                           .dimensions((1, 1))
-    ///                           .build()
-    ///                           .unwrap());
+    /// let mut returned_entries = qt.delete(
+    ///     AreaBuilder::default().anchor(Point {x: 2, y: 1})
+    ///                           .build().unwrap());
+    ///
     /// // We've removed one object from the Quadtree.
+    /// assert_eq!(returned_entries.next().unwrap().value_ref(),
+    ///            &4.56);
+    ///
+    /// // And left one behind.
     /// assert_eq!(qt.len(), 1);
-    ///
-    /// // qt.delete() returns a struct of type IntoIter<u32, f64>.
-    /// let hit: Entry<u32, f64> = returned_entries.next().unwrap();
-    ///
-    /// // IntoIter is an iterator over type Entry<u32, f64>, which
-    /// // makes accessible the returned region and value.
-    /// assert_eq!(hit.value_ref(), &4.56);
-    /// assert_eq!(hit.area().anchor(), (1, 1).into());
-    /// assert_eq!(hit.area().width(), 3);
-    /// assert_eq!(hit.area().height(), 2);
-    ///
     /// ```
     ///
     /// [`IntoIter<U, V>`]: struct.IntoIter.html
@@ -1049,10 +980,12 @@ where
         T: IntoIterator<Item = (point::Type<U>, V)>,
     {
         for (pt, val) in iter {
+            // Ignore errors.
             self.insert(
                 AreaBuilder::default().anchor(pt.into()).build().unwrap(),
                 val,
-            );
+            )
+            .ok();
         }
     }
 }
