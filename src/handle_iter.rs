@@ -71,18 +71,18 @@ where
         // far down we'd rather stop and return the HandleIter as-is.
         if let Some(qt) = self.qt_stack.last() {
             // If the region doesn't contain our @req, we're already too far down. Return here.
-            if !qt.region.contains(req) {
+            if !qt.region().contains(req) {
                 return;
             }
-            assert!(qt.region.contains(req));
+            assert!(qt.region().contains(req));
 
-            if let Some(sqs) = qt.subquadrants.as_ref() {
+            if let Some(sqs) = qt.subquadrants().as_ref() {
                 for sq in sqs.iter() {
                     // If we find a subquadrant which totally contains the @req, we want to make
                     // that our new sole qt.
-                    if sq.region.contains(req) {
+                    if sq.region().contains(req) {
                         if traversal_method == Traversal::Overlapping {
-                            self.handle_stack.extend(&qt.kept_handles);
+                            self.handle_stack.extend(qt.handles());
                         }
 
                         // TODO(ambuc): Could this be done with Vec::swap() or std::mem::replace()?
@@ -120,10 +120,10 @@ where
         // Then check the qt_stack.
         if let Some(qt) = self.qt_stack.pop() {
             // Push my regions onto the region stack
-            self.handle_stack.extend(&qt.kept_handles);
+            self.handle_stack.extend(qt.handles());
 
             // Push my subquadrants onto the qt_stack too.
-            if let Some(sqs) = qt.subquadrants.as_ref() {
+            if let Some(sqs) = qt.subquadrants().as_ref() {
                 self.qt_stack.extend(sqs.iter().map(|x| x.deref()));
             }
             return self.next();

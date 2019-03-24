@@ -198,7 +198,6 @@ pub struct Quadtree<U, V>
 where
     U: PrimInt + std::default::Default,
 {
-    depth: usize,
     inner: QTInner<U>,
     store: StoreType<U, V>,
 }
@@ -249,7 +248,6 @@ where
     /// ```
     pub fn new_with_anchor(anchor: point::Point<U>, depth: usize) -> Self {
         Self {
-            depth,
             inner: QTInner::new(anchor, depth),
             store: HashMap::new(),
         }
@@ -257,22 +255,22 @@ where
 
     /// The top-left corner of the region covered by the quadtree.
     pub fn anchor(&self) -> point::Point<U> {
-        self.inner.region.anchor()
+        self.inner.region().anchor()
     }
 
     /// The width of the region covered by the quadtree.
     pub fn width(&self) -> usize {
-        self.inner.region.width().to_usize().unwrap()
+        self.inner.region().width().to_usize().unwrap()
     }
 
     /// The height of the region covered by the quadtree.
     pub fn height(&self) -> usize {
-        self.inner.region.height().to_usize().unwrap()
+        self.inner.region().height().to_usize().unwrap()
     }
 
     /// The depth of the quadtree.
     pub fn depth(&self) -> usize {
-        self.inner.depth
+        self.inner.depth()
     }
 
     /// The number of elements in the quadtree.
@@ -315,7 +313,7 @@ where
     ///                           .build().unwrap()));
     /// ```
     pub fn contains(&self, area: Area<U>) -> bool {
-        self.inner.region.contains(area)
+        self.inner.region().contains(area)
     }
 
     /// Associates the passed value with the passed region.

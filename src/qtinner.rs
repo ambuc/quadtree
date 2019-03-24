@@ -28,18 +28,18 @@ where
     U: PrimInt + std::default::Default,
 {
     // The depth of the current cell in its tree. Zero means it's at the very bottom.
-    pub(crate) depth: usize,
+    depth: usize,
 
     // The region  of the current cell.
-    pub(crate) region: Area<U>,
+    region: Area<U>,
 
     // The regions held at this level in the tree. (NB: That doesn't mean each value in `values`
     // is at self.region).
-    pub(crate) kept_handles: Vec<u64>,
+    kept_handles: Vec<u64>,
 
     // The subquadrants under this cell. [ne, nw, se, sw]. If there are no subquadrants, this
     // entire list could be None.
-    pub(crate) subquadrants: Option<[Box<QTInner<U>>; 4]>,
+    subquadrants: Option<[Box<QTInner<U>>; 4]>,
 
     // The last-inserted handle. This is a monotonically increasing counter.
     handle_counter: u64,
@@ -68,7 +68,9 @@ impl<U> QTInner<U>
 where
     U: PrimInt + std::default::Default,
 {
-    pub(crate) fn new(anchor: Point<U>, depth: usize) -> Self {
+    // pub
+
+    pub fn new(anchor: Point<U>, depth: usize) -> Self {
         #[allow(clippy::cast_possible_truncation)]
         let width: U = Self::two().pow(depth as u32);
         let height: U = width;
@@ -82,24 +84,31 @@ where
         )
     }
 
-    fn new_with_area(region: Area<U>, depth: usize) -> Self {
-        Self {
-            depth,
-            region,
-            kept_handles: Vec::new(),
-            subquadrants: None,
-            handle_counter: 0_u64,
-        }
+    pub fn depth(&self) -> usize {
+        self.depth
     }
 
-    pub(crate) fn reset(&mut self) {
+    pub fn region(&self) -> Area<U> {
+        self.region
+    }
+
+    pub fn handles(&self) -> &Vec<u64> {
+        &self.kept_handles
+    }
+
+    pub fn subquadrants(&self) -> &Option<[Box<QTInner<U>>; 4]> {
+        &self.subquadrants
+    }
+
+    // Resets this quadtree.
+    pub fn reset(&mut self) {
         self.kept_handles.clear();
         self.subquadrants = None;
     }
 
     // Attempts to insert the value at the requested region. Returns false if the region was too
     // large.
-    pub(crate) fn insert_val_at_region<V>(
+    pub fn insert_val_at_region<V>(
         &mut self,
         req: Area<U>,
         val: V,
@@ -110,6 +119,32 @@ where
         store.insert(handle, Entry::new((req, val), handle));
         self.insert_handle_at_region(req, handle, store);
         handle
+    }
+
+    // Delete all instances of @handle from this level's @kept_handles.
+    pub fn delete_by_handle(&mut self, handle: u64, req: Area<U>) {
+        self.kept_handles.retain(|&x| x != handle);
+        // And potentially recurse into the subquadrants...
+        if let Some(sqs) = self.subquadrants.as_mut() {
+            for sq in sqs.iter_mut() {
+                // ...but not all of them.
+                if sq.region.intersects(req) {
+                    sq.delete_by_handle(handle, req);
+                }
+            }
+        }
+    }
+
+    // fn
+
+    fn new_with_area(region: Area<U>, depth: usize) -> Self {
+        Self {
+            depth,
+            region,
+            kept_handles: Vec::new(),
+            subquadrants: None,
+            handle_counter: 0_u64,
+        }
     }
 
     // Attempts to insert the value at the requested region. Returns false if the region was too
@@ -181,20 +216,6 @@ where
                 self.depth - 1,
             )),
         ]);
-    }
-
-    pub(crate) fn delete_by_handle(&mut self, handle: u64, req: Area<U>) {
-        // Delete all instances of @handle from this level's @kept_handles.
-        self.kept_handles.retain(|&x| x != handle);
-        // And potentially recurse into the subquadrants...
-        if let Some(sqs) = self.subquadrants.as_mut() {
-            for sq in sqs.iter_mut() {
-                // ...but not all of them.
-                if sq.region.intersects(req) {
-                    sq.delete_by_handle(handle, req);
-                }
-            }
-        }
     }
 
     // Strongly-typed alias for U::one() + U::One()
