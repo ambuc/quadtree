@@ -14,7 +14,11 @@
 
 //! A type representing an area in space.
 
-use crate::point;
+use {
+    crate::point,
+    num::PrimInt,
+    std::{cmp::PartialOrd, default::Default, fmt::Debug},
+};
 
 //  .d8b.  d8888b. d88888b  .d8b.
 //  d8' `8b 88  `8D 88'     d8' `8b
@@ -35,7 +39,7 @@ pub(crate) type Type<U> = (point::Type<U>, (U, U));
 #[builder(build_fn(validate = "Self::validate"))]
 pub struct Area<U>
 where
-    U: num::PrimInt + std::default::Default + std::cmp::PartialOrd,
+    U: PrimInt + Default + PartialOrd,
 {
     anchor: point::Point<U>,
     #[builder(default = "(U::one(), U::one())")]
@@ -44,7 +48,7 @@ where
 
 impl<U> AreaBuilder<U>
 where
-    U: num::PrimInt + std::default::Default + std::cmp::PartialOrd,
+    U: PrimInt + Default + PartialOrd,
 {
     fn validate(&self) -> Result<(), String> {
         if let Some((w, h)) = self.dimensions {
@@ -59,9 +63,9 @@ where
     }
 }
 
-impl<U> std::fmt::Debug for Area<U>
+impl<U> Debug for Area<U>
 where
-    U: num::PrimInt + std::default::Default + std::fmt::Debug,
+    U: PrimInt + Default + Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
@@ -76,7 +80,7 @@ where
 
 impl<U> Into<Type<U>> for Area<U>
 where
-    U: num::PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     fn into(self) -> Type<U> {
         (self.anchor.into(), self.dimensions())
@@ -85,7 +89,7 @@ where
 
 impl<U> Area<U>
 where
-    U: num::PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     // pub
 

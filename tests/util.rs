@@ -1,7 +1,7 @@
 use {
     num::{cast::FromPrimitive, PrimInt},
     quadtree_rs::area::AreaBuilder,
-    std::hash::Hash,
+    std::{collections::HashSet, default::Default, fmt::Debug, hash::Hash, iter::FromIterator},
 };
 
 // Inspired by google/googletest's UnorderedElementsAre().
@@ -16,8 +16,6 @@ where
     Y: IntoIterator<Item = T>,
     Y::Item: PartialEq + Eq + Hash,
 {
-    use std::{collections::HashSet, iter::FromIterator};
-
     let hs1: HashSet<T> = HashSet::from_iter(x);
     let hs2: HashSet<T> = HashSet::from_iter(y);
     hs1 == hs2
@@ -26,8 +24,8 @@ where
 #[allow(dead_code)]
 pub fn print_quadtree<U, V>(qt: &quadtree_rs::Quadtree<U, V>)
 where
-    U: PrimInt + std::default::Default + FromPrimitive + std::fmt::Debug,
-    V: std::fmt::Debug,
+    U: PrimInt + Default + FromPrimitive + Debug,
+    V: Debug,
 {
     print!("┌");
     for _i in 0..qt.width() {

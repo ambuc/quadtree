@@ -21,6 +21,14 @@
 // 88      `8b  d8'   .88.   88  V888    88
 // 88       `Y88P'  Y888888P VP   V8P    YP
 
+use {
+    num::PrimInt,
+    std::{
+        fmt::Debug,
+        ops::{Add, Sub},
+    },
+};
+
 // Transparent alias. In docs and user-facing APIs, this resolves to (U, U).
 pub(crate) type Type<U> = (U, U);
 
@@ -31,9 +39,9 @@ pub struct Point<U> {
     pub y: U,
 }
 
-impl<U> std::fmt::Debug for Point<U>
+impl<U> Debug for Point<U>
 where
-    U: num::PrimInt + std::fmt::Debug,
+    U: PrimInt + Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{:?}x{:?}", self.x, self.y)
@@ -42,7 +50,7 @@ where
 
 impl<U> From<Type<U>> for Point<U>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     fn from((x, y): Type<U>) -> Self {
         Self { x, y }
@@ -51,7 +59,7 @@ where
 
 impl<U> From<&Type<U>> for Point<U>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     fn from((x, y): &Type<U>) -> Self {
         Self { x: *x, y: *y }
@@ -60,16 +68,16 @@ where
 
 impl<U> Into<Type<U>> for Point<U>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     fn into(self) -> Type<U> {
         (self.x, self.y)
     }
 }
 
-impl<U> std::ops::Add for Point<U>
+impl<U> Add for Point<U>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     type Output = Self;
     fn add(self, other: Self) -> Self {
@@ -80,9 +88,9 @@ where
     }
 }
 
-impl<U> std::ops::Sub for Point<U>
+impl<U> Sub for Point<U>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     type Output = Self;
     fn sub(self, other: Self) -> Self {
@@ -95,7 +103,7 @@ where
 
 impl<U> Point<U>
 where
-    U: num::PrimInt,
+    U: PrimInt,
 {
     // pub
 

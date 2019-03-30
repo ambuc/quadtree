@@ -161,6 +161,7 @@ use {
         area::{Area, AreaBuilder},
         entry::Entry,
         handle_iter::HandleIter,
+        point::Point,
         qtinner::QTInner,
         traversal::Traversal,
         types::StoreType,
@@ -168,6 +169,8 @@ use {
     num::PrimInt,
     std::{
         collections::{HashMap, HashSet},
+        default::Default,
+        hash::Hash,
         iter::FusedIterator,
     },
 };
@@ -196,7 +199,7 @@ use {
 #[derive(Debug, PartialEq, Eq)]
 pub struct Quadtree<U, V>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     inner: QTInner<U>,
     store: StoreType<U, V>,
@@ -204,7 +207,7 @@ where
 
 impl<U, V> Quadtree<U, V>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     // pub
 
@@ -323,7 +326,7 @@ where
     /// instance of the object is returned.
     ///
     /// If the region cannot be wholly contained,
-    /// `::insert()` will return an `Err`.
+    /// `::insert()` will return an error.
     /// ```
     /// use quadtree_rs::{area::AreaBuilder,
     ///                   point::Point,
@@ -332,6 +335,7 @@ where
     /// let mut qt = Quadtree::<u32, i8>::new(2);
     ///
     /// let some_area = AreaBuilder::default().anchor(Point {x: 0, y: 0})
+    ///                                       .dimensions((2,3))
     ///                                       .build().unwrap();
     /// let some_value = 5_i8;
     ///
@@ -343,13 +347,31 @@ where
     /// // the same.
     /// assert_ne!(handle_a_1, handle_a_2);
     /// ```
-    pub fn insert(&mut self, region: Area<U>, val: V) -> Result<u64, &'static str> {
+    pub fn insert(&mut self, region: Area<U>, val: V) -> Result<u64, String> {
         if self.contains(region) {
             return Ok(self
                 .inner
                 .insert_val_at_region(region, val, &mut self.store));
         }
-        Err("The requested region does not fit in this quadtree.")
+        Err("The requested region does not fit in this quadtree.".to_string())
+    }
+
+    /// Associates a value with a point. (An [`Area`] is
+    /// really just a [`Point`] with dimensions `(1, 1)`,
+    /// so the point still has to fit within the region.)
+    ///
+    /// ```
+    /// use quadtree_rs::{point::Point, Quadtree};
+    ///
+    /// let mut qt = Quadtree::<u32, i8>::new(2);
+    ///
+    /// assert!(qt.insert_pt(Point { x: 1, y: 2 }, 5_i8).is_ok());
+    /// ```
+    ///
+    /// [`Area`]: area/struct.Area.html
+    /// [`Point`]: point/struct.Point.html
+    pub fn insert_pt(&mut self, point: Point<U>, val: V) -> Result<u64, String> {
+        self.insert(AreaBuilder::default().anchor(point).build()?, val)
     }
 
     /// Provides access to a single value in the Quadtree,
@@ -651,7 +673,7 @@ where
     pub fn retain<F>(&mut self, mut f: F) -> IntoIter<U, V>
     where
         F: FnMut(&mut V) -> bool,
-        U: std::hash::Hash,
+        U: Hash,
     {
         // TODO(ambuc): I think this is technically correct but it seems to be interweaving three
         // routines. Is there a way to simplify this?
@@ -727,7 +749,7 @@ where
 #[derive(Clone, Debug)]
 pub struct Iter<'a, U, V>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     store: &'a StoreType<U, V>,
     handle_iter: HandleIter<'a, U>,
@@ -735,7 +757,7 @@ where
 
 impl<'a, U, V> Iter<'a, U, V>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     pub(crate) fn new(qt: &'a QTInner<U>, store: &'a StoreType<U, V>) -> Iter<'a, U, V> {
         Iter {
@@ -747,7 +769,7 @@ where
 
 impl<'a, U, V> Iterator for Iter<'a, U, V>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     type Item = &'a Entry<U, V>;
 
@@ -769,7 +791,7 @@ where
     }
 }
 
-impl<U, V> FusedIterator for Iter<'_, U, V> where U: PrimInt + std::default::Default {}
+impl<U, V> FusedIterator for Iter<'_, U, V> where U: PrimInt + Default {}
 
 //  .d88b.  db    db d88888b d8888b. db    db
 // .8P  Y8. 88    88 88'     88  `8D `8b  d8'
@@ -787,7 +809,7 @@ impl<U, V> FusedIterator for Iter<'_, U, V> where U: PrimInt + std::default::Def
 #[derive(Clone, Debug)]
 pub struct Query<'a, U, V>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     query_region: Area<U>,
     handle_iter: HandleIter<'a, U>,
@@ -797,7 +819,7 @@ where
 
 impl<'a, U, V> Query<'a, U, V>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     pub(crate) fn new(
         query_region: Area<U>,
@@ -806,7 +828,7 @@ where
         traversal_method: Traversal,
     ) -> Query<'a, U, V>
     where
-        U: PrimInt + std::default::Default,
+        U: PrimInt + Default,
     {
         // Construct the HandleIter first...
         let mut handle_iter = HandleIter::new(qt);
@@ -827,7 +849,7 @@ where
 
 impl<'a, U, V> Iterator for Query<'a, U, V>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     type Item = &'a Entry<U, V>;
 
@@ -850,7 +872,7 @@ where
     }
 }
 
-impl<U, V> FusedIterator for Query<'_, U, V> where U: PrimInt + std::default::Default {}
+impl<U, V> FusedIterator for Query<'_, U, V> where U: PrimInt + Default {}
 
 // d8888b. d88888b  d888b  d888888b  .d88b.  d8b   db .d8888.
 // 88  `8D 88'     88' Y8b   `88'   .8P  Y8. 888o  88 88'  YP
@@ -868,14 +890,14 @@ impl<U, V> FusedIterator for Query<'_, U, V> where U: PrimInt + std::default::De
 #[derive(Clone, Debug)]
 pub struct Regions<'a, U, V>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     pub(crate) inner: Iter<'a, U, V>,
 }
 
 impl<'a, U, V> Iterator for Regions<'a, U, V>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     type Item = Area<U>;
 
@@ -890,7 +912,7 @@ where
     }
 }
 
-impl<U, V> FusedIterator for Regions<'_, U, V> where U: PrimInt + std::default::Default {}
+impl<U, V> FusedIterator for Regions<'_, U, V> where U: PrimInt + Default {}
 
 // db    db  .d8b.  db      db    db d88888b .d8888.
 // 88    88 d8' `8b 88      88    88 88'     88'  YP
@@ -908,14 +930,14 @@ impl<U, V> FusedIterator for Regions<'_, U, V> where U: PrimInt + std::default::
 #[derive(Clone, Debug)]
 pub struct Values<'a, U, V>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     pub(crate) inner: Iter<'a, U, V>,
 }
 
 impl<'a, U, V> Iterator for Values<'a, U, V>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     type Item = (&'a V);
 
@@ -930,7 +952,7 @@ where
     }
 }
 
-impl<U, V> FusedIterator for Values<'_, U, V> where U: PrimInt + std::default::Default {}
+impl<U, V> FusedIterator for Values<'_, U, V> where U: PrimInt + Default {}
 
 // d888888b d8b   db d888888b  .d88b.  d888888b d888888b d88888b d8888b.
 //   `88'   888o  88 `~~88~~' .8P  Y8.   `88'   `~~88~~' 88'     88  `8D
@@ -949,14 +971,14 @@ impl<U, V> FusedIterator for Values<'_, U, V> where U: PrimInt + std::default::D
 #[derive(Debug)]
 pub struct IntoIter<U, V>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     entries: Vec<Entry<U, V>>,
 }
 
 impl<U, V> Iterator for IntoIter<U, V>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     type Item = Entry<U, V>;
 
@@ -971,14 +993,14 @@ where
     }
 }
 
-impl<U, V> FusedIterator for IntoIter<U, V> where U: PrimInt + std::default::Default {}
+impl<U, V> FusedIterator for IntoIter<U, V> where U: PrimInt + Default {}
 
 /// `Extend<((U, U), V)>` will silently drop values whose coordinates do not fit in the region
 /// represented by the Quadtree. It is the responsibility of the callsite to ensure these points
 /// fit.
 impl<U, V> Extend<(point::Type<U>, V)> for Quadtree<U, V>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     fn extend<T>(&mut self, iter: T)
     where
@@ -1001,7 +1023,7 @@ where
 // Immutable iterator for the Quadtree, returning by-reference.
 impl<'a, U, V> IntoIterator for &'a Quadtree<U, V>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     type Item = &'a Entry<U, V>;
     type IntoIter = Iter<'a, U, V>;
@@ -1013,7 +1035,7 @@ where
 
 impl<U, V> IntoIterator for Quadtree<U, V>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     type Item = Entry<U, V>;
     type IntoIter = IntoIter<U, V>;

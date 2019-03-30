@@ -15,7 +15,7 @@
 use {
     crate::{area::Area, qtinner::QTInner, traversal::Traversal},
     num::PrimInt,
-    std::{collections::HashSet, iter::FusedIterator, ops::Deref},
+    std::{collections::HashSet, default::Default, iter::FusedIterator, ops::Deref},
 };
 
 // db   db  .d8b.  d8b   db d8888b. db      d88888b d888888b d888888b d88888b d8888b.
@@ -28,7 +28,7 @@ use {
 #[derive(Clone, Debug)]
 pub(crate) struct HandleIter<'a, U>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     handle_stack: Vec<u64>,
     qt_stack: Vec<&'a QTInner<U>>,
@@ -37,7 +37,7 @@ where
 
 impl<'a, U> HandleIter<'a, U>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     pub(crate) fn new(qt: &'a QTInner<U>) -> HandleIter<'a, U> {
         HandleIter {
@@ -76,18 +76,18 @@ where
             }
             assert!(qt.region().contains(req));
 
-            if let Some(sqs) = qt.subquadrants().as_ref() {
-                for sq in sqs.iter() {
+            if let Some(subquadrants) = qt.subquadrants().as_ref() {
+                for subquadrant in subquadrants.iter() {
                     // If we find a subquadrant which totally contains the @req, we want to make
                     // that our new sole qt.
-                    if sq.region().contains(req) {
+                    if subquadrant.region().contains(req) {
                         if traversal_method == Traversal::Overlapping {
                             self.handle_stack.extend(qt.handles());
                         }
 
                         // TODO(ambuc): Could this be done with Vec::swap() or std::mem::replace()?
                         assert!(self.qt_stack.len() == 1);
-                        self.qt_stack = vec![sq];
+                        self.qt_stack = vec![subquadrant];
 
                         // Recurse on this step. It will naturally return, but we want to propogate
                         // that return rather than continue to search the other subquadrants.
@@ -103,7 +103,7 @@ where
 
 impl<U> Iterator for HandleIter<'_, U>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     type Item = u64;
 
@@ -123,8 +123,8 @@ where
             self.handle_stack.extend(qt.handles());
 
             // Push my subquadrants onto the qt_stack too.
-            if let Some(sqs) = qt.subquadrants().as_ref() {
-                self.qt_stack.extend(sqs.iter().map(|x| x.deref()));
+            if let Some(subquadrants) = qt.subquadrants().as_ref() {
+                self.qt_stack.extend(subquadrants.iter().map(|x| x.deref()));
             }
             return self.next();
         }
@@ -139,4 +139,4 @@ where
     }
 }
 
-impl<U> FusedIterator for HandleIter<'_, U> where U: PrimInt + std::default::Default {}
+impl<U> FusedIterator for HandleIter<'_, U> where U: PrimInt + Default {}

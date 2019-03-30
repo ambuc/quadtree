@@ -20,12 +20,13 @@ use {
         types::StoreType,
     },
     num::PrimInt,
+    std::{default::Default, fmt::Debug},
 };
 
 #[derive(Clone, PartialEq, Eq)]
 pub(crate) struct QTInner<U>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     // The depth of the current cell in its tree. Zero means it's at the very bottom.
     depth: usize,
@@ -45,9 +46,9 @@ where
     handle_counter: u64,
 }
 
-impl<U> std::fmt::Debug for QTInner<U>
+impl<U> Debug for QTInner<U>
 where
-    U: PrimInt + std::default::Default + std::fmt::Debug,
+    U: PrimInt + Default + Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         if self.subquadrants.is_some() {
@@ -66,7 +67,7 @@ where
 
 impl<U> QTInner<U>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     // pub
 
@@ -96,7 +97,7 @@ where
         &self.kept_handles
     }
 
-    pub fn subquadrants(&self) -> &Option<[Box<QTInner<U>>; 4]> {
+    pub fn subquadrants(&self) -> &Option<[Box<Self>; 4]> {
         &self.subquadrants
     }
 

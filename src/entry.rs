@@ -17,6 +17,7 @@
 use {
     crate::{area::Area, point::Point},
     num::PrimInt,
+    std::default::Default,
 };
 
 /// A region/value association being returned (by value) from the [`Quadtree`].
@@ -62,7 +63,7 @@ use {
 #[derive(Debug, PartialEq, Eq)]
 pub struct Entry<U, V>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     region: Area<U>,
     value: V,
@@ -70,7 +71,7 @@ where
 }
 impl<U, V> Entry<U, V>
 where
-    U: PrimInt + std::default::Default,
+    U: PrimInt + Default,
 {
     // pub
 
