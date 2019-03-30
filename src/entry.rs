@@ -23,29 +23,23 @@ use {
 /// A region/value association being returned (by value) from the [`Quadtree`].
 ///
 /// ```
-/// use quadtree_rs::{area::AreaBuilder,
-///                   entry::Entry,
-///                   point::Point,
-///                   Quadtree};
+/// use quadtree_rs::{area::AreaBuilder, entry::Entry, point::Point, Quadtree};
 ///
 /// let mut qt = Quadtree::<u32, f64>::new(4);
-/// assert!(
-///   qt.insert(
-///     /*region=*/AreaBuilder::default().anchor(Point {x: 1, y: 1})
+/// let region_a = AreaBuilder::default().anchor(Point {x: 1, y: 1})
 ///                                      .dimensions((3, 2))
 ///                                      .build()
-///                                      .unwrap(),
-///     /*val=*/4.56)
-///   .is_some());
+///                                      .unwrap();
+/// assert!(qt.insert(region_a, 4.56_f64).is_some());
 ///
 /// // Calling Quadtree::delete() on a region in the tree
 /// // clears that region of the tree and returns the
 /// // region/value associations which were deleted.
 ///
-/// let mut returned_entries = qt.delete(
-///     /*region=*/AreaBuilder::default().anchor(Point {x: 2, y: 1})
+/// let region_b = AreaBuilder::default().anchor(Point {x: 2, y: 1})
 ///                                      .build()
-///                                      .unwrap());
+///                                      .unwrap();
+/// let mut returned_entries = qt.delete(region_b);
 ///
 /// // The iterator contains Entry<U, V> structs.
 /// let entry: Entry<u32, f64> = returned_entries.next().unwrap();
