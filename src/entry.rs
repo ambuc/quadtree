@@ -26,19 +26,16 @@ use {
 /// use quadtree_rs::{area::AreaBuilder, entry::Entry, point::Point, Quadtree};
 ///
 /// let mut qt = Quadtree::<u32, f64>::new(4);
-/// let region_a = AreaBuilder::default().anchor(Point {x: 1, y: 1})
-///                                      .dimensions((3, 2))
-///                                      .build()
-///                                      .unwrap();
+/// let region_a = AreaBuilder::default()
+///     .anchor(Point {x: 1, y: 1}).dimensions((3, 2)).build().unwrap();
 /// assert!(qt.insert(region_a, 4.56_f64).is_some());
 ///
 /// // Calling Quadtree::delete() on a region in the tree
 /// // clears that region of the tree and returns the
 /// // region/value associations which were deleted.
 ///
-/// let region_b = AreaBuilder::default().anchor(Point {x: 2, y: 1})
-///                                      .build()
-///                                      .unwrap();
+/// let region_b = AreaBuilder::default()
+///     .anchor(Point {x: 2, y: 1}).build().unwrap();
 /// let mut returned_entries = qt.delete(region_b);
 ///
 /// // The iterator contains Entry<U, V> structs.

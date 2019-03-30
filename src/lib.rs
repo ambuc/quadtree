@@ -611,20 +611,30 @@ where
     }
     // TODO(ambuc): retain_within
 
-    /// Returns an iterator over all `(&((U, U), (U, U)), &V)` region/value associations in the
-    /// Quadtree.
+    /// Returns an iterator ([`Iter<U, V>`]) over all [`&'a Entry<U, V>`]
+    /// region/value associations in the Quadtree.
+    ///
+    /// [`Iter<U, V>`]: struct.Iter.html
+    /// [`&'a Entry<U, V>`]: entry/struct.Entry.html
     pub fn iter(&self) -> Iter<U, V> {
         Iter::new(&self.inner, &self.store)
     }
 
-    /// Returns an iterator over all `&'a ((U, U), (U, U))` regions in the Quadtree.
+    /// Returns an iterator ([`Regions<U, V>`]) over all [`Area<U>`] regions
+    /// in the Quadtree.
+    ///
+    /// [`Regions<U, V>`]: struct.Regions.html
+    /// [`Area<U>`]: area/struct.Area.html
     pub fn regions(&self) -> Regions<U, V> {
         Regions {
             inner: Iter::new(&self.inner, &self.store),
         }
     }
 
-    /// Returns an iterator over all `&'a V` values in the Quadtree.
+    /// Returns an iterator ([`Values<U, V>`]) over all `&'a V` values in the
+    /// Quadtree.
+    ///
+    /// [`Values<U, V>`]: struct.Values.html
     pub fn values(&self) -> Values<U, V> {
         Values {
             inner: Iter::new(&self.inner, &self.store),
