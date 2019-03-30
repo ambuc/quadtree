@@ -28,3 +28,7 @@ This project is licensed under the Apache 2.0 license.
 # Disclaimer
 
 This is not an official Google product. 
+
+# TODO
+ - [ ] Pretty-print quadtree function which plots a density map
+ - [ ] Benchmark tests

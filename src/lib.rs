@@ -53,27 +53,40 @@
 //! ```
 //! use quadtree_rs::{area::AreaBuilder, point::Point, Quadtree};
 //!
-//! let mut qt = Quadtree::<u8, f32>::new(2);
+//! let mut qt = Quadtree::<u8, char>::new(2);
 //!
 //! // In a quadtree, every region is subdivided lazily into four subqudrants.
 //!
 //! // Inserting a point, represented as a region with width and height one,
 //! // means traversing the full height of the tree.
-//! let region_a = AreaBuilder::default()
-//!     .anchor(Point {x: 0, y: 0}).build().unwrap();
-//! assert!(qt.insert(region_a, 1.23456).is_some());
+//! assert!(qt.insert_pt(Point {x: 0, y: 0}, 'a').is_some());
 //!
-//! // (0,0)->4x4 ─── (0,0)->2x2 ─── (0,0)->1x1
-//! //                               [1.23456]
+//! // (0,0)->4x4             +---+---+---+---+
+//! //   (0,0)->2x2           | a |   |       |
+//! //     (0,0)->1x1 ['a']   +---+   +       +
+//! //                        |       |       |
+//! //                        +---+---+---+---+
+//! //                        |       |       |
+//! //                        +       +       +
+//! //                        |       |       |
+//! //                        +---+---+---+---+
+//!
 //!
 //! // Inserting a region means traversing only as far down
 //! // the tree as necessary to fully cover that region.
 //! let region_b = AreaBuilder::default()
 //!     .anchor(Point {x: 0, y: 0}).dimensions((2, 2)).build().unwrap();
-//! assert!(qt.insert(region_b, 2.46810).is_some());
+//! assert!(qt.insert(region_b, 'b').is_some());
 //!
-//! // (0,0)->4x4 ─── (0,0)->2x2 ─── (0,0)->1x1
-//! //                [2.46810]      [1.23456]
+//! // (0,0)->4x4              +---+---+---+---+
+//! //   (0,0)->2x2 ['b']      | a |   |       |
+//! //     (0,0)->1x1 ['a']    +---+   +       +
+//! //                         |     b |       |
+//! //                         +---+---+---+---+
+//! //                         |       |       |
+//! //                         +       +       +
+//! //                         |       |       |
+//! //                         +---+---+---+---+
 //!
 //! // Often that means inserting the value in multiple places.
 //! // (The implementation duplicates not the stored value,
@@ -82,26 +95,19 @@
 //!
 //! let region_c = AreaBuilder::default()
 //!     .anchor(Point {x: 0, y: 0}).dimensions((3, 3)).build().unwrap();
-//! assert!(qt.insert(region_c, 3.6912).is_some());
+//! assert!(qt.insert(region_c, 'c').is_some());
 //!
-//! // (0,0)->4x4 ─┬─ (0,0)->2x2 ─── (0,0)->1x1
-//! //             │  [ 2.46810,      [1.23456]
-//! //             │    3.6912 ]  
-//! //             │
-//! //             ├─ (0,2)->2x2 ─┬─ (0,2)->1x1
-//! //             │              │  [3.6912]
-//! //             │              │
-//! //             │              └─ (1,2)->1x1
-//! //             │                 [3.6912]
-//! //             │
-//! //             ├─ (2,0)->2x2 ─┬─ (2,0)->1x1
-//! //             │              │  [3.6912]
-//! //             │              │
-//! //             │              └─ (2,1)->1x1
-//! //             │                 [3.6912]
-//! //             │
-//! //             └─ (2,2)->2x2 ─── (2,2)->1x1
-//! //                                [3.6912]
+//! // (0,0)->4x4                +---+---+---+---+
+//! //   (0,0)->2x2 ['b', 'c']   | a |   | c |   |
+//! //     (0,0)->1x1 ['a']      +---+   +---+---+
+//! //   (0,2)->2x2              |   b,c | c |   |
+//! //     (0,2)->1x1 ['c']      +---+---+---+---+
+//! //     (1,2)->1x1 ['c']      | c | c | c |   |
+//! //   (2,0)->2x2              +---+---+---+---+
+//! //     (2,0)->1x1 ['c']      |   |   |   |   |
+//! //     (2,1)->1x1 ['c']      +---+---+---+---+
+//! //   (2,2)->2x2
+//! //     (2,2)->1x1 ['c']
 //! ```
 //! Duplicating the storage handle is expensive, but allows for fast lookups and fast insertions at
 //! the cost of slower deletions. This means that `quadtree_rs` is well-suited for maps which hold
