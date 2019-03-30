@@ -27,7 +27,6 @@ use {
 //  88   88 88 `88. 88.     88   88
 //  YP   YP 88   YD Y88888P YP   YP
 
-// Transparent alias. In docs and user-facing APIs, this resolves to ((U, U), (U, U)).
 pub(crate) type Type<U> = (point::Type<U>, (U, U));
 
 /// Lightweight data type to represent a region.
