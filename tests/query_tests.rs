@@ -45,7 +45,7 @@ mod query_tests {
                     .unwrap(),
                 49,
             )
-            .is_ok());
+            .is_some());
 
         // Requesting a region which does contain '49'.
         let mut iter1 = qt.query(
@@ -117,7 +117,7 @@ mod query_tests {
                     .unwrap(),
                 10,
             )
-            .is_ok());
+            .is_some());
         assert!(qt
             .insert(
                 AreaBuilder::default()
@@ -127,7 +127,7 @@ mod query_tests {
                     .unwrap(),
                 55,
             )
-            .is_ok());
+            .is_some());
 
         // Queries which turn up empty:
         let mut empty1 = qt.query(
@@ -350,7 +350,7 @@ mod query_tests {
                     .unwrap(),
                 10,
             )
-            .is_ok());
+            .is_some());
         assert!(qt
             .insert(
                 AreaBuilder::default()
@@ -360,7 +360,7 @@ mod query_tests {
                     .unwrap(),
                 55,
             )
-            .is_ok());
+            .is_some());
 
         // Queries which turn up empty:
         debug_assert_eq!(
@@ -643,7 +643,7 @@ mod query_tests {
                     .unwrap(),
                 1.234,
             )
-            .is_ok());
+            .is_some());
 
         let mut query_obj = qt.query(
             AreaBuilder::default()
@@ -683,7 +683,7 @@ mod query_tests {
                     .unwrap(),
                 49,
             )
-            .is_ok());
+            .is_some());
         qt.modify(
             AreaBuilder::default()
                 .anchor((0, 0).into())
@@ -712,7 +712,7 @@ mod query_tests {
                     .unwrap(),
                 17,
             )
-            .is_ok());
+            .is_some());
 
         // Up it to 18,
         qt.modify(

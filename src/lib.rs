@@ -40,7 +40,7 @@
 //!                           .build().unwrap(),
 //!     /*val=*/
 //!     "foo".to_string())
-//!   .is_ok());
+//!   .is_some());
 //!
 //! //
 //! //   0  1  2  3
@@ -78,7 +78,7 @@
 //!                           .build().unwrap(),
 //!     /*val=*/
 //!     1.23456)
-//!   .is_ok());
+//!   .is_some());
 //!
 //! // (0,0)->4x4 ─── (0,0)->2x2 ─── (0,0)->1x1
 //! //                               [1.23456]
@@ -93,7 +93,7 @@
 //!                                 .build().unwrap(),
 //!     /*val=*/
 //!     2.46810)
-//!   .is_ok());
+//!   .is_some());
 //!
 //! // (0,0)->4x4 ─── (0,0)->2x2 ─── (0,0)->1x1
 //! //                [2.46810]      [1.23456]
@@ -109,7 +109,7 @@
 //!                           .dimensions((3, 3))
 //!                           .build().unwrap(),
 //!     3.6912)
-//!   .is_ok());
+//!   .is_some());
 //!
 //! // (0,0)->4x4 ─┬─ (0,0)->2x2 ─── (0,0)->1x1
 //! //             │  [ 2.46810,      [1.23456]
@@ -347,13 +347,14 @@ where
     /// // the same.
     /// assert_ne!(handle_a_1, handle_a_2);
     /// ```
-    pub fn insert(&mut self, region: Area<U>, val: V) -> Result<u64, String> {
+    pub fn insert(&mut self, region: Area<U>, val: V) -> Option<u64> {
         if self.contains(region) {
-            return Ok(self
-                .inner
-                .insert_val_at_region(region, val, &mut self.store));
+            return Some(
+                self.inner
+                    .insert_val_at_region(region, val, &mut self.store),
+            );
         }
-        Err("The requested region does not fit in this quadtree.".to_string())
+        None
     }
 
     /// Associates a value with a point. (An [`Area`] is
@@ -365,13 +366,16 @@ where
     ///
     /// let mut qt = Quadtree::<u32, i8>::new(2);
     ///
-    /// assert!(qt.insert_pt(Point { x: 1, y: 2 }, 5_i8).is_ok());
+    /// assert!(qt.insert_pt(Point { x: 1, y: 2 }, 5_i8).is_some());
     /// ```
     ///
     /// [`Area`]: area/struct.Area.html
     /// [`Point`]: point/struct.Point.html
-    pub fn insert_pt(&mut self, point: Point<U>, val: V) -> Result<u64, String> {
-        self.insert(AreaBuilder::default().anchor(point).build()?, val)
+    pub fn insert_pt(&mut self, point: Point<U>, val: V) -> Option<u64> {
+        if let Ok(area) = AreaBuilder::default().anchor(point).build() {
+            return self.insert(area, val);
+        }
+        None
     }
 
     /// Provides access to a single value in the Quadtree,
@@ -456,13 +460,13 @@ where
     ///                                   .dimensions((3, 2))
     ///                                   .build().unwrap(),
     ///             21)
-    ///   .is_ok());
+    ///   .is_some());
     /// assert!(
     ///   qt.insert(AreaBuilder::default().anchor(Point {x: 1, y: 4})
     ///                                   .dimensions((3, 1))
     ///                                   .build().unwrap(),
     ///             57)
-    ///   .is_ok());
+    ///   .is_some());
     ///
     /// //   0123456
     /// // 0 ░░░░░░░
@@ -594,13 +598,13 @@ where
     ///                                   .dimensions((2, 2))
     ///                                   .build().unwrap(),
     ///             1.23)
-    ///   .is_ok());
+    ///   .is_some());
     /// assert!(
     ///   qt.insert(AreaBuilder::default().anchor(Point {x: 1, y: 1})
     ///                                   .dimensions((3, 2))
     ///                                   .build().unwrap(),
     ///             4.56)
-    ///   .is_ok());
+    ///   .is_some());
     ///
     /// //   0123
     /// // 0 ░░
@@ -1014,8 +1018,7 @@ where
                     .build()
                     .unwrap(),
                 val,
-            )
-            .ok();
+            );
         }
     }
 }

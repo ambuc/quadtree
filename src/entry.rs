@@ -36,7 +36,7 @@ use {
 ///                                      .build()
 ///                                      .unwrap(),
 ///     /*val=*/4.56)
-///   .is_ok());
+///   .is_some());
 ///
 /// // Calling Quadtree::delete() on a region in the tree
 /// // clears that region of the tree and returns the
