@@ -35,8 +35,8 @@ pub(crate) type Type<U> = (U, U);
 /// A type representing a point in space. Should be passed by value.
 #[derive(PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Point<U> {
-    pub x: U,
-    pub y: U,
+    pub x: U, // The x-coordinate of the point.
+    pub y: U, // The y-coordinate of the point.
 }
 
 impl<U> Debug for Point<U>

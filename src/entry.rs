@@ -21,26 +21,38 @@ use {
     std::default::Default,
 };
 
-/// A region/value association being returned (by value) from the [`Quadtree`].
+/// A region/value association in the [`Quadtree`].
 ///
+/// `Entry` is used both for read-only access into a quadtree (i.e. [`.get()`]) and as the return
+/// type for mutating operations (i.e. [`.delete()`], which returns `iter::IntoIter<U, V>`, which
+/// is iterable over _former_ `Entry<U, V>` entries).
+///
+/// [`.get()`]: ../struct.Quadtree.html#method.get
+/// [`.delete()`]: ../struct.Quadtree.html#method.delete
 /// ```
-/// use quadtree_rs::{area::AreaBuilder, entry::Entry, point::Point, Quadtree};
+/// use quadtree_rs::{
+///   area::AreaBuilder,
+///   Quadtree,
+/// };
 ///
 /// let mut qt = Quadtree::<u32, f64>::new(4);
 /// let region_a = AreaBuilder::default()
-///     .anchor(Point {x: 1, y: 1}).dimensions((3, 2)).build().unwrap();
-/// assert!(qt.insert(region_a, 4.56_f64).is_some());
+///     .anchor((1, 1).into())
+///     .dimensions((3, 2))
+///     .build().unwrap();
 ///
-/// // Calling Quadtree::delete() on a region in the tree
-/// // clears that region of the tree and returns the
-/// // region/value associations which were deleted.
+/// qt.insert(region_a, 4.56_f64);
+///
+/// // Calling Quadtree::delete() on a region in the tree clears that region of the tree and returns the region/value associations which were deleted.
 ///
 /// let region_b = AreaBuilder::default()
-///     .anchor(Point {x: 2, y: 1}).build().unwrap();
-/// let mut returned_entries = qt.delete(region_b);
+///     .anchor((2, 1).into())
+///     .build().unwrap();
 ///
 /// // The iterator contains Entry<U, V> structs.
-/// let entry: Entry<u32, f64> = returned_entries.next().unwrap();
+/// let mut returned_entries = qt.delete(region_b);
+///
+/// let entry = returned_entries.next().unwrap();
 ///
 /// assert_eq!(entry.anchor().x(), 1);
 /// assert_eq!(entry.anchor().y(), 1);
@@ -99,10 +111,10 @@ where
 
     // pub(crate)
 
-    pub(crate) fn new(inner: (Area<U>, V), handle: u64) -> Self {
+    pub(crate) fn new((region, value): (Area<U>, V), handle: u64) -> Self {
         Self {
-            region: inner.0,
-            value: inner.1,
+            region,
+            value,
             handle,
         }
     }

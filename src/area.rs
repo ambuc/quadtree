@@ -20,7 +20,7 @@ use {
     std::{cmp::PartialOrd, default::Default, fmt::Debug},
 };
 
-//  .d8b.  d8888b. d88888b  .d8b.
+//   .d8b.  d8888b. d88888b  .d8b.
 //  d8' `8b 88  `8D 88'     d8' `8b
 //  88ooo88 88oobY' 88ooooo 88ooo88
 //  88~~~88 88`8b   88~~~~~ 88~~~88
@@ -29,11 +29,14 @@ use {
 
 pub(crate) type Type<U> = (point::Type<U>, (U, U));
 
-/// Lightweight data type to represent a region.
-///   - The top-left anchor may be positive or negative in either coordinate.
-///   - Defined by a top-left anchor and a width/height.
-///   - The width/height must both be positive and nonzero.
-///   - Should be passed by value.
+/// A rectangular region in 2d space.
+///
+/// Lightweight, should be passed by value. Defined by its top-left anchor, width, and height.
+///
+/// **NB:**
+///   - The top-left anchor can be any valid `(U, U)` coordinate, positive or negative, in any
+///   quadrant.
+///   - The width and height must both be positive and nonzero.
 #[derive(PartialEq, Eq, Clone, Copy, Hash, Builder)]
 #[builder(build_fn(validate = "Self::validate"))]
 pub struct Area<U>
