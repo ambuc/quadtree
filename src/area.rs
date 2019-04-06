@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! A type representing an area in space.
+//! A rectangular region in the tree.
 
 use {
     crate::point,

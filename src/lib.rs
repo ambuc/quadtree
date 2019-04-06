@@ -12,40 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! [Point/region Quadtree](https://en.wikipedia.org/wiki/Quadtree) with support for overlapping
+//! A [point/region Quadtree](https://en.wikipedia.org/wiki/Quadtree) with support for overlapping
 //! regions.
 //!
 //! # Quick Start
-//!
-//! Add `quadtree_rs` to your `Cargo.toml`, and then add it to your main.
 //! ```
-//! extern crate quadtree_rs;
 //! use quadtree_rs::{area::AreaBuilder, point::Point, Quadtree};
 //!
-//! // A new Quadtree with u64 coordinates and String values.
-//! // ::new(4) means a depth of 4 layers, i.e. sides of length 2^4.
-//! let mut qt = Quadtree::<u64, String>::new(4);
+//! // Instantiate a new quadtree which associates String values with u64 coordinates.
+//! let mut qt = Quadtree::<u64, String>::new(/*depth=*/4);
 //!
-//! //   0  1  2
-//! // 0 ░░░░░░░    Insert the string "foo"
-//! //   ░░foo░░    at a region in the tree.
-//! // 1 ░░░░░░░
+//! // A depth of four means a square with width (and height) 2^4.
+//! assert_eq!(qt.width(), 16);
+//!
+//! // Associate the value "foo" with a rectangle of size 2x1, anchored at (0, 0).
 //! let region_a = AreaBuilder::default()
-//!     .anchor(Point {x: 0, y: 0}).dimensions((2, 1)).build().unwrap();
-//! assert!(qt.insert(region_a, "foo".to_string()).is_some());
+//!     .anchor(Point {x: 0, y: 0}).dimensions((2, 1))
+//!     .build().unwrap();
+//! qt.insert(region_a, "foo".to_string());
 //!
-//! //
-//! //   0  1  2  3
-//! // 0 ░░░▓▓▓▓▒▒▒     
-//! //   ░░░▓▓▓▓▒▒▒ <-- Query over a region
-//! // 1 ░░░▓▓▓▓▒▒▒     which overlaps foo.
-//! //   |  ▒▒▒▒▒▒▒
-//! // 2 +--▒▒▒▒▒▒▒
+//! // Query over a region of size 2x2, anchored at (1, 0).
 //! let region_b = AreaBuilder::default()
-//!     .anchor(Point {x: 1, y: 0}).dimensions((2, 2)).build().unwrap();
+//!     .anchor(Point {x: 1, y: 0}).dimensions((2, 2))
+//!     .build().unwrap();
 //! let mut query = qt.query(region_b);
 //!
-//! // Take the first entry in the query results and check its' value.
+//! // The query region (region_b) intersects the region "foo" is associated with (region_a), so the query iterator returns "foo" by reference.
 //! assert_eq!(query.next().unwrap().value_ref(), "foo");
 //! ```
 //!
@@ -55,47 +47,42 @@
 //!
 //! let mut qt = Quadtree::<u8, char>::new(2);
 //!
-//! // In a quadtree, every region is subdivided lazily into four subqudrants.
+//! // In a quadtree, every region is (lazily) subdivided into subqudrants.
 //!
-//! // Inserting a point, represented as a region with width and height one,
-//! // means traversing the full height of the tree.
-//! assert!(qt.insert_pt(Point {x: 0, y: 0}, 'a').is_some());
+//! // Associating a value with a point, which is represented by a region with dimensions 1x1, means traversing the full height of the quadtree.
+//! qt.insert_pt(Point {x: 0, y: 0}, 'a');
 //!
-//! // (0,0)->4x4             +---+---+---+---+
-//! //   (0,0)->2x2           | a |   |       |
-//! //     (0,0)->1x1 ['a']   +---+   +       +
-//! //                        |       |       |
-//! //                        +---+---+---+---+
-//! //                        |       |       |
-//! //                        +       +       +
-//! //                        |       |       |
-//! //                        +---+---+---+---+
+//! // (0,0)->4x4                +---+---+---+---+
+//! //   (0,0)->2x2              | a |   |       |
+//! //     (0,0)->1x1 ['a']      +---+   +       +
+//! //                           |       |       |
+//! //                           +---+---+---+---+
+//! //                           |       |       |
+//! //                           +       +       +
+//! //                           |       |       |
+//! //                           +---+---+---+---+
 //!
-//!
-//! // Inserting a region means traversing only as far down
-//! // the tree as necessary to fully cover that region.
+//! // Often inserting a large region requires traversing only as far down as necessary to fully cover that region.
 //! let region_b = AreaBuilder::default()
-//!     .anchor(Point {x: 0, y: 0}).dimensions((2, 2)).build().unwrap();
-//! assert!(qt.insert(region_b, 'b').is_some());
+//!     .anchor(Point {x: 0, y: 0}).dimensions((2, 2))
+//!     .build().unwrap();
+//! qt.insert(region_b, 'b');
 //!
-//! // (0,0)->4x4              +---+---+---+---+
-//! //   (0,0)->2x2 ['b']      | a |   |       |
-//! //     (0,0)->1x1 ['a']    +---+   +       +
-//! //                         |     b |       |
-//! //                         +---+---+---+---+
-//! //                         |       |       |
-//! //                         +       +       +
-//! //                         |       |       |
-//! //                         +---+---+---+---+
+//! // (0,0)->4x4                +---+---+---+---+
+//! //   (0,0)->2x2 ['b']        | a |   |       |
+//! //     (0,0)->1x1 ['a']      +---+   +       +
+//! //                           |     b |       |
+//! //                           +---+---+---+---+
+//! //                           |       |       |
+//! //                           +       +       +
+//! //                           |       |       |
+//! //                           +---+---+---+---+
 //!
-//! // Often that means inserting the value in multiple places.
-//! // (The implementation duplicates not the stored value,
-//! // which need not implement Copy, but a handle to the
-//! // value in a storage map.)
-//!
+//! // If a region cannot be represented by one node in the tree, a handle type is inserted in multiple places.
 //! let region_c = AreaBuilder::default()
-//!     .anchor(Point {x: 0, y: 0}).dimensions((3, 3)).build().unwrap();
-//! assert!(qt.insert(region_c, 'c').is_some());
+//!     .anchor(Point {x: 0, y: 0}).dimensions((3, 3))
+//!     .build().unwrap();
+//! qt.insert(region_c, 'c');
 //!
 //! // (0,0)->4x4                +---+---+---+---+
 //! //   (0,0)->2x2 ['b', 'c']   | a |   | c |   |
@@ -109,13 +96,13 @@
 //! //   (2,2)->2x2
 //! //     (2,2)->1x1 ['c']
 //! ```
-//! Duplicating the storage handle is expensive, but allows for fast lookups and fast insertions at
-//! the cost of slower deletions. This means that `quadtree_rs` is well-suited for maps which hold
-//! many items with small regions.
+//!
+//! Duplicating the storage handle allows for fast lookup and insertion at the cost of slow
+//! deletion. `quadtree_rs` is well-suited for scenarios with low churn but frequent read access.
 //!
 //! # Usage
 //!
-//! For further usage details, see [`Quadtree`].
+//! For further usage details, see the documentations for the [`Quadtree`] struct.
 //!
 //! [`Quadtree`]: struct.Quadtree.html
 
@@ -160,8 +147,11 @@ use {
 //  88    88 88    88 88~~~88 88   88    88    88`8b   88~~~~~ 88~~~~~
 //  `8P  d8' 88b  d88 88   88 88  .8D    88    88 `88. 88.     88.
 //   `Y88'Y8 ~Y8888P' YP   YP Y8888D'    YP    88   YD Y88888P Y88888P
+//
+// These headers are created by the *basic* style on https://www.messletters.com/en/big-text/.
 
-/// A data structure for storing and accessing data by x/y coordinates.
+/// A data structure for storing and accessing data in 2d space.
+///
 /// (A [Quadtree](https://en.wikipedia.org/wiki/Quadtree).)
 ///
 /// `Quadtree<U, V>` is parameterized over

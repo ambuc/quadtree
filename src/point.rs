@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! A type representing an point in space.
+//! A point region in the tree.
 
 // d8888b.  .d88b.  d888888b d8b   db d888888b
 // 88  `8D .8P  Y8.   `88'   888o  88 `~~88~~'

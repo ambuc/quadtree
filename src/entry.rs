@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! An entry in a Quadtree.
+//! A view into a single entry in the Quadtree.
+// Influenced by https://doc.rust-lang.org/std/collections/hash_map/enum.Entry.html.
 
 use {
     crate::{area::Area, point::Point},
