@@ -21,9 +21,6 @@ categories = ["algorithms", "graphics", "visualization"]
 # SPDX 2.1 license expression. See https://spdx.org/licenses/
 license = "Apache-2.0"
 
-# TODO(ambuc): Add docs.rs badges.
-# [badges]
-
 # One of: `actively-developed`, `passively-maintained`, `as-is`, `experimental`,
 # `looking-for-maintainer`, `deprecated`, `none`.
 maintenance = { status = "actively-developed" }
