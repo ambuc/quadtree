@@ -115,6 +115,7 @@ extern crate num;
 
 pub mod area;
 pub mod entry;
+pub mod iter;
 pub mod point;
 
 mod handle_iter;
@@ -127,6 +128,7 @@ use {
         area::{Area, AreaBuilder},
         entry::Entry,
         handle_iter::HandleIter,
+        iter::{IntoIter, Iter, Query, Regions, Values},
         point::Point,
         qtinner::QTInner,
         traversal::Traversal,
@@ -137,7 +139,6 @@ use {
         collections::{HashMap, HashSet},
         default::Default,
         hash::Hash,
-        iter::FusedIterator,
     },
 };
 
@@ -155,14 +156,9 @@ use {
 /// (A [Quadtree](https://en.wikipedia.org/wiki/Quadtree).)
 ///
 /// `Quadtree<U, V>` is parameterized over
-///  - `U`, where `U` is the index type of the x/y coordinate, and
-///  - `V`, where `V` is the value being stored in the data structure.
+///  - `U`, the type of the coordinate, and
+///  - `V`, the value being stored in the data structure.
 ///
-/// Points and areas are respresented by the [`point`] and [`area`] structs. Both are parameterized
-/// over `U`.
-///
-/// [`point`]: point/struct.Point.html
-/// [`area`]: area/struct.Area.html
 // TODO(ambuc): Implement `.delete_by(anchor, dimensions, fn)`: `.retain()` is the inverse.
 // TODO(ambuc): Implement `FromIterator<(K, V)>` for `Quadtree`.
 #[derive(Debug, PartialEq, Eq)]
@@ -189,6 +185,8 @@ where
     ///
     /// let qt = Quadtree::<u32, u8>::new(/*depth=*/ 2);
     ///
+    /// // The anchor of a rectangular region is its top-left coordinate.
+    /// // By default, quadtrees are anchored at (0, 0).
     /// assert_eq!(qt.anchor(), Point {x: 0, y: 0});
     /// assert_eq!(qt.depth(), 2);
     /// assert_eq!(qt.width(), 4);
@@ -331,12 +329,12 @@ where
     /// assert_eq!(qt.get(handle), Some(&9.87));
     /// ```
     ///
-    /// [`insert`]: struct.Quadtree.html#method.insert
+    /// [`insert`]: #method.insert
     pub fn get(&self, handle: u64) -> Option<&V> {
         self.store.get(&handle).and_then(|e| Some(e.value_ref()))
     }
 
-    /// A mutable variant of `.get()`.
+    /// A mutable variant of [`.get()`].
     ///
     /// ```
     /// use quadtree_rs::{area::AreaBuilder, point::Point, Quadtree};
@@ -355,7 +353,7 @@ where
     ///
     /// ```
     ///
-    /// [`.get()`]: struct.Quadtree.html#method.get
+    /// [`.get()`]: #method.get
     pub fn get_mut(&mut self, handle: u64) -> Option<&mut V> {
         self.store
             .get_mut(&handle)
@@ -422,7 +420,7 @@ where
     /// ```
     ///
     /// [`Entry<U, V>`]: entry/struct.Entry.html
-    /// [`.query_strict()`]: struct.Quadtree.html#method.query_strict
+    /// [`.query_strict()`]: #method.query_strict
     // TODO(ambuc): Settle on a stable return order to avoid breaking callers.
     pub fn query(&self, area: Area<U>) -> Query<U, V> {
         Query::new(area, &self.inner, &self.store, Traversal::Overlapping)
@@ -478,7 +476,7 @@ where
     /// Alias for [`.modify()`] which runs over the entire
     /// quadtree.
     ///
-    /// [`.modify()`]: struct.Quadtree.html#method.modify
+    /// [`.modify()`]: #method.modify
     pub fn modify_all<F>(&mut self, f: F)
     where
         F: Fn(&mut V) + Copy,
@@ -531,9 +529,9 @@ where
     /// assert_eq!(qt.len(), 1);
     /// ```
     ///
-    /// [`IntoIter<U, V>`]: struct.IntoIter.html
+    /// [`IntoIter<U, V>`]: iter/struct.IntoIter.html
     /// [`Entry<U, V>`]: entry/struct.Entry.html
-    /// [`.delete_strict()`]: struct.Quadtree.html#method.delete_strict
+    /// [`.delete_strict()`]: #method.delete_strict
     pub fn delete(&mut self, area: Area<U>) -> IntoIter<U, V> {
         self.delete_handles_and_return(self.query(area).map(|e| e.handle()).collect())
     }
@@ -610,7 +608,7 @@ where
     /// Returns an iterator ([`Iter<U, V>`]) over all [`&'a Entry<U, V>`]
     /// region/value associations in the Quadtree.
     ///
-    /// [`Iter<U, V>`]: struct.Iter.html
+    /// [`Iter<U, V>`]: iter/struct.Iter.html
     /// [`&'a Entry<U, V>`]: entry/struct.Entry.html
     pub fn iter(&self) -> Iter<U, V> {
         Iter::new(&self.inner, &self.store)
@@ -619,7 +617,7 @@ where
     /// Returns an iterator ([`Regions<U, V>`]) over all [`Area<U>`] regions
     /// in the Quadtree.
     ///
-    /// [`Regions<U, V>`]: struct.Regions.html
+    /// [`Regions<U, V>`]: iter/struct.Regions.html
     /// [`Area<U>`]: area/struct.Area.html
     pub fn regions(&self) -> Regions<U, V> {
         Regions {
@@ -630,7 +628,7 @@ where
     /// Returns an iterator ([`Values<U, V>`]) over all `&'a V` values in the
     /// Quadtree.
     ///
-    /// [`Values<U, V>`]: struct.Values.html
+    /// [`Values<U, V>`]: iter/struct.Values.html
     pub fn values(&self) -> Values<U, V> {
         Values {
             inner: Iter::new(&self.inner, &self.store),
@@ -654,268 +652,6 @@ where
         }
     }
 }
-
-// d888888b d888888b d88888b d8888b.
-//   `88'   `~~88~~' 88'     88  `8D
-//    88       88    88ooooo 88oobY'
-//    88       88    88~~~~~ 88`8b
-//   .88.      88    88.     88 `88.
-// Y888888P    YP    Y88888P 88   YD
-
-/// An iterator over all regions and values of a [`Quadtree`].
-///
-/// This struct is created by the [`iter`] method on [`Quadtree`].
-///
-/// [`iter`]: struct.Quadtree.html#method.iter
-/// [`Quadtree`]: struct.Quadtree.html
-#[derive(Clone, Debug)]
-pub struct Iter<'a, U, V>
-where
-    U: PrimInt + Default,
-{
-    store: &'a StoreType<U, V>,
-    handle_iter: HandleIter<'a, U>,
-}
-
-impl<'a, U, V> Iter<'a, U, V>
-where
-    U: PrimInt + Default,
-{
-    pub(crate) fn new(qt: &'a QTInner<U>, store: &'a StoreType<U, V>) -> Iter<'a, U, V> {
-        Iter {
-            store,
-            handle_iter: HandleIter::new(qt),
-        }
-    }
-}
-
-impl<'a, U, V> Iterator for Iter<'a, U, V>
-where
-    U: PrimInt + Default,
-{
-    type Item = &'a Entry<U, V>;
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.handle_iter.next() {
-            Some(handle) => Some(
-                self.store
-                    .get(&handle)
-                    .expect("Shouldn't have an handle in the tree which isn't in the store."),
-            ),
-            None => None,
-        }
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, Some(self.store.len()))
-    }
-}
-
-impl<U, V> FusedIterator for Iter<'_, U, V> where U: PrimInt + Default {}
-
-//  .d88b.  db    db d88888b d8888b. db    db
-// .8P  Y8. 88    88 88'     88  `8D `8b  d8'
-// 88    88 88    88 88ooooo 88oobY'  `8bd8'
-// 88    88 88    88 88~~~~~ 88`8b      88
-// `8P  d8' 88b  d88 88.     88 `88.    88
-//  `Y88'Y8 ~Y8888P' Y88888P 88   YD    YP
-
-/// An iterator over the regions and values of a [`Quadtree`].
-///
-/// This struct is created by the [`query`] method on [`Quadtree`].
-///
-/// [`query`]: struct.Quadtree.html#method.query
-/// [`Quadtree`]: struct.Quadtree.html
-#[derive(Clone, Debug)]
-pub struct Query<'a, U, V>
-where
-    U: PrimInt + Default,
-{
-    query_region: Area<U>,
-    handle_iter: HandleIter<'a, U>,
-    store: &'a StoreType<U, V>,
-    traversal_method: Traversal,
-}
-
-impl<'a, U, V> Query<'a, U, V>
-where
-    U: PrimInt + Default,
-{
-    pub(crate) fn new(
-        query_region: Area<U>,
-        qt: &'a QTInner<U>,
-        store: &'a StoreType<U, V>,
-        traversal_method: Traversal,
-    ) -> Query<'a, U, V>
-    where
-        U: PrimInt + Default,
-    {
-        // Construct the HandleIter first...
-        let mut handle_iter = HandleIter::new(qt);
-
-        // ...and descend it to the appropriate level. Depending on the type of @traversal_method,
-        // this will potentially collect intersecting regions along the way. Avoiding combing the
-        // entire Quadtree is essential for the efficiency of a query.
-        handle_iter.query_optimization(query_region, traversal_method);
-
-        Query {
-            query_region,
-            handle_iter,
-            store,
-            traversal_method,
-        }
-    }
-}
-
-impl<'a, U, V> Iterator for Query<'a, U, V>
-where
-    U: PrimInt + Default,
-{
-    type Item = &'a Entry<U, V>;
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        if let Some(handle) = self.handle_iter.next() {
-            if let Some(entry) = self.store.get(&handle) {
-                if self.traversal_method.eval(entry.area(), self.query_region) {
-                    return Some(entry);
-                }
-            }
-            return self.next();
-        }
-        None
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, Some(self.store.len()))
-    }
-}
-
-impl<U, V> FusedIterator for Query<'_, U, V> where U: PrimInt + Default {}
-
-// d8888b. d88888b  d888b  d888888b  .d88b.  d8b   db .d8888.
-// 88  `8D 88'     88' Y8b   `88'   .8P  Y8. 888o  88 88'  YP
-// 88oobY' 88ooooo 88         88    88    88 88V8o 88 `8bo.
-// 88`8b   88~~~~~ 88  ooo    88    88    88 88 V8o88   `Y8b.
-// 88 `88. 88.     88. ~8~   .88.   `8b  d8' 88  V888 db   8D
-// 88   YD Y88888P  Y888P  Y888888P  `Y88P'  VP   V8P `8888Y'
-
-/// An iterator over the regions held within a [`Quadtree`].
-///
-/// This struct is created by the [`regions`] method on [`Quadtree`].
-///
-/// [`regions`]: struct.Quadtree.html#method.regions
-/// [`Quadtree`]: struct.Quadtree.html
-#[derive(Clone, Debug)]
-pub struct Regions<'a, U, V>
-where
-    U: PrimInt + Default,
-{
-    pub(crate) inner: Iter<'a, U, V>,
-}
-
-impl<'a, U, V> Iterator for Regions<'a, U, V>
-where
-    U: PrimInt + Default,
-{
-    type Item = Area<U>;
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().and_then(|e| Some(e.area()))
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, None)
-    }
-}
-
-impl<U, V> FusedIterator for Regions<'_, U, V> where U: PrimInt + Default {}
-
-// db    db  .d8b.  db      db    db d88888b .d8888.
-// 88    88 d8' `8b 88      88    88 88'     88'  YP
-// Y8    8P 88ooo88 88      88    88 88ooooo `8bo.
-// `8b  d8' 88~~~88 88      88    88 88~~~~~   `Y8b.
-//  `8bd8'  88   88 88booo. 88b  d88 88.     db   8D
-//    YP    YP   YP Y88888P ~Y8888P' Y88888P `8888Y'
-
-/// An iterator over the values held within a [`Quadtree`].
-///
-/// This struct is created by the [`values`] method on [`Quadtree`].
-///
-/// [`values`]: struct.Quadtree.html#method.values
-/// [`Quadtree`]: struct.Quadtree.html
-#[derive(Clone, Debug)]
-pub struct Values<'a, U, V>
-where
-    U: PrimInt + Default,
-{
-    pub(crate) inner: Iter<'a, U, V>,
-}
-
-impl<'a, U, V> Iterator for Values<'a, U, V>
-where
-    U: PrimInt + Default,
-{
-    type Item = (&'a V);
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().and_then(|e| Some(e.value_ref()))
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, None)
-    }
-}
-
-impl<U, V> FusedIterator for Values<'_, U, V> where U: PrimInt + Default {}
-
-// d888888b d8b   db d888888b  .d88b.  d888888b d888888b d88888b d8888b.
-//   `88'   888o  88 `~~88~~' .8P  Y8.   `88'   `~~88~~' 88'     88  `8D
-//    88    88V8o 88    88    88    88    88       88    88ooooo 88oobY'
-//    88    88 V8o88    88    88    88    88       88    88~~~~~ 88`8b
-//   .88.   88  V888    88    `8b  d8'   .88.      88    88.     88 `88.
-// Y888888P VP   V8P    YP     `Y88P'  Y888888P    YP    Y88888P 88   YD
-
-/// A consuming iterator over all region/value associations held in a [`Quadtree`].
-///
-/// This struct is created by the `into_iter()` method on the [`IntoIterator`] trait.
-///
-/// [`IntoIterator`]: struct.Quadtree.html#impl-IntoIterator
-///
-/// [`Quadtree`]: struct.Quadtree.html
-#[derive(Debug)]
-pub struct IntoIter<U, V>
-where
-    U: PrimInt + Default,
-{
-    entries: Vec<Entry<U, V>>,
-}
-
-impl<U, V> Iterator for IntoIter<U, V>
-where
-    U: PrimInt + Default,
-{
-    type Item = Entry<U, V>;
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        self.entries.pop()
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, None)
-    }
-}
-
-impl<U, V> FusedIterator for IntoIter<U, V> where U: PrimInt + Default {}
 
 /// `Extend<((U, U), V)>` will silently drop values whose coordinates do not fit in the region
 /// represented by the Quadtree. It is the responsibility of the callsite to ensure these points
