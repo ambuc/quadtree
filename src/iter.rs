@@ -182,7 +182,7 @@ where
     type Item = &'a Entry<U, V>;
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        for handle in self.handle_iter.by_ref() {
+        while let Some(handle) = self.handle_iter.next() {
             if let Some(entry) = self.store.get(&handle) {
                 if self.traversal_method.eval(entry.area(), self.query_region) {
                     return Some(entry);
@@ -191,7 +191,7 @@ where
         }
         None
     }
-
+    
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         (0, Some(self.store.len()))
@@ -225,11 +225,11 @@ impl<'a, U, V> Iterator for Values<'a, U, V>
 where
     U: PrimInt + Default,
 {
-    type Item = &'a V;
+    type Item = (&'a V);
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(|e| e.value_ref())
+        self.inner.next().and_then(|e| Some(e.value_ref()))
     }
 
     #[inline]
@@ -269,7 +269,7 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(|e| e.area())
+        self.inner.next().and_then(|e| Some(e.area()))
     }
 
     #[inline]

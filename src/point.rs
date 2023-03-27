@@ -35,8 +35,7 @@ pub(crate) type Type<U> = (U, U);
 /// A type representing a point in space. Should be passed by value.
 #[derive(PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Point<U> {
-    pub x: U,
-    // The x-coordinate of the point.
+    pub x: U, // The x-coordinate of the point.
     pub y: U, // The y-coordinate of the point.
 }
 
@@ -67,12 +66,12 @@ where
     }
 }
 
-impl<U> From<Point<U>> for Type<U>
+impl<U> Into<Type<U>> for Point<U>
 where
     U: PrimInt,
 {
-    fn from(value: Point<U>) -> Self {
-        (value.x, value.y)
+    fn into(self) -> Type<U> {
+        (self.x, self.y)
     }
 }
 

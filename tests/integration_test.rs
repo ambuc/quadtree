@@ -349,8 +349,7 @@ fn quadtree_struct() {
     #[derive(Clone)]
     struct Foo {
         pub baz: String,
-    }
-    #[allow(clippy::disallowed_names)]
+    };
     let foo = Foo {
         baz: "baz".to_string(),
     };
@@ -582,7 +581,7 @@ fn debug() {
 fn test_print_quadtree() {
     use crate::util::print_quadtree;
 
-    let mut qt = Quadtree::<u8, f64>::new(3);
+    let mut qt = quadtree_rs::Quadtree::<u8, f64>::new(3);
     assert!(qt
         .insert(
             AreaBuilder::default()

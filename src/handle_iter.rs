@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use rustc_hash::FxHashSet;
 use {
     crate::{area::Area, qtinner::QTInner, traversal::Traversal},
     num::PrimInt,
-    std::{default::Default, iter::FusedIterator},
+    std::{collections::HashSet, default::Default, iter::FusedIterator, ops::Deref},
 };
 
 // db   db  .d8b.  d8b   db d8888b. db      d88888b d888888b d888888b d88888b d8888b.
@@ -33,7 +32,7 @@ where
 {
     handle_stack: Vec<u64>,
     qt_stack: Vec<&'a QTInner<U>>,
-    visited: FxHashSet<u64>,
+    visited: HashSet<u64>,
 }
 
 impl<'a, U> HandleIter<'a, U>
@@ -42,9 +41,9 @@ where
 {
     pub(crate) fn new(qt: &'a QTInner<U>) -> HandleIter<'a, U> {
         HandleIter {
-            handle_stack: Vec::with_capacity(256),
+            handle_stack: vec![],
             qt_stack: vec![qt],
-            visited: FxHashSet::default(),
+            visited: HashSet::new(),
         }
     }
 
@@ -59,7 +58,7 @@ where
     pub(crate) fn query_optimization(&mut self, req: Area<U>, traversal_method: Traversal) {
         // This method expects to be called at a point in time when the HandleIter has just been
         // created but has not yet been called.
-        assert_eq!(self.qt_stack.len(), 1);
+        assert!(self.qt_stack.len() == 1);
         assert!(self.handle_stack.is_empty());
         assert!(self.visited.is_empty());
 
@@ -67,7 +66,7 @@ where
     }
 
     fn descend_recurse_step(&mut self, req: Area<U>, traversal_method: Traversal) {
-        assert_eq!(self.qt_stack.len(), 1);
+        assert!(self.qt_stack.len() == 1);
         // Peek into the stack. We have to peek rather than pop, because if we are about to go too
         // far down we'd rather stop and return the HandleIter as-is.
         if let Some(qt) = self.qt_stack.last() {
@@ -87,7 +86,7 @@ where
                         }
 
                         // TODO(ambuc): Could this be done with Vec::swap() or std::mem::replace()?
-                        assert_eq!(self.qt_stack.len(), 1);
+                        assert!(self.qt_stack.len() == 1);
                         self.qt_stack = vec![subquadrant];
 
                         // Recurse on this step. It will naturally return, but we want to propogate
@@ -97,6 +96,7 @@ where
                 }
             }
             // If there aren't any subquadrants, we're probably done.
+            return;
         }
     }
 }
@@ -109,33 +109,28 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if let Some(handle) = self.handle_stack.pop() {
-                if !self.visited.insert(handle) {
-                    continue;
-                }
-                return Some(handle);
+        // Check the handle_stack.
+        if let Some(handle) = self.handle_stack.pop() {
+            if !self.visited.insert(handle) {
+                return self.next();
             }
-
-            // Then check the qt_stack.
-            if let Some(qt) = self.qt_stack.pop() {
-                // Push my regions onto the region stack
-                self.handle_stack.extend(qt.handles());
-
-                // Push my subquadrants onto the qt_stack too.
-                if let Some(subquadrants) = qt.subquadrants().as_ref() {
-                    self.qt_stack.push(&subquadrants[0]);
-                    self.qt_stack.push(&subquadrants[1]);
-                    self.qt_stack.push(&subquadrants[2]);
-                    self.qt_stack.push(&subquadrants[3]);
-                    // self.qt_stack.extend(subquadrants.iter().map(|x| x.deref()));
-                }
-                continue;
-            }
-
-            // Else there's nothing left to search.
-            return None;
+            return Some(handle);
         }
+
+        // Then check the qt_stack.
+        if let Some(qt) = self.qt_stack.pop() {
+            // Push my regions onto the region stack
+            self.handle_stack.extend(qt.handles());
+
+            // Push my subquadrants onto the qt_stack too.
+            if let Some(subquadrants) = qt.subquadrants().as_ref() {
+                self.qt_stack.extend(subquadrants.iter().map(|x| x.deref()));
+            }
+            return self.next();
+        }
+
+        // Else there's nothing left to search.
+        None
     }
 
     #[inline]

@@ -31,7 +31,7 @@ where
     for _i in 0..qt.width() {
         print!("─");
     }
-    println!("┐");
+    print!("┐\n");
     for i in 0..qt.width() {
         print!("│");
         for j in 0..qt.height() {
@@ -52,11 +52,11 @@ where
             }
         }
         print!("|");
-        println!();
+        print!("\n");
     }
     print!("└");
     for _i in 0..qt.width() {
         print!("─");
     }
-    println!("┘");
+    print!("┘\n");
 }

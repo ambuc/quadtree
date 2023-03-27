@@ -80,12 +80,12 @@ where
     }
 }
 
-impl<U> From<Area<U>> for Type<U>
+impl<U> Into<Type<U>> for Area<U>
 where
     U: PrimInt + Default,
 {
-    fn from(value: Area<U>) -> Self {
-        (value.anchor.into(), value.dimensions())
+    fn into(self) -> Type<U> {
+        (self.anchor.into(), self.dimensions())
     }
 }
 
