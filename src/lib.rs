@@ -127,6 +127,7 @@ mod qtinner;
 mod traversal;
 mod types;
 
+use rustc_hash::FxHashSet;
 use {
     crate::{
         area::{Area, AreaBuilder},
@@ -139,11 +140,7 @@ use {
         types::StoreType,
     },
     num::PrimInt,
-    std::{
-        collections::{HashMap, HashSet},
-        default::Default,
-        hash::Hash,
-    },
+    std::{collections::HashMap, default::Default, hash::Hash},
 };
 
 //   .d88b.  db    db  .d8b.  d8888b. d888888b d8888b. d88888b d88888b
@@ -215,7 +212,7 @@ where
     /// ```
     pub fn new(depth: usize) -> Self {
         Self::new_with_anchor(
-            point::Point {
+            Point {
                 x: U::zero(),
                 y: U::zero(),
             },
@@ -242,7 +239,7 @@ where
     /// assert_eq!(qt.width(), 8);
     /// assert_eq!(qt.height(), 8);
     /// ```
-    pub fn new_with_anchor(anchor: point::Point<U>, depth: usize) -> Self {
+    pub fn new_with_anchor(anchor: Point<U>, depth: usize) -> Self {
         Self {
             inner: QTInner::new(anchor, depth),
             store: HashMap::new(),
@@ -250,7 +247,7 @@ where
     }
 
     /// The top-left corner (anchor) of the region which this quadtree represents.
-    pub fn anchor(&self) -> point::Point<U> {
+    pub fn anchor(&self) -> Point<U> {
         self.inner.region().anchor()
     }
 
@@ -517,7 +514,7 @@ where
         F: Fn(&mut V) + Copy,
     {
         for entry in self.store.values_mut() {
-            f(&mut entry.value_mut());
+            f(entry.value_mut());
         }
     }
 
@@ -580,7 +577,7 @@ where
     }
 
     #[allow(clippy::needless_pass_by_value)]
-    fn delete_handles_and_return(&mut self, handles: HashSet<u64>) -> IntoIter<U, V> {
+    fn delete_handles_and_return(&mut self, handles: FxHashSet<u64>) -> IntoIter<U, V> {
         let error: &'static str = "I tried to look up an handle in the store which I found in the tree, but it wasn't there!";
 
         let mut entries: Vec<Entry<U, V>> = vec![];
@@ -588,7 +585,7 @@ where
         handles.iter().for_each(|u| {
             // We were just passed a hashset of handles taken from this quadtree, so it is safe to
             // assume they all still exist.
-            entries.push(self.store.remove(u).expect(&error));
+            entries.push(self.store.remove(u).expect(error));
         });
 
         IntoIter { entries }
@@ -622,7 +619,7 @@ where
     {
         // TODO(ambuc): I think this is technically correct but it seems to be interweaving three
         // routines. Is there a way to simplify this?
-        let mut doomed: HashSet<(u64, Area<U>)> = HashSet::new();
+        let mut doomed: FxHashSet<(u64, Area<U>)> = FxHashSet::default();
         for (handle, entry) in &mut self.store {
             if f(entry.value_mut()) {
                 doomed.insert((*handle, entry.area()));
@@ -681,7 +678,7 @@ where
         for i in relevant_handles {
             if let Some(entry) = self.store.get_mut(&i) {
                 if filter(entry.area()) {
-                    modify(&mut entry.value_mut());
+                    modify(entry.value_mut());
                 }
             }
         }
@@ -703,7 +700,7 @@ where
             // Ignore errors.
             self.insert(
                 AreaBuilder::default()
-                    .anchor(point::Point { x, y })
+                    .anchor(Point { x, y })
                     .build()
                     .unwrap(),
                 val,
@@ -734,11 +731,7 @@ where
 
     fn into_iter(self) -> IntoIter<U, V> {
         IntoIter {
-            entries: self
-                .store
-                .into_iter()
-                .map(|(_handle, entry)| entry)
-                .collect(),
+            entries: self.store.into_values().collect(),
         }
     }
 }
