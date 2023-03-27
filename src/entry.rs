@@ -123,7 +123,7 @@ where
         self.area().dimensions()
     }
 
-    pub(crate) fn handle(&self) -> u64 {
+    pub fn handle(&self) -> u64 {
         self.handle
     }
 }
