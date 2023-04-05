@@ -15,7 +15,7 @@
 use {
     crate::{area::Area, qtinner::QTInner, traversal::Traversal},
     num::PrimInt,
-    std::{collections::HashSet, default::Default, iter::FusedIterator, ops::Deref},
+    std::{collections::HashSet, default::Default, iter::FusedIterator},
 };
 
 // db   db  .d8b.  d8b   db d8888b. db      d88888b d888888b d888888b d88888b d8888b.
@@ -30,6 +30,7 @@ pub(crate) struct HandleIter<'a, U>
 where
     U: PrimInt + Default,
 {
+    search_area: Area<U>,
     handle_stack: Vec<u64>,
     qt_stack: Vec<&'a QTInner<U>>,
     visited: HashSet<u64>,
@@ -39,8 +40,9 @@ impl<'a, U> HandleIter<'a, U>
 where
     U: PrimInt + Default,
 {
-    pub(crate) fn new(qt: &'a QTInner<U>) -> HandleIter<'a, U> {
+    pub(crate) fn new(qt: &'a QTInner<U>, search_area: Area<U>) -> HandleIter<'a, U> {
         HandleIter {
+            search_area,
             handle_stack: vec![],
             qt_stack: vec![qt],
             visited: HashSet::new(),
@@ -96,7 +98,6 @@ where
                 }
             }
             // If there aren't any subquadrants, we're probably done.
-            return;
         }
     }
 }
@@ -109,28 +110,41 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        // Check the handle_stack.
-        if let Some(handle) = self.handle_stack.pop() {
-            if !self.visited.insert(handle) {
-                return self.next();
+        loop {
+            while let Some(handle) = self.handle_stack.pop() {
+                if self.visited.insert(handle) {
+                    return Some(handle);
+                }
             }
-            return Some(handle);
-        }
 
-        // Then check the qt_stack.
-        if let Some(qt) = self.qt_stack.pop() {
-            // Push my regions onto the region stack
-            self.handle_stack.extend(qt.handles());
+            // Then check the qt_stack.
+            if let Some(qt) = self.qt_stack.pop() {
+                // Push my sub quadrants onto the qt_stack too.
+                if let Some(sub_quadrants) = qt.subquadrants().as_ref() {
+                    for sub_quadrant in sub_quadrants {
+                        if sub_quadrant.region().intersects(self.search_area) {
+                            self.qt_stack.push(sub_quadrant)
+                        }
+                    }
+                }
 
-            // Push my subquadrants onto the qt_stack too.
-            if let Some(subquadrants) = qt.subquadrants().as_ref() {
-                self.qt_stack.extend(subquadrants.iter().map(|x| x.deref()));
+                // Push my regions onto the region stack
+                match qt.handles().len() {
+                    0 => (),
+                    1 => {
+                        if self.visited.insert(qt.handles()[0]) {
+                            return Some(qt.handles()[0]);
+                        }
+                    }
+                    _ => self.handle_stack.extend(qt.handles()),
+                }
+
+                continue;
             }
-            return self.next();
-        }
 
-        // Else there's nothing left to search.
-        None
+            // Else there's nothing left to search.
+            return None;
+        }
     }
 
     #[inline]

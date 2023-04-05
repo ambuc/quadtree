@@ -517,7 +517,7 @@ where
         F: Fn(&mut V) + Copy,
     {
         for entry in self.store.values_mut() {
-            f(&mut entry.value_mut());
+            f(entry.value_mut());
         }
     }
 
@@ -588,7 +588,7 @@ where
         handles.iter().for_each(|u| {
             // We were just passed a hashset of handles taken from this quadtree, so it is safe to
             // assume they all still exist.
-            entries.push(self.store.remove(u).expect(&error));
+            entries.push(self.store.remove(u).expect(error));
         });
 
         IntoIter { entries }
@@ -677,11 +677,12 @@ where
         F: Fn(Area<U>) -> bool,
         M: Fn(&mut V) + Copy,
     {
-        let relevant_handles: Vec<u64> = HandleIter::new(&self.inner).collect();
+        let relevant_handles: Vec<u64> =
+            HandleIter::new(&self.inner, self.inner.region()).collect();
         for i in relevant_handles {
             if let Some(entry) = self.store.get_mut(&i) {
                 if filter(entry.area()) {
-                    modify(&mut entry.value_mut());
+                    modify(entry.value_mut());
                 }
             }
         }
@@ -734,11 +735,7 @@ where
 
     fn into_iter(self) -> IntoIter<U, V> {
         IntoIter {
-            entries: self
-                .store
-                .into_iter()
-                .map(|(_handle, entry)| entry)
-                .collect(),
+            entries: self.store.into_values().collect(),
         }
     }
 }
