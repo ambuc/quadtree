@@ -66,12 +66,12 @@ where
     }
 }
 
-impl<U> Into<Type<U>> for Point<U>
+impl<U> From<Point<U>> for Type<U>
 where
     U: PrimInt,
 {
-    fn into(self) -> Type<U> {
-        (self.x, self.y)
+    fn from(value: Point<U>) -> Self {
+        (value.x, value.y)
     }
 }
 

@@ -154,7 +154,7 @@ where
         &mut self,
         req: Area<U>,
         handle: u64,
-        store: &mut StoreType<U, V>,
+        _store: &mut StoreType<U, V>,
     ) {
         // If we're at the bottom depth, it had better fit.
         if self.depth == 0 {
@@ -181,7 +181,7 @@ where
         if let Some(sqs) = self.subquadrants.as_mut() {
             for sq in sqs.iter_mut() {
                 if sq.region.intersects(req) {
-                    sq.insert_handle_at_region(req, handle, store);
+                    sq.insert_handle_at_region(req, handle, _store);
                 }
             }
         }
