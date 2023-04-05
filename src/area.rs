@@ -20,8 +20,6 @@ use {
     std::{cmp::PartialOrd, default::Default, fmt::Debug},
 };
 
-pub(crate) type Type<U> = (point::Type<U>, (U, U));
-
 /// A rectangular region in 2d space.
 ///
 /// Lightweight, should be passed by value. Defined by its top-left anchor, width, and height.
@@ -73,7 +71,20 @@ where
     }
 }
 
-impl<U> From<Area<U>> for Type<U>
+/// Why this custom From<>? Useful for type coercion:
+///
+/// ```
+/// use quadtree_rs::{area::{Area, AreaBuilder}, point::Point};
+///
+/// let area: Area<_> = AreaBuilder::default()
+///     .anchor(Point{x:1, y:2})
+///     .dimensions((3,4))
+///     .build().unwrap();
+/// let (anchor, dims) = area.into();
+/// assert_eq!(anchor, (1,2));
+/// assert_eq!(dims, (3,4));
+/// ```
+impl<U> From<Area<U>> for ((U, U), (U, U))
 where
     U: PrimInt + Default,
 {
@@ -86,8 +97,6 @@ impl<U> Area<U>
 where
     U: PrimInt + Default,
 {
-    // pub
-
     /// The top-left coordinate (anchor) of the region.
     pub fn anchor(&self) -> point::Point<U> {
         self.anchor
@@ -150,8 +159,6 @@ where
         )
     }
 
-    // pub(crate)
-
     // NB: The center point is an integer and thus rounded, i.e. a 2x2 region at (0,0) has a center
     // at (0,0), when in reality the center would be at (0.5, 0.5).
     pub(crate) fn center_pt(&self) -> point::Point<U> {
@@ -165,8 +172,6 @@ where
     pub(crate) fn dimensions(&self) -> (U, U) {
         self.dimensions
     }
-
-    // fn
 
     // Strongly-typed alias for U::one() + U::One()
     fn two() -> U {

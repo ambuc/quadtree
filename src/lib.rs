@@ -683,13 +683,13 @@ where
 /// `Extend<((U, U), V)>` will silently drop values whose coordinates do not fit in the region
 /// represented by the Quadtree. It is the responsibility of the callsite to ensure these points
 /// fit.
-impl<U, V> Extend<(point::Type<U>, V)> for Quadtree<U, V>
+impl<U, V> Extend<((U, U), V)> for Quadtree<U, V>
 where
     U: PrimInt + Default,
 {
     fn extend<T>(&mut self, iter: T)
     where
-        T: IntoIterator<Item = (point::Type<U>, V)>,
+        T: IntoIterator<Item = ((U, U), V)>,
     {
         for ((x, y), val) in iter {
             // Ignore errors.
