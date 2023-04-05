@@ -146,15 +146,6 @@ use {
     },
 };
 
-//   .d88b.  db    db  .d8b.  d8888b. d888888b d8888b. d88888b d88888b
-//  .8P  Y8. 88    88 d8' `8b 88  `8D `~~88~~' 88  `8D 88'     88'
-//  88    88 88    88 88ooo88 88   88    88    88oobY' 88ooooo 88ooooo
-//  88    88 88    88 88~~~88 88   88    88    88`8b   88~~~~~ 88~~~~~
-//  `8P  d8' 88b  d88 88   88 88  .8D    88    88 `88. 88.     88.
-//   `Y88'Y8 ~Y8888P' YP   YP Y8888D'    YP    88   YD Y88888P Y88888P
-//
-// These headers are created by the *basic* style on https://www.messletters.com/en/big-text/.
-
 /// A data structure for storing and accessing data in 2d space.
 ///
 /// For historical context, other implementations, and potential uses of a

@@ -21,13 +21,6 @@ use {
     std::iter::FusedIterator,
 };
 
-// d888888b d888888b d88888b d8888b.
-//   `88'   `~~88~~' 88'     88  `8D
-//    88       88    88ooooo 88oobY'
-//    88       88    88~~~~~ 88`8b
-//   .88.      88    88.     88 `88.
-// Y888888P    YP    Y88888P 88   YD
-
 /// An iterator over all regions and values of a [`Quadtree`].
 ///
 /// This struct is created by the [`iter`] method on [`Quadtree`].
@@ -81,13 +74,6 @@ where
 
 impl<U, V> FusedIterator for Iter<'_, U, V> where U: PrimInt + Default {}
 
-// d888888b d8b   db d888888b  .d88b.  d888888b d888888b d88888b d8888b.
-//   `88'   888o  88 `~~88~~' .8P  Y8.   `88'   `~~88~~' 88'     88  `8D
-//    88    88V8o 88    88    88    88    88       88    88ooooo 88oobY'
-//    88    88 V8o88    88    88    88    88       88    88~~~~~ 88`8b
-//   .88.   88  V888    88    `8b  d8'   .88.      88    88.     88 `88.
-// Y888888P VP   V8P    YP     `Y88P'  Y888888P    YP    Y88888P 88   YD
-
 /// A consuming iterator over all region/value associations held in a [`Quadtree`].
 ///
 /// This struct is created by the `into_iter()` method on the [`IntoIterator`] trait.
@@ -120,13 +106,6 @@ where
 }
 
 impl<U, V> FusedIterator for IntoIter<U, V> where U: PrimInt + Default {}
-
-//  .d88b.  db    db d88888b d8888b. db    db
-// .8P  Y8. 88    88 88'     88  `8D `8b  d8'
-// 88    88 88    88 88ooooo 88oobY'  `8bd8'
-// 88    88 88    88 88~~~~~ 88`8b      88
-// `8P  d8' 88b  d88 88.     88 `88.    88
-//  `Y88'Y8 ~Y8888P' Y88888P 88   YD    YP
 
 /// An iterator over the regions and values of a [`Quadtree`].
 ///
@@ -200,13 +179,6 @@ where
 
 impl<U, V> FusedIterator for Query<'_, U, V> where U: PrimInt + Default {}
 
-// db    db  .d8b.  db      db    db d88888b .d8888.
-// 88    88 d8' `8b 88      88    88 88'     88'  YP
-// Y8    8P 88ooo88 88      88    88 88ooooo `8bo.
-// `8b  d8' 88~~~88 88      88    88 88~~~~~   `Y8b.
-//  `8bd8'  88   88 88booo. 88b  d88 88.     db   8D
-//    YP    YP   YP Y88888P ~Y8888P' Y88888P `8888Y'
-
 /// An iterator over the values held within a [`Quadtree`].
 ///
 /// This struct is created by the [`values`] method on [`Quadtree`].
@@ -239,13 +211,6 @@ where
 }
 
 impl<U, V> FusedIterator for Values<'_, U, V> where U: PrimInt + Default {}
-
-// d8888b. d88888b  d888b  d888888b  .d88b.  d8b   db .d8888.
-// 88  `8D 88'     88' Y8b   `88'   .8P  Y8. 888o  88 88'  YP
-// 88oobY' 88ooooo 88         88    88    88 88V8o 88 `8bo.
-// 88`8b   88~~~~~ 88  ooo    88    88    88 88 V8o88   `Y8b.
-// 88 `88. 88.     88. ~8~   .88.   `8b  d8' 88  V888 db   8D
-// 88   YD Y88888P  Y888P  Y888888P  `Y88P'  VP   V8P `8888Y'
 
 /// An iterator over the regions held within a [`Quadtree`].
 ///

@@ -20,13 +20,6 @@ use {
     std::{cmp::PartialOrd, default::Default, fmt::Debug},
 };
 
-//   .d8b.  d8888b. d88888b  .d8b.
-//  d8' `8b 88  `8D 88'     d8' `8b
-//  88ooo88 88oobY' 88ooooo 88ooo88
-//  88~~~88 88`8b   88~~~~~ 88~~~88
-//  88   88 88 `88. 88.     88   88
-//  YP   YP 88   YD Y88888P YP   YP
-
 pub(crate) type Type<U> = (point::Type<U>, (U, U));
 
 /// A rectangular region in 2d space.

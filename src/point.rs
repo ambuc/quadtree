@@ -14,13 +14,6 @@
 
 //! A point region in the tree.
 
-// d8888b.  .d88b.  d888888b d8b   db d888888b
-// 88  `8D .8P  Y8.   `88'   888o  88 `~~88~~'
-// 88oodD' 88    88    88    88V8o 88    88
-// 88~~~   88    88    88    88 V8o88    88
-// 88      `8b  d8'   .88.   88  V888    88
-// 88       `Y88P'  Y888888P VP   V8P    YP
-
 use {
     num::PrimInt,
     std::{
