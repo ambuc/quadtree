@@ -14,6 +14,8 @@
 
 //! A rectangular region in the tree.
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use {
     crate::point,
     num::PrimInt,
@@ -28,6 +30,7 @@ use {
 ///   - The top-left anchor can be any valid `(U, U)` coordinate, positive or negative, in any
 ///   quadrant.
 ///   - The width and height must both be positive and nonzero.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(PartialEq, Eq, Clone, Copy, Hash, Builder)]
 #[builder(build_fn(validate = "Self::validate"))]
 pub struct Area<U>
