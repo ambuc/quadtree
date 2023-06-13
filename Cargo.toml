@@ -1,6 +1,6 @@
 [package]
 name = "quadtree_rs"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["James Adam Buckland <james.adam.buckland@gmail.com>"]
 edition = "2018"
 description = "Point/region Quadtree with support for overlapping regions."
