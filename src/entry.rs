@@ -15,6 +15,8 @@
 //! A view into a single entry in the Quadtree.
 // Influenced by https://doc.rust-lang.org/std/collections/hash_map/enum.Entry.html.
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use {
     crate::{area::Area, point::Point},
     num::PrimInt,
@@ -64,6 +66,7 @@ use {
 ///
 /// [`Quadtree`]: ../struct.Quadtree.html
 // TODO(ambuc): Entry should hold Box<V> for better return-by-value semantics.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq)]
 pub struct Entry<U, V>
 where

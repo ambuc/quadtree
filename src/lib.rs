@@ -127,6 +127,8 @@ mod qtinner;
 mod traversal;
 mod types;
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use {
     crate::{
         area::{Area, AreaBuilder},
@@ -175,6 +177,7 @@ use {
 /// [`.delete()`]: #method.delete
 // TODO(ambuc): Implement `.delete_by(anchor, dimensions, fn)`: `.retain()` is the inverse.
 // TODO(ambuc): Implement `FromIterator<(K, V)>` for `Quadtree`.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq)]
 pub struct Quadtree<U, V>
 where
