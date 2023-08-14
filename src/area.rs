@@ -14,6 +14,7 @@
 
 //! A rectangular region in the tree.
 
+use derive_builder::Builder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use {
