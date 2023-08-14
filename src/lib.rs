@@ -115,7 +115,6 @@
 
 #[macro_use]
 extern crate derive_builder;
-extern crate num;
 
 pub mod area;
 pub mod entry;
