@@ -26,8 +26,8 @@ license = "Apache-2.0"
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-num = "0.2"
-derive_builder = "0.7"
+num = "0.4"
+derive_builder = "0.12"
 serde = { version = "1.0.152", features = ["derive"], optional=true}
 
 [features]

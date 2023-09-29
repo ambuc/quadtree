@@ -113,10 +113,6 @@
 // For extra-pedantic documentation tests.
 #![doc(test(attr(deny(warnings))))]
 
-#[macro_use]
-extern crate derive_builder;
-extern crate num;
-
 pub mod area;
 pub mod entry;
 pub mod iter;
@@ -171,7 +167,7 @@ use {
 /// operational region, the strict behavior is for the operation to apply only to those regions
 /// which are _totally contained by_ the operational region.
 ///
-/// [`derive_builder`]: https://docs.rs/derive_builder/0.7.0/derive_builder/
+/// [`derive_builder`]: https://docs.rs/derive_builder/0.12.0/derive_builder/
 /// [`.query()`]: #method.query
 /// [`.modify()`]: #method.modify
 /// [`.delete()`]: #method.delete
