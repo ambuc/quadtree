@@ -17,10 +17,10 @@
 //!
 //! # Quick Start
 //! ```
-//! use quadtree_rs::{area::AreaBuilder, point::Point, Quadtree};
+//! use quadtree_rs::{area::AreaBuilder, point::Point, HashQuadtree as Quadtree};
 //!
 //! // Instantiate a new quadtree which associates String values with u64 coordinates.
-//! let mut qt = Quadtree::<u64, String>::new(/*depth=*/4);
+//! let mut qt = Quadtree::new(/*depth=*/4);
 //!
 //! // A depth of four means a square with width (and height) 2^4.
 //! assert_eq!(qt.width(), 16);
@@ -45,9 +45,9 @@
 //!
 //! # Implementation
 //! ```
-//! use quadtree_rs::{area::AreaBuilder, point::Point, Quadtree};
+//! use quadtree_rs::{area::AreaBuilder, point::Point, HashQuadtree as Quadtree};
 //!
-//! let mut qt = Quadtree::<u8, char>::new(2);
+//! let mut qt = Quadtree::new(2);
 //!
 //! // In a quadtree, every region is (lazily) subdivided into subqudrants.
 //!
@@ -123,12 +123,16 @@ pub mod iter;
 pub mod point;
 
 mod handle_iter;
+mod map;
 mod qtinner;
 mod qtree;
 mod traversal;
 
-// The hashmap storage type for qtinners. Made explicit here for brevity in other files.
-pub(crate) type StoreType<U, V> = std::collections::HashMap<u64, crate::entry::Entry<U, V>>;
+use entry::Entry;
+use std::collections::{BTreeMap, HashMap};
+
+pub type HashQuadtree<U, V> = Quadtree<U, V, HashMap<u64, Entry<U, V>>>;
+pub type BQuadtree<U, V> = Quadtree<U, V, BTreeMap<u64, Entry<U, V>>>;
 
 pub use area::{Area, AreaBuilder};
 pub use point::Point;

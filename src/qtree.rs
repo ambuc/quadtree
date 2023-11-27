@@ -3,20 +3,16 @@ use crate::{
     entry::Entry,
     handle_iter::HandleIter,
     iter::{IntoIter, Iter, Query, Regions, Values},
+    map::Map,
     point::Point,
     qtinner::QTInner,
     traversal::Traversal,
-    StoreType,
 };
 
 use num::PrimInt;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::{HashMap, HashSet},
-    default::Default,
-    hash::Hash,
-};
+use std::{collections::HashSet, default::Default, hash::Hash, marker::PhantomData};
 
 /// A data structure for storing and accessing data in 2d space.
 ///
@@ -49,26 +45,29 @@ use std::{
 // TODO(ambuc): Implement `FromIterator<(K, V)>` for `Quadtree`.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq)]
-pub struct Quadtree<U, V>
+pub struct Quadtree<U, V, M>
 where
-    U: PrimInt + Default,
+    M: Map<U, V> + Default,
+    U: PrimInt + Default + 'static,
 {
     pub(crate) inner: QTInner<U>,
-    pub(crate) store: StoreType<U, V>,
+    pub(crate) store: M,
+    _v: PhantomData<V>,
 }
 
-impl<U, V> Quadtree<U, V>
+impl<U, V, M> Quadtree<U, V, M>
 where
-    U: PrimInt + Default,
+    M: Map<U, V> + Default,
+    U: PrimInt + Default + 'static,
 {
     // pub
 
     /// Creates a new, empty quadtree with some depth.
     /// A quadtree with depth `n` will accept coordinates in the range `[0, 2^n]`.
     /// ```
-    /// use quadtree_rs::{point::Point, Quadtree};
+    /// use quadtree_rs::{point::Point, HashQuadtree as Quadtree};
     ///
-    /// let qt = Quadtree::<u32, u8>::new(/*depth=*/ 2);
+    /// let qt: Quadtree<u32, u8> = Quadtree::new(/*depth=*/ 2);
     ///
     /// // The anchor of a rectangular region is its top-left coordinate.
     /// // By default, quadtrees are anchored at (0, 0).
@@ -95,11 +94,11 @@ where
     ///
     /// [`point::Point`]: point/struct.Point.html
     /// ```
-    /// use quadtree_rs::{point::Point, Quadtree};
+    /// use quadtree_rs::{point::Point, HashQuadtree as Quadtree};
     ///
     /// let anchor = Point {x: 2, y: 4};
     /// let depth = 3_usize;
-    /// let qt = Quadtree::<u32, u8>::new_with_anchor(anchor, depth);
+    /// let qt: Quadtree<u32, u8> = Quadtree::new_with_anchor(anchor, depth);
     ///
     /// assert_eq!(qt.depth(), 3);
     /// assert_eq!(qt.anchor(), Point {x: 2, y: 4});
@@ -109,7 +108,8 @@ where
     pub fn new_with_anchor(anchor: Point<U>, depth: usize) -> Self {
         Self {
             inner: QTInner::new(anchor, depth),
-            store: HashMap::new(),
+            store: Default::default(),
+            _v: Default::default(),
         }
     }
 
@@ -155,9 +155,9 @@ where
     /// If the region is too large for, or doesn't overlap with, the region which this quadtree
     /// represents, returns `None`.
     /// ```
-    /// use quadtree_rs::{area::AreaBuilder, point::Point, Quadtree};
+    /// use quadtree_rs::{area::AreaBuilder, point::Point, HashQuadtree as Quadtree};
     ///
-    /// let mut qt = Quadtree::<u32, i8>::new(8);
+    /// let mut qt = Quadtree::new(8);
     ///
     /// let region = AreaBuilder::default()
     ///     .anchor(Point {x: 4, y: 5})
@@ -187,11 +187,11 @@ where
     /// the point still has to fit within the region.)
     ///
     /// ```
-    /// use quadtree_rs::{point::Point, Quadtree};
+    /// use quadtree_rs::{point::Point, HashQuadtree as Quadtree};
     ///
-    /// let mut qt = Quadtree::<u32, i8>::new(2);
+    /// let mut qt: Quadtree<u32, u8> = Quadtree::new(2);
     ///
-    /// assert!(qt.insert_pt(Point { x: 1, y: 2 }, 5_i8).is_some());
+    /// assert!(qt.insert_pt(Point { x: 1, y: 2 }, 5).is_some());
     /// ```
     ///
     /// [`.insert()`]: #method.insert
@@ -211,9 +211,9 @@ where
     /// fail and return `None`.
     ///
     /// ```
-    /// use quadtree_rs::{area::AreaBuilder, point::Point, Quadtree};
+    /// use quadtree_rs::{area::AreaBuilder, point::Point, HashQuadtree as Quadtree};
     ///
-    /// let mut qt = Quadtree::<u32, f32>::new(4);
+    /// let mut qt = Quadtree::new(4);
     ///
     /// let region = AreaBuilder::default()
     ///     .anchor(Point {x: 0, y: 1})
@@ -227,17 +227,20 @@ where
     ///
     /// [`.insert()`]: #method.insert
     /// [`Entry<U, V>`]: entry/struct.Entry.html
-    pub fn get(&self, handle: u64) -> Option<&Entry<U, V>> {
-        self.store.get(&handle)
+    pub fn get(&self, handle: u64) -> Option<&Entry<U, V>>
+    where
+        U: 'static,
+    {
+        self.store.get(handle)
     }
 
     /// A mutable variant of [`.get()`] which provides mutable access to the
     /// associated [`Entry<U, V>`] struct.
     ///
     /// ```
-    /// use quadtree_rs::{area::AreaBuilder, point::Point, Quadtree};
+    /// use quadtree_rs::{area::AreaBuilder, point::Point, HashQuadtree as Quadtree};
     ///
-    /// let mut qt = Quadtree::<u32, f32>::new(4);
+    /// let mut qt: Quadtree<u32, f32> = Quadtree::new(4);
     ///
     /// let region = AreaBuilder::default()
     ///     .anchor(Point {x: 0, y: 1})
@@ -256,13 +259,13 @@ where
     /// [`.get()`]: #method.get
     /// [`Entry<U, V>`]: entry/struct.Entry.html
     pub fn get_mut(&mut self, handle: u64) -> Option<&mut Entry<U, V>> {
-        self.store.get_mut(&handle)
+        self.store.get_mut(handle)
     }
 
     /// Returns an iterator over [`&Entry<U, V>`] structs representing values
     /// within the query region.
     /// ```
-    /// use quadtree_rs::{area::AreaBuilder, Quadtree};
+    /// use quadtree_rs::{area::AreaBuilder, HashQuadtree as Quadtree};
     ///
     /// //   0123456
     /// // 0 ░░░░░░░
@@ -271,7 +274,7 @@ where
     /// // 3 ░░░░░░░
     /// // 4 ░▒▒▒░░░    (1,4)->3x1
     /// // 5 ░░░░░░░
-    /// let mut qt = Quadtree::<u32, char>::new(4);
+    /// let mut qt = Quadtree::new(4);
     ///
     /// let region_a = AreaBuilder::default()
     ///     .anchor((2, 1).into())
@@ -325,14 +328,14 @@ where
     /// [`&Entry<U, V>`]: entry/struct.Entry.html
     /// [`.query()`]: #method.query
     // TODO(ambuc): Settle on a stable return order to avoid breaking callers.
-    pub fn query(&self, area: Area<U>) -> Query<U, V> {
+    pub fn query(&self, area: Area<U>) -> Query<U, V, M> {
         Query::new(area, &self.inner, &self.store, Traversal::Overlapping)
     }
 
     /// A strict variant of [`.query()`].
     ///
     /// [`.query()`]: #method.query
-    pub fn query_strict(&self, area: Area<U>) -> Query<U, V> {
+    pub fn query_strict(&self, area: Area<U>) -> Query<U, V, M> {
         Query::new(area, &self.inner, &self.store, Traversal::Strict)
     }
 
@@ -340,9 +343,9 @@ where
     /// quadtree which intersecting the described region.
     ///
     /// ```
-    /// use quadtree_rs::{area::AreaBuilder, Quadtree};
+    /// use quadtree_rs::{area::AreaBuilder, HashQuadtree as Quadtree};
     ///
-    /// let mut qt = Quadtree::<u8, bool>::new(3);
+    /// let mut qt: Quadtree<u8, bool> = Quadtree::new(3);
     ///
     /// let region_a = AreaBuilder::default()
     ///     .anchor((0, 0).into())
@@ -396,9 +399,9 @@ where
     /// Along the way, consumed [`Entry<U, V>`] entries are collected and returned in an iterator
     /// [`IntoIter<U, V>`].
     /// ```
-    /// use quadtree_rs::{area::AreaBuilder, Quadtree};
+    /// use quadtree_rs::{area::AreaBuilder, HashQuadtree as Quadtree};
     ///
-    /// let mut qt = Quadtree::<u32, f64>::new(4);
+    /// let mut qt = Quadtree::new(4);
     ///
     /// let region_a = AreaBuilder::default()
     ///     .anchor((0, 0).into())
@@ -452,7 +455,7 @@ where
         handles.iter().for_each(|u| {
             // We were just passed a hashset of handles taken from this quadtree, so it is safe to
             // assume they all still exist.
-            entries.push(self.store.remove(u).expect(error));
+            entries.push(self.store.remove(*u).expect(error));
         });
 
         IntoIter { entries }
@@ -465,7 +468,7 @@ where
     /// returns `None`.
     pub fn delete_by_handle(&mut self, handle: u64) -> Option<Entry<U, V>> {
         // Pop the Entry<U, V> out of the @store,
-        if let Some(entry) = self.store.remove(&handle) {
+        if let Some(entry) = self.store.remove(handle) {
             // Use the now-known region to descend into the tree efficiently,
             self.inner.delete_by_handle(handle, entry.area());
             // And return the Entry.
@@ -487,7 +490,7 @@ where
         // TODO(ambuc): I think this is technically correct but it seems to be interweaving three
         // routines. Is there a way to simplify this?
         let mut doomed: HashSet<(u64, Area<U>)> = HashSet::new();
-        for (handle, entry) in &mut self.store {
+        for (handle, entry) in self.store.iter_mut() {
             if f(entry.value_mut()) {
                 doomed.insert((*handle, entry.area()));
             }
@@ -496,7 +499,7 @@ where
         // many traversals i.e. one per match.
         let mut entries: Vec<Entry<U, V>> = vec![];
         for (handle, region) in doomed {
-            entries.push(self.store.remove(&handle).unwrap());
+            entries.push(self.store.remove(handle).unwrap());
             self.inner.delete_by_handle(handle, region);
         }
 
@@ -509,7 +512,7 @@ where
     ///
     /// [`Iter<U, V>`]: iter/struct.Iter.html
     /// [`&'a Entry<U, V>`]: entry/struct.Entry.html
-    pub fn iter(&self) -> Iter<U, V> {
+    pub fn iter(&self) -> Iter<U, V, M> {
         Iter::new(&self.inner, &self.store)
     }
 
@@ -518,7 +521,7 @@ where
     ///
     /// [`Regions<U, V>`]: iter/struct.Regions.html
     /// [`Area<U>`]: area/struct.Area.html
-    pub fn regions(&self) -> Regions<U, V> {
+    pub fn regions(&self) -> Regions<U, V, M> {
         Regions {
             inner: Iter::new(&self.inner, &self.store),
         }
@@ -528,7 +531,7 @@ where
     /// Quadtree.
     ///
     /// [`Values<U, V>`]: iter/struct.Values.html
-    pub fn values(&self) -> Values<U, V> {
+    pub fn values(&self) -> Values<U, V, M> {
         Values {
             inner: Iter::new(&self.inner, &self.store),
         }
@@ -536,15 +539,15 @@ where
 
     // fn
 
-    pub(crate) fn modify_region<F, M>(&mut self, filter: F, modify: M)
+    pub(crate) fn modify_region<F, MF>(&mut self, filter: F, modify: MF)
     where
         F: Fn(Area<U>) -> bool,
-        M: Fn(&mut V) + Copy,
+        MF: Fn(&mut V) + Copy,
     {
         let relevant_handles: Vec<u64> =
             HandleIter::new(&self.inner, self.inner.region()).collect();
         for i in relevant_handles {
-            if let Some(entry) = self.store.get_mut(&i) {
+            if let Some(entry) = self.store.get_mut(i) {
                 if filter(entry.area()) {
                     modify(entry.value_mut());
                 }
@@ -556,9 +559,10 @@ where
 /// `Extend<((U, U), V)>` will silently drop values whose coordinates do not fit in the region
 /// represented by the Quadtree. It is the responsibility of the callsite to ensure these points
 /// fit.
-impl<U, V> Extend<((U, U), V)> for Quadtree<U, V>
+impl<U, V, M> Extend<((U, U), V)> for Quadtree<U, V, M>
 where
-    U: PrimInt + Default,
+    M: Map<U, V> + Default,
+    U: PrimInt + Default + 'static,
 {
     fn extend<T>(&mut self, iter: T)
     where
@@ -578,21 +582,23 @@ where
 }
 
 // Immutable iterator for the Quadtree, returning by-reference.
-impl<'a, U, V> IntoIterator for &'a Quadtree<U, V>
+impl<'a, U, V, M> IntoIterator for &'a Quadtree<U, V, M>
 where
-    U: PrimInt + Default,
+    M: Map<U, V> + Default,
+    U: PrimInt + Default + 'static,
 {
     type Item = &'a Entry<U, V>;
-    type IntoIter = Iter<'a, U, V>;
+    type IntoIter = Iter<'a, U, V, M>;
 
-    fn into_iter(self) -> Iter<'a, U, V> {
+    fn into_iter(self) -> Iter<'a, U, V, M> {
         Iter::new(&self.inner, &self.store)
     }
 }
 
-impl<U, V> IntoIterator for Quadtree<U, V>
+impl<U, V, M> IntoIterator for Quadtree<U, V, M>
 where
-    U: PrimInt + Default,
+    M: Map<U, V> + Default,
+    U: PrimInt + Default + 'static,
 {
     type Item = Entry<U, V>;
     type IntoIter = IntoIter<U, V>;

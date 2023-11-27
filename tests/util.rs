@@ -1,5 +1,5 @@
 use num::{cast::FromPrimitive, PrimInt};
-use quadtree_rs::{AreaBuilder, Quadtree};
+use quadtree_rs::{AreaBuilder, HashQuadtree as Quadtree};
 use std::{collections::HashSet, default::Default, fmt::Debug, hash::Hash, iter::FromIterator};
 
 // Inspired by google/googletest's UnorderedElementsAre().

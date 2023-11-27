@@ -32,10 +32,10 @@ use std::default::Default;
 /// ```
 /// use quadtree_rs::{
 ///   area::AreaBuilder,
-///   Quadtree,
+///   HashQuadtree as Quadtree,
 /// };
 ///
-/// let mut qt = Quadtree::<u32, f64>::new(4);
+/// let mut qt = Quadtree::new(4);
 /// let region_a = AreaBuilder::default()
 ///     .anchor((1, 1).into())
 ///     .dimensions((3, 2))

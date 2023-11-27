@@ -17,11 +17,11 @@ mod util; // For unordered_elements_are.
 // For testing .query(), .modify().
 mod query_tests {
     use crate::util::unordered_elements_are;
-    use quadtree_rs::{AreaBuilder, Quadtree};
+    use quadtree_rs::{AreaBuilder, HashQuadtree as Quadtree};
 
     #[test]
     fn query_empty() {
-        let qt = Quadtree::<u32, u8>::new(2);
+        let qt: Quadtree<u32, u8> = Quadtree::new(2);
         let mut iter = qt.query(
             AreaBuilder::default()
                 .anchor((0, 0).into())
@@ -34,7 +34,7 @@ mod query_tests {
 
     #[test]
     fn query_on_point() {
-        let mut qt = Quadtree::<u32, u8>::new(1);
+        let mut qt = Quadtree::new(1);
         assert!(qt
             .insert(
                 AreaBuilder::default()
@@ -91,7 +91,7 @@ mod query_tests {
 
     #[test]
     fn query_in_region() {
-        let mut qt = Quadtree::<u32, u8>::new(4);
+        let mut qt = Quadtree::new(4);
         //   0  1  2  3  4  5  6
         // 0 +--+--+--+--+--+--+
         //   |  |  |  |  |  |  |
@@ -324,7 +324,7 @@ mod query_tests {
 
     #[test]
     fn query_strict_in_region() {
-        let mut qt = Quadtree::<u32, u8>::new(4);
+        let mut qt = Quadtree::new(4);
         //   0  1  2  3  4  5  6
         // 0 +--+--+--+--+--+--+
         //   |  |  |  |  |  |  |
@@ -656,21 +656,21 @@ mod query_tests {
     #[test]
     fn modify_empty() {
         // Modification shouldn't change the emptiness.
-        let mut qt = Quadtree::<u32, u8>::new(2);
+        let mut qt = Quadtree::new(2);
         qt.modify(
             AreaBuilder::default()
                 .anchor((0, 0).into())
                 .dimensions((4, 4))
                 .build()
                 .unwrap(),
-            |v| *v *= 2,
+            |v: &mut u32| *v *= 2,
         );
         debug_assert!(qt.is_empty());
     }
 
     #[test]
     fn modify() {
-        let mut qt = Quadtree::<u32, u8>::new(3);
+        let mut qt = Quadtree::new(3);
 
         // Insert #49 at (0, 0)->1x1.
         assert!(qt

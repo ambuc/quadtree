@@ -12,16 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::{
-    area::{Area, AreaBuilder},
-    entry::Entry,
-    point::Point,
-    StoreType,
-};
-use num::PrimInt;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use std::{default::Default, fmt::Debug};
+
+use crate::map::Map;
+use {
+    crate::{
+        area::{Area, AreaBuilder},
+        entry::Entry,
+        point::Point,
+    },
+    num::PrimInt,
+    std::{default::Default, fmt::Debug},
+};
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, PartialEq, Eq)]
@@ -49,7 +52,7 @@ where
 
 impl<U> Debug for QTInner<U>
 where
-    U: PrimInt + Default + Debug,
+    U: PrimInt + Default + Debug + 'static,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         if self.subquadrants.is_some() {
@@ -68,7 +71,7 @@ where
 
 impl<U> QTInner<U>
 where
-    U: PrimInt + Default,
+    U: PrimInt + Default + 'static,
 {
     // pub
 
@@ -110,16 +113,15 @@ where
 
     // Attempts to insert the value at the requested region. Returns false if the region was too
     // large.
-    pub fn insert_val_at_region<V>(
-        &mut self,
-        req: Area<U>,
-        val: V,
-        store: &mut StoreType<U, V>,
-    ) -> u64 {
+    pub fn insert_val_at_region<'a, V, M>(&mut self, req: Area<U>, val: V, store: &'a mut M) -> u64
+    where
+        M: Map<U, V> + Default,
+        V: 'a,
+    {
         let handle = self.handle_counter;
         self.handle_counter += 1;
         store.insert(handle, Entry::new((req, val), handle));
-        self.insert_handle_at_region(req, handle, store);
+        self.insert_handle_at_region::<V, M>(req, handle, store);
         handle
     }
 
@@ -151,12 +153,7 @@ where
 
     // Attempts to insert the value at the requested region. Returns false if the region was too
     // large.
-    fn insert_handle_at_region<V>(
-        &mut self,
-        req: Area<U>,
-        handle: u64,
-        _store: &mut StoreType<U, V>,
-    ) {
+    fn insert_handle_at_region<V, M>(&mut self, req: Area<U>, handle: u64, _store: &mut M) {
         // If we're at the bottom depth, it had better fit.
         if self.depth == 0 {
             self.kept_handles.push(handle);
@@ -182,7 +179,7 @@ where
         if let Some(sqs) = self.subquadrants.as_mut() {
             for sq in sqs.iter_mut() {
                 if sq.region.intersects(req) {
-                    sq.insert_handle_at_region(req, handle, _store);
+                    sq.insert_handle_at_region::<V, M>(req, handle, _store);
                 }
             }
         }

@@ -19,7 +19,7 @@ use std::{collections::HashSet, default::Default, iter::FusedIterator};
 #[derive(Clone, Debug)]
 pub(crate) struct HandleIter<'a, U>
 where
-    U: PrimInt + Default,
+    U: PrimInt + Default + 'static,
 {
     search_area: Area<U>,
     handle_stack: Vec<u64>,
