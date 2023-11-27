@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use {
-    crate::{
-        area::Area, entry::Entry, handle_iter::HandleIter, qtinner::QTInner, traversal::Traversal,
-        types::StoreType,
-    },
-    num::PrimInt,
-    std::iter::FusedIterator,
+use crate::{
+    area::Area, entry::Entry, handle_iter::HandleIter, qtinner::QTInner, traversal::Traversal,
+    StoreType,
 };
+use num::PrimInt;
+use std::iter::FusedIterator;
 
 /// An iterator over all regions and values of a [`Quadtree`].
 ///

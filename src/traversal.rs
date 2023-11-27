@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use {crate::area::Area, num::PrimInt, std::default::Default};
+use crate::area::Area;
+use num::PrimInt;
+use std::default::Default;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Traversal {

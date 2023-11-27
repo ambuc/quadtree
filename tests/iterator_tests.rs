@@ -16,10 +16,8 @@ mod util; // For unordered_elements_are.
 
 // For testing .iter(), .iter_mut(), .regions(), .values(), .values_mut().
 mod iterator_tests {
-    use {
-        crate::util::unordered_elements_are,
-        quadtree_rs::{area::AreaBuilder, entry::Entry, Quadtree},
-    };
+    use crate::util::unordered_elements_are;
+    use quadtree_rs::{area::AreaBuilder, entry::Entry, Quadtree};
 
     fn mk_quadtree_for_iter_tests() -> Quadtree<i32, i8> {
         let mut qt = Quadtree::<i32, i8>::new_with_anchor((-35, -35).into(), 8);

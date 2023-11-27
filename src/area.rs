@@ -14,13 +14,11 @@
 
 //! A rectangular region in the tree.
 
+use crate::point;
+use num::PrimInt;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use {
-    crate::point,
-    num::PrimInt,
-    std::{cmp::PartialOrd, default::Default, fmt::Debug},
-};
+use std::{cmp::PartialOrd, default::Default, fmt::Debug};
 
 /// A rectangular region in 2d space.
 ///

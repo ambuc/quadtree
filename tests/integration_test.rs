@@ -14,7 +14,7 @@
 
 mod util; // For unordered_elements_are.
 
-use quadtree_rs::{area::AreaBuilder, Quadtree};
+use quadtree_rs::{AreaBuilder, Quadtree};
 
 mod new {
     use super::*;
