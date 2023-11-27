@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use {
-    crate::{
-        area::Area, entry::Entry, handle_iter::HandleIter, qtinner::QTInner, traversal::Traversal,
-        types::StoreType,
-    },
-    num::PrimInt,
-    std::iter::FusedIterator,
+use crate::{
+    area::Area, entry::Entry, handle_iter::HandleIter, map::Map, qtinner::QTInner,
+    traversal::Traversal,
 };
+use num::PrimInt;
+use std::{iter::FusedIterator, marker::PhantomData};
 
 /// An iterator over all regions and values of a [`Quadtree`].
 ///
@@ -28,29 +26,35 @@ use {
 /// [`iter`]: ../struct.Quadtree.html#method.iter
 /// [`Quadtree`]: ../struct.Quadtree.html
 #[derive(Clone, Debug)]
-pub struct Iter<'a, U, V>
+pub struct Iter<'a, U, V, M>
 where
-    U: PrimInt + Default,
+    M: Map<U, V>,
+    U: PrimInt + Default + 'static,
 {
-    store: &'a StoreType<U, V>,
+    store: &'a M,
     handle_iter: HandleIter<'a, U>,
+    _v: PhantomData<V>,
 }
 
-impl<'a, U, V> Iter<'a, U, V>
+impl<'a, U, V, M> Iter<'a, U, V, M>
 where
-    U: PrimInt + Default,
+    M: Map<U, V>,
+    U: PrimInt + Default + 'static,
 {
-    pub(crate) fn new(qt: &'a QTInner<U>, store: &'a StoreType<U, V>) -> Iter<'a, U, V> {
+    pub(crate) fn new(qt: &'a QTInner<U>, store: &'a M) -> Self {
         Iter {
             store,
             handle_iter: HandleIter::new(qt, qt.region()),
+            _v: Default::default(),
         }
     }
 }
 
-impl<'a, U, V> Iterator for Iter<'a, U, V>
+impl<'a, U, V, M> Iterator for Iter<'a, U, V, M>
 where
-    U: PrimInt + Default,
+    M: Map<U, V>,
+    U: PrimInt + Default + 'static,
+    V: 'a,
 {
     type Item = &'a Entry<U, V>;
 
@@ -59,7 +63,7 @@ where
         match self.handle_iter.next() {
             Some(handle) => Some(
                 self.store
-                    .get(&handle)
+                    .get(handle)
                     .expect("Shouldn't have an handle in the tree which isn't in the store."),
             ),
             None => None,
@@ -72,7 +76,13 @@ where
     }
 }
 
-impl<U, V> FusedIterator for Iter<'_, U, V> where U: PrimInt + Default {}
+impl<'a, U, V, M> FusedIterator for Iter<'a, U, V, M>
+where
+    M: Map<U, V>,
+    U: PrimInt + Default + 'static,
+    V: 'a,
+{
+}
 
 /// A consuming iterator over all region/value associations held in a [`Quadtree`].
 ///
@@ -114,26 +124,27 @@ impl<U, V> FusedIterator for IntoIter<U, V> where U: PrimInt + Default {}
 /// [`query`]: ../struct.Quadtree.html#method.query
 /// [`Quadtree`]: ../struct.Quadtree.html
 #[derive(Clone, Debug)]
-pub struct Query<'a, U, V>
+pub struct Query<'a, U, V, M>
 where
-    U: PrimInt + Default,
+    U: PrimInt + Default + 'static,
 {
     query_region: Area<U>,
     handle_iter: HandleIter<'a, U>,
-    store: &'a StoreType<U, V>,
+    store: &'a M,
     traversal_method: Traversal,
+    _v: PhantomData<V>,
 }
 
-impl<'a, U, V> Query<'a, U, V>
+impl<'a, U, V, M> Query<'a, U, V, M>
 where
     U: PrimInt + Default,
 {
     pub(crate) fn new(
         query_region: Area<U>,
         qt: &'a QTInner<U>,
-        store: &'a StoreType<U, V>,
+        store: &'a M,
         traversal_method: Traversal,
-    ) -> Query<'a, U, V>
+    ) -> Self
     where
         U: PrimInt + Default,
     {
@@ -150,19 +161,22 @@ where
             handle_iter,
             store,
             traversal_method,
+            _v: Default::default(),
         }
     }
 }
 
-impl<'a, U, V> Iterator for Query<'a, U, V>
+impl<'a, U, V, M> Iterator for Query<'a, U, V, M>
 where
-    U: PrimInt + Default,
+    M: Map<U, V>,
+    U: PrimInt + Default + 'static,
+    V: 'a,
 {
     type Item = &'a Entry<U, V>;
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         for handle in self.handle_iter.by_ref() {
-            if let Some(entry) = self.store.get(&handle) {
+            if let Some(entry) = self.store.get(handle) {
                 if self.traversal_method.eval(entry.area(), self.query_region) {
                     return Some(entry);
                 }
@@ -177,7 +191,13 @@ where
     }
 }
 
-impl<U, V> FusedIterator for Query<'_, U, V> where U: PrimInt + Default {}
+impl<'a, U, V, M> FusedIterator for Query<'a, U, V, M>
+where
+    M: Map<U, V>,
+    U: PrimInt + Default + 'static,
+    V: 'a,
+{
+}
 
 /// An iterator over the values held within a [`Quadtree`].
 ///
@@ -186,16 +206,19 @@ impl<U, V> FusedIterator for Query<'_, U, V> where U: PrimInt + Default {}
 /// [`values`]: ../struct.Quadtree.html#method.values
 /// [`Quadtree`]: ../struct.Quadtree.html
 #[derive(Clone, Debug)]
-pub struct Values<'a, U, V>
+pub struct Values<'a, U, V, M>
 where
-    U: PrimInt + Default,
+    M: Map<U, V>,
+    U: PrimInt + Default + 'static,
 {
-    pub(crate) inner: Iter<'a, U, V>,
+    pub(crate) inner: Iter<'a, U, V, M>,
 }
 
-impl<'a, U, V> Iterator for Values<'a, U, V>
+impl<'a, U, V, M> Iterator for Values<'a, U, V, M>
 where
-    U: PrimInt + Default,
+    M: Map<U, V>,
+    U: PrimInt + Default + 'static,
+    V: 'a,
 {
     type Item = &'a V;
 
@@ -210,7 +233,13 @@ where
     }
 }
 
-impl<U, V> FusedIterator for Values<'_, U, V> where U: PrimInt + Default {}
+impl<'a, U, V, M> FusedIterator for Values<'a, U, V, M>
+where
+    M: Map<U, V>,
+    U: PrimInt + Default + 'static,
+    V: 'a,
+{
+}
 
 /// An iterator over the regions held within a [`Quadtree`].
 ///
@@ -219,16 +248,19 @@ impl<U, V> FusedIterator for Values<'_, U, V> where U: PrimInt + Default {}
 /// [`regions`]: ../struct.Quadtree.html#method.regions
 /// [`Quadtree`]: ../struct.Quadtree.html
 #[derive(Clone, Debug)]
-pub struct Regions<'a, U, V>
+pub struct Regions<'a, U, V, M>
 where
-    U: PrimInt + Default,
+    M: Map<U, V>,
+    U: PrimInt + Default + 'static,
 {
-    pub(crate) inner: Iter<'a, U, V>,
+    pub(crate) inner: Iter<'a, U, V, M>,
 }
 
-impl<'a, U, V> Iterator for Regions<'a, U, V>
+impl<'a, U, V, M> Iterator for Regions<'a, U, V, M>
 where
-    U: PrimInt + Default,
+    M: Map<U, V>,
+    U: PrimInt + Default + 'static,
+    V: 'a,
 {
     type Item = Area<U>;
 
@@ -243,4 +275,10 @@ where
     }
 }
 
-impl<U, V> FusedIterator for Regions<'_, U, V> where U: PrimInt + Default {}
+impl<'a, U, V, M> FusedIterator for Regions<'a, U, V, M>
+where
+    M: Map<U, V>,
+    U: PrimInt + Default + 'static,
+    V: 'a,
+{
+}

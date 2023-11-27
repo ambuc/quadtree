@@ -16,12 +16,11 @@
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use {
-    num::PrimInt,
-    std::{
-        fmt::Debug,
-        ops::{Add, Sub},
-    },
+
+use num::PrimInt;
+use std::{
+    fmt::Debug,
+    ops::{Add, Sub},
 };
 
 // Transparent alias. In docs and user-facing APIs, this resolves to (U, U).
