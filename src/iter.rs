@@ -38,7 +38,7 @@ impl<'a, U, V> Iter<'a, U, V>
 where
     U: PrimInt + Default,
 {
-    pub(crate) fn new(qt: &'a QTInner<U>, store: &'a StoreType<U, V>) -> Iter<'a, U, V> {
+    pub(crate) fn new(qt: &'a QTInner<U>, store: &'a StoreType<U, V>) -> Self {
         Iter {
             store,
             handle_iter: HandleIter::new(qt, qt.region()),
@@ -131,7 +131,7 @@ where
         qt: &'a QTInner<U>,
         store: &'a StoreType<U, V>,
         traversal_method: Traversal,
-    ) -> Query<'a, U, V>
+    ) -> Self
     where
         U: PrimInt + Default,
     {

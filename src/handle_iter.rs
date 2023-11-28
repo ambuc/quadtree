@@ -31,7 +31,7 @@ impl<'a, U> HandleIter<'a, U>
 where
     U: PrimInt + Default,
 {
-    pub(crate) fn new(qt: &'a QTInner<U>, search_area: Area<U>) -> HandleIter<'a, U> {
+    pub(crate) fn new(qt: &'a QTInner<U>, search_area: Area<U>) -> Self {
         HandleIter {
             search_area,
             handle_stack: vec![],
@@ -112,7 +112,7 @@ where
             if let Some(qt) = self.qt_stack.pop() {
                 // Push my sub quadrants onto the qt_stack too.
                 if let Some(sub_quadrants) = qt.subquadrants().as_ref() {
-                    for sub_quadrant in sub_quadrants {
+                    for sub_quadrant in &**sub_quadrants {
                         if sub_quadrant.region().intersects(self.search_area) {
                             self.qt_stack.push(sub_quadrant)
                         }
