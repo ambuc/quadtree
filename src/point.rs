@@ -100,8 +100,6 @@ impl<U> Point<U>
 where
     U: PrimInt,
 {
-    // pub
-
     /// The x-coordinate of the point.
     pub fn x(&self) -> U {
         self.x

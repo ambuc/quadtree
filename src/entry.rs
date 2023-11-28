@@ -78,8 +78,6 @@ impl<U, V> Entry<U, V>
 where
     U: PrimInt + Default,
 {
-    // pub
-
     /// The returned region.
     pub fn area(&self) -> Area<U> {
         self.region
@@ -109,8 +107,6 @@ where
     pub fn value_ref(&self) -> &V {
         &self.value
     }
-
-    // pub(crate)
 
     pub(crate) fn new((region, value): (Area<U>, V), handle: u64) -> Self {
         Self {

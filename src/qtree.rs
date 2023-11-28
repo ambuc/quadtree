@@ -61,8 +61,6 @@ impl<U, V> Quadtree<U, V>
 where
     U: PrimInt + Default,
 {
-    // pub
-
     /// Creates a new, empty quadtree with some depth.
     /// A quadtree with depth `n` will accept coordinates in the range `[0, 2^n]`.
     /// ```
