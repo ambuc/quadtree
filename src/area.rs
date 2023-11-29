@@ -153,7 +153,7 @@ where
     }
 
     /// Whether or not an area contains a point.
-    pub fn contains_pt(self, pt: point::Point<U>) -> bool {
+    pub fn contains_pt(self, pt: impl Into<point::Point<U>>) -> bool {
         self.contains(
             AreaBuilder::default()
                 .anchor(pt)
