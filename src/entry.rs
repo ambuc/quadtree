@@ -33,23 +33,18 @@ use {
 /// [`.delete()`]: ../struct.Quadtree.html#method.delete
 /// ```
 /// use quadtree_rs::{
-///   area::AreaBuilder,
+///   area::Area,
 ///   Quadtree,
 /// };
 ///
 /// let mut qt = Quadtree::<u32, f64>::new(4);
-/// let region_a = AreaBuilder::default()
-///     .anchor((1, 1))
-///     .dimensions((3, 2))
-///     .build().unwrap();
+/// let region_a: Area<u32> = ((1,1),(3,2)).into();
 ///
 /// qt.insert(region_a, 4.56_f64);
 ///
 /// // Calling Quadtree::delete() on a region in the tree clears that region of the tree and returns the region/value associations which were deleted.
 ///
-/// let region_b = AreaBuilder::default()
-///     .anchor((2, 1))
-///     .build().unwrap();
+/// let region_b: Area<u32> = (2,1).into();
 ///
 /// // The iterator contains Entry<U, V> structs.
 /// let mut returned_entries = qt.delete(region_b);
