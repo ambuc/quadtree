@@ -137,7 +137,8 @@ where
     }
 
     /// Whether or not an area intersects another area.
-    pub fn intersects(self, other: Self) -> bool {
+    pub fn intersects(self, other: impl Into<Self>) -> bool {
+        let other = other.into();
         self.left_edge() < other.right_edge()
             && self.right_edge() > other.left_edge()
             && self.top_edge() < other.bottom_edge()
@@ -145,7 +146,8 @@ where
     }
 
     /// Whether or not an area wholly contains another area.
-    pub fn contains(self, other: Self) -> bool {
+    pub fn contains(self, other: impl Into<Self>) -> bool {
+        let other = other.into();
         other.right_edge() <= self.right_edge()
             && other.left_edge() >= self.left_edge()
             && other.top_edge() >= self.top_edge()
@@ -180,5 +182,29 @@ where
     // Strongly-typed alias for U::one() + U::One()
     fn two() -> U {
         U::one() + U::one()
+    }
+}
+
+impl<P, U> From<(P, (U, U))> for Area<U>
+where
+    P: Into<point::Point<U>>,
+    U: PrimInt + Default + PartialOrd,
+{
+    fn from((anchor, dimensions): (P, (U, U))) -> Self {
+        AreaBuilder::default()
+            .anchor(anchor)
+            .dimensions(dimensions)
+            .build()
+            .unwrap()
+    }
+}
+
+impl<P, U> From<P> for Area<U>
+where
+    P: Into<point::Point<U>>,
+    U: PrimInt + Default + PartialOrd,
+{
+    fn from(anchor: P) -> Self {
+        AreaBuilder::default().anchor(anchor).build().unwrap()
     }
 }

@@ -18,7 +18,7 @@ mod util; // For unordered_elements_are.
 mod iterator_tests {
     use {
         crate::util::unordered_elements_are,
-        quadtree_rs::{area::AreaBuilder, entry::Entry, Quadtree},
+        quadtree_rs::{entry::Entry, Quadtree},
     };
 
     fn mk_quadtree_for_iter_tests() -> Quadtree<i32, i8> {
@@ -83,13 +83,7 @@ mod iterator_tests {
     fn delete_everything() {
         let mut qt = mk_quadtree_for_iter_tests();
         debug_assert_eq!(qt.len(), 3);
-        qt.delete(
-            AreaBuilder::default()
-                .anchor((-35, -35))
-                .dimensions((80, 80))
-                .build()
-                .unwrap(),
-        );
+        qt.delete(((-35, -35), (80, 80)));
         debug_assert_eq!(qt.len(), 0);
     }
 
@@ -98,19 +92,15 @@ mod iterator_tests {
         let mut qt = mk_quadtree_for_iter_tests();
         debug_assert_eq!(qt.len(), 3);
         // Near miss.
-        qt.delete(AreaBuilder::default().anchor((29, -36)).build().unwrap());
+        qt.delete((29, -36));
         debug_assert_eq!(qt.len(), 3);
 
         // Direct hit!
-        let mut returned_entries =
-            qt.delete(AreaBuilder::default().anchor((30, -35)).build().unwrap());
+        let mut returned_entries = qt.delete((30, -35));
         debug_assert_eq!(qt.len(), 2);
         let hit = returned_entries.next().unwrap();
         debug_assert_eq!(hit.value_ref(), &40);
-        debug_assert_eq!(
-            hit.area(),
-            AreaBuilder::default().anchor((30, -35)).build().unwrap()
-        );
+        debug_assert_eq!(hit.area(), (30, -35).into());
     }
 
     #[test]
@@ -119,15 +109,7 @@ mod iterator_tests {
         debug_assert_eq!(qt.len(), 3);
 
         // Just large enough to encompass the two points.
-        let returned_entries: Vec<Entry<i32, i8>> = qt
-            .delete(
-                AreaBuilder::default()
-                    .anchor((-15, -5))
-                    .dimensions((16, 26))
-                    .build()
-                    .unwrap(),
-            )
-            .collect();
+        let returned_entries: Vec<Entry<i32, i8>> = qt.delete(((-15, -5), (16, 26))).collect();
         debug_assert_eq!(qt.len(), 1);
 
         debug_assert!(unordered_elements_are(

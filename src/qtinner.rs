@@ -15,12 +15,7 @@
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use {
-    crate::{
-        area::{Area, AreaBuilder},
-        entry::Entry,
-        point::Point,
-        types::StoreType,
-    },
+    crate::{area::Area, entry::Entry, point::Point, types::StoreType},
     num::PrimInt,
     std::{default::Default, fmt::Debug},
 };
@@ -78,14 +73,7 @@ where
         #[allow(clippy::cast_possible_truncation)]
         let width: U = Self::two().pow(depth as u32);
         let height: U = width;
-        Self::new_with_area(
-            AreaBuilder::default()
-                .anchor(anchor)
-                .dimensions((width, height))
-                .build()
-                .expect("Unexpected error in QTInner::new()."),
-            depth,
-        )
+        Self::new_with_area((anchor, (width, height)).into(), depth)
     }
 
     pub fn depth(&self) -> usize {
@@ -114,10 +102,11 @@ where
     // large.
     pub fn insert_val_at_region<V>(
         &mut self,
-        req: Area<U>,
+        req: impl Into<Area<U>>,
         val: V,
         store: &mut StoreType<U, V>,
     ) -> u64 {
+        let req = req.into();
         let handle = self.handle_counter;
         self.handle_counter += 1;
         store.insert(handle, Entry::new((req, val), handle));

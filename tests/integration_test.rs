@@ -14,7 +14,7 @@
 
 mod util; // For unordered_elements_are.
 
-use quadtree_rs::{area::AreaBuilder, Quadtree};
+use quadtree_rs::Quadtree;
 
 mod new {
     use super::*;
@@ -72,62 +72,27 @@ mod insert {
     #[test]
     fn insert_successful() {
         let mut qt = Quadtree::<u32, u8>::new(2);
-        assert!(qt
-            .insert(
-                AreaBuilder::default()
-                    .anchor((0, 0))
-                    .dimensions((2, 3))
-                    .build()
-                    .unwrap(),
-                4,
-            )
-            .is_some());
-        assert!(qt
-            .insert(AreaBuilder::default().anchor((1, 1)).build().unwrap(), 3,)
-            .is_some());
+        assert!(qt.insert(((0, 0), (2, 3)), 4,).is_some());
+        assert!(qt.insert((1, 1), 3).is_some());
 
         // The full bounds of the region.
-        assert!(qt
-            .insert(
-                AreaBuilder::default()
-                    .anchor((0, 0))
-                    .dimensions((4, 4))
-                    .build()
-                    .unwrap(),
-                17,
-            )
-            .is_some());
+        assert!(qt.insert(((0, 0), (4, 4)), 17,).is_some());
         // At (3, 3) but 1x1
-        assert!(qt
-            .insert(AreaBuilder::default().anchor((3, 3)).build().unwrap(), 19,)
-            .is_some());
+        assert!(qt.insert((3, 3), 19).is_some());
     }
 
     #[test]
     fn insert_unsucessful() {
         let mut qt = Quadtree::<u32, u8>::new(2);
         // At (0, 0) and too large.
-        assert!(qt
-            .insert(
-                AreaBuilder::default()
-                    .anchor((0, 0))
-                    .dimensions((5, 5))
-                    .build()
-                    .unwrap(),
-                17,
-            )
-            .is_none());
+        assert!(qt.insert(((0, 0), (5, 5)), 17,).is_none());
 
         // At (4, 4) but 1x1.
-        assert!(qt
-            .insert(AreaBuilder::default().anchor((4, 4)).build().unwrap(), 20,)
-            .is_none());
+        assert!(qt.insert((4, 4), 20).is_none());
 
         // Since the region overlaps, insertion fails.
         let mut qt = Quadtree::<u32, u16>::new_with_anchor((2, 2).into(), 2);
-        assert!(qt
-            .insert(AreaBuilder::default().anchor((0, 0)).build().unwrap(), 25,)
-            .is_none());
+        assert!(qt.insert((0, 0), 25).is_none());
     }
 }
 
@@ -135,19 +100,13 @@ mod insert {
 fn len() {
     let mut qt = Quadtree::<u32, u32>::new(4);
     debug_assert_eq!(qt.len(), 0);
-    assert!(qt
-        .insert(AreaBuilder::default().anchor((0, 0)).build().unwrap(), 2,)
-        .is_some());
+    assert!(qt.insert((0, 0), 2).is_some());
     debug_assert_eq!(qt.len(), 1);
     // Even if it's the same thing again.
-    assert!(qt
-        .insert(AreaBuilder::default().anchor((0, 0)).build().unwrap(), 2,)
-        .is_some());
+    assert!(qt.insert((0, 0), 2).is_some());
     debug_assert_eq!(qt.len(), 2);
     // Or if it's a point.
-    assert!(qt
-        .insert(AreaBuilder::default().anchor((2, 3)).build().unwrap(), 2,)
-        .is_some());
+    assert!(qt.insert((2, 3), 2).is_some());
     debug_assert_eq!(qt.len(), 3);
 }
 
@@ -156,30 +115,12 @@ fn fill_quadrant() {
     let mut qt = Quadtree::<u8, f64>::new(2);
     debug_assert!(qt.is_empty());
 
-    assert!(qt
-        .insert(
-            AreaBuilder::default()
-                .anchor((0, 0))
-                .dimensions((2, 2))
-                .build()
-                .unwrap(),
-            49.17,
-        )
-        .is_some());
+    assert!(qt.insert(((0, 0), (2, 2)), 49.17,).is_some());
     // This should 100% fill one quadrant.
     debug_assert_eq!(qt.len(), 1);
     debug_assert!(!qt.is_empty());
 
-    assert!(qt
-        .insert(
-            AreaBuilder::default()
-                .anchor((2, 2))
-                .dimensions((2, 2))
-                .build()
-                .unwrap(),
-            71.94,
-        )
-        .is_some()); // This should 100% fill one quadrant.
+    assert!(qt.insert(((2, 2), (2, 2)), 71.94,).is_some()); // This should 100% fill one quadrant.
     debug_assert_eq!(qt.len(), 2);
     debug_assert!(!qt.is_empty());
 }
@@ -190,25 +131,14 @@ fn is_empty() {
     debug_assert!(qt.is_empty());
 
     // Insert region
-    assert!(qt
-        .insert(
-            AreaBuilder::default()
-                .anchor((0, 0))
-                .dimensions((2, 2))
-                .build()
-                .unwrap(),
-            49,
-        )
-        .is_some());
+    assert!(qt.insert(((0, 0), (2, 2)), 49,).is_some());
     debug_assert!(!qt.is_empty());
 
     let mut q2 = Quadtree::<u32, u32>::new(4);
     debug_assert!(q2.is_empty());
 
     // Insert point
-    assert!(q2
-        .insert(AreaBuilder::default().anchor((1, 1)).build().unwrap(), 50,)
-        .is_some());
+    assert!(q2.insert((1, 1), 50).is_some());
     debug_assert!(!q2.is_empty());
 }
 
@@ -217,12 +147,7 @@ fn reset() {
     let mut qt = Quadtree::<u32, f32>::new(4);
     debug_assert!(qt.is_empty());
 
-    assert!(qt
-        .insert(
-            AreaBuilder::default().anchor((2, 2)).build().unwrap(),
-            57.27,
-        )
-        .is_some());
+    assert!(qt.insert((2, 2), 57.27,).is_some());
     debug_assert!(!qt.is_empty());
 
     qt.reset();
@@ -237,38 +162,19 @@ mod string {
     #[test]
     fn quadtree_string() {
         let mut qt = Quadtree::<u32, String>::new(4);
-        assert!(qt
-            .insert(
-                AreaBuilder::default().anchor((0, 0)).build().unwrap(),
-                "foo_bar_baz".to_string(),
-            )
-            .is_some());
+        assert!(qt.insert((0, 0), "foo_bar_baz".to_string(),).is_some());
 
-        let mut iter = qt.query(AreaBuilder::default().anchor((0, 0)).build().unwrap());
+        let mut iter = qt.query((0, 0));
         assert_eq!(iter.next().unwrap().value_ref(), "foo_bar_baz");
     }
 
     #[test]
     fn quadtree_mut_string() {
         let mut qt = Quadtree::<u32, String>::new(4);
-        assert!(qt
-            .insert(
-                AreaBuilder::default().anchor((0, 0)).build().unwrap(),
-                "hello ".to_string(),
-            )
-            .is_some());
-        qt.modify(
-            AreaBuilder::default().anchor((0, 0)).build().unwrap(),
-            |v| *v += "world",
-        );
+        assert!(qt.insert((0, 0), "hello ".to_string(),).is_some());
+        qt.modify((0, 0), |v| *v += "world");
 
-        assert_eq!(
-            qt.query(AreaBuilder::default().anchor((0, 0)).build().unwrap())
-                .next()
-                .unwrap()
-                .value_ref(),
-            "hello world"
-        );
+        assert_eq!(qt.query((0, 0)).next().unwrap().value_ref(), "hello world");
     }
 }
 
@@ -287,18 +193,9 @@ fn quadtree_struct() {
 
     let mut qt = Quadtree::<u32, Foo>::new(4);
 
-    assert!(qt
-        .insert(AreaBuilder::default().anchor((0, 0)).build().unwrap(), foo,)
-        .is_some());
+    assert!(qt.insert((0, 0), foo,).is_some());
 
-    assert_eq!(
-        qt.query(AreaBuilder::default().anchor((0, 0)).build().unwrap())
-            .next()
-            .unwrap()
-            .value_ref()
-            .baz,
-        "baz"
-    );
+    assert_eq!(qt.query((0, 0)).next().unwrap().value_ref().baz, "baz");
 }
 
 // Since we implement Extend<((U, U), V)> for Quadtree<U, V>, test out .extend()ing with a real
@@ -315,10 +212,7 @@ mod extend {
 
         debug_assert_eq!(qt.len(), 2);
 
-        let entry_zero = qt
-            .query(AreaBuilder::default().anchor((0, 0)).build().unwrap())
-            .next()
-            .unwrap();
+        let entry_zero = qt.query((0, 0)).next().unwrap();
         let area_zero = entry_zero.area();
         debug_assert_eq!(area_zero.anchor(), (0, 0).into());
         debug_assert_eq!(area_zero.width(), 1);
@@ -326,10 +220,7 @@ mod extend {
 
         debug_assert_eq!(entry_zero.value_ref(), &0);
 
-        let entry_five = qt
-            .query(AreaBuilder::default().anchor((2, 3)).build().unwrap())
-            .next()
-            .unwrap();
+        let entry_five = qt.query((2, 3)).next().unwrap();
         let area_five = entry_five.area();
         debug_assert_eq!(area_five.anchor(), (2, 3).into());
         debug_assert_eq!(area_five.width(), 1);
@@ -343,36 +234,13 @@ mod extend {
         let mut qt = Quadtree::<u32, i8>::new(3);
         assert!(qt.is_empty());
 
-        assert!(qt
-            .insert(AreaBuilder::default().anchor((0, 0)).build().unwrap(), 0,)
-            .is_some());
-        assert!(qt
-            .insert(
-                AreaBuilder::default()
-                    .anchor((2, 3))
-                    .dimensions((3, 4))
-                    .build()
-                    .unwrap(),
-                5,
-            )
-            .is_some());
+        assert!(qt.insert((0, 0), 0).is_some());
+        assert!(qt.insert(((2, 3), (3, 4)), 5,).is_some());
 
         debug_assert_eq!(qt.len(), 2);
 
-        debug_assert_eq!(
-            qt.query(AreaBuilder::default().anchor((0, 0)).build().unwrap())
-                .next()
-                .unwrap()
-                .value_ref(),
-            &0
-        );
-        debug_assert_eq!(
-            qt.query(AreaBuilder::default().anchor((2, 3)).build().unwrap())
-                .next()
-                .unwrap()
-                .value_ref(),
-            &5
-        );
+        debug_assert_eq!(qt.query((0, 0)).next().unwrap().value_ref(), &0);
+        debug_assert_eq!(qt.query((2, 3)).next().unwrap().value_ref(), &5);
     }
 }
 
@@ -387,9 +255,7 @@ mod delete {
         debug_assert_eq!(qt.len(), 4);
 
         // But we will be sure to retain this one.
-        let handle = qt
-            .insert(AreaBuilder::default().anchor((0, 0)).build().unwrap(), 11)
-            .unwrap();
+        let handle = qt.insert((0, 0), 11).unwrap();
         debug_assert_eq!(qt.len(), 5); // Insertion succeeded.
 
         // Check the returned entry.
@@ -405,11 +271,7 @@ mod delete {
         debug_assert_eq!(qt.len(), 4); // Insertion succeeded.
 
         // And, check that queries over the previous area don't crash or return garbage indices.
-        debug_assert_eq!(
-            qt.query(AreaBuilder::default().anchor((0, 0)).build().unwrap())
-                .count(),
-            1
-        );
+        debug_assert_eq!(qt.query((0, 0)).count(), 1);
     }
 }
 
@@ -417,39 +279,10 @@ mod delete {
 #[ignore]
 fn debug() {
     let mut qt = Quadtree::<u8, f64>::new(2);
-    assert!(qt
-        .insert(
-            AreaBuilder::default()
-                .anchor((0, 0))
-                .dimensions((2, 2))
-                .build()
-                .unwrap(),
-            1.35,
-        )
-        .is_some());
-    assert!(qt
-        .insert(AreaBuilder::default().anchor((1, 1)).build().unwrap(), 2.46,)
-        .is_some());
-    assert!(qt
-        .insert(
-            AreaBuilder::default()
-                .anchor((1, 1))
-                .dimensions((2, 2))
-                .build()
-                .unwrap(),
-            3.69,
-        )
-        .is_some());
-    assert!(qt
-        .insert(
-            AreaBuilder::default()
-                .anchor((2, 2))
-                .dimensions((2, 2))
-                .build()
-                .unwrap(),
-            4.812,
-        )
-        .is_some());
+    assert!(qt.insert(((0, 0), (2, 2)), 1.35,).is_some());
+    assert!(qt.insert((1, 1), 2.46).is_some());
+    assert!(qt.insert(((1, 1), (2, 2)), 3.69,).is_some());
+    assert!(qt.insert(((2, 2), (2, 2)), 4.812,).is_some());
     dbg!(&qt);
 }
 
@@ -459,48 +292,10 @@ fn test_print_quadtree() {
     use crate::util::print_quadtree;
 
     let mut qt = Quadtree::<u8, f64>::new(3);
-    assert!(qt
-        .insert(
-            AreaBuilder::default()
-                .anchor((0, 0))
-                .dimensions((2, 2))
-                .build()
-                .unwrap(),
-            1.35,
-        )
-        .is_some());
-    assert!(qt
-        .insert(AreaBuilder::default().anchor((2, 3)).build().unwrap(), 2.46,)
-        .is_some());
-    assert!(qt
-        .insert(
-            AreaBuilder::default()
-                .anchor((1, 1))
-                .dimensions((2, 2))
-                .build()
-                .unwrap(),
-            3.69,
-        )
-        .is_some());
-    assert!(qt
-        .insert(
-            AreaBuilder::default()
-                .anchor((2, 2))
-                .dimensions((4, 4))
-                .build()
-                .unwrap(),
-            4.812,
-        )
-        .is_some());
-    assert!(qt
-        .insert(
-            AreaBuilder::default()
-                .anchor((0, 4))
-                .dimensions((2, 3))
-                .build()
-                .unwrap(),
-            4.812,
-        )
-        .is_some());
+    assert!(qt.insert(((0, 0), (2, 2)), 1.35,).is_some());
+    assert!(qt.insert((2, 3), 2.46,).is_some());
+    assert!(qt.insert(((1, 1), (2, 2)), 3.69,).is_some());
+    assert!(qt.insert(((2, 2), (4, 4)), 4.812,).is_some());
+    assert!(qt.insert(((0, 4), (2, 3)), 4.812,).is_some());
     print_quadtree(&qt);
 }

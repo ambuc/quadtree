@@ -129,7 +129,7 @@ where
     U: PrimInt + Default,
 {
     pub(crate) fn new(
-        query_region: Area<U>,
+        query_region: impl Into<Area<U>>,
         qt: &'a QTInner<U>,
         store: &'a StoreType<U, V>,
         traversal_method: Traversal,
@@ -137,6 +137,8 @@ where
     where
         U: PrimInt + Default,
     {
+        let query_region = query_region.into();
+
         // Construct the HandleIter first...
         let mut handle_iter = HandleIter::new(qt, query_region);
 
