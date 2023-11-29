@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use {
-    crate::{
-        area::Area, entry::Entry, handle_iter::HandleIter, qtinner::QTInner, traversal::Traversal,
-        types::StoreType,
-    },
-    num::PrimInt,
-    std::iter::FusedIterator,
+use crate::{
+    area::Area, entry::Entry, handle_iter::HandleIter, qtinner::QTInner, traversal::Traversal,
+    StoreType,
 };
+use num::PrimInt;
+use std::iter::FusedIterator;
 
 /// An iterator over all regions and values of a [`Quadtree`].
 ///
@@ -40,7 +38,7 @@ impl<'a, U, V> Iter<'a, U, V>
 where
     U: PrimInt + Default,
 {
-    pub(crate) fn new(qt: &'a QTInner<U>, store: &'a StoreType<U, V>) -> Iter<'a, U, V> {
+    pub(crate) fn new(qt: &'a QTInner<U>, store: &'a StoreType<U, V>) -> Self {
         Iter {
             store,
             handle_iter: HandleIter::new(qt, qt.region()),
@@ -133,7 +131,7 @@ where
         qt: &'a QTInner<U>,
         store: &'a StoreType<U, V>,
         traversal_method: Traversal,
-    ) -> Query<'a, U, V>
+    ) -> Self
     where
         U: PrimInt + Default,
     {

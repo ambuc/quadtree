@@ -15,13 +15,11 @@
 //! A view into a single entry in the Quadtree.
 // Influenced by https://doc.rust-lang.org/std/collections/hash_map/enum.Entry.html.
 
+use crate::{area::Area, point::Point};
+use num::PrimInt;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use {
-    crate::{area::Area, point::Point},
-    num::PrimInt,
-    std::default::Default,
-};
+use std::default::Default;
 
 /// A region/value association in the [`Quadtree`].
 ///
@@ -80,8 +78,6 @@ impl<U, V> Entry<U, V>
 where
     U: PrimInt + Default,
 {
-    // pub
-
     /// The returned region.
     pub fn area(&self) -> Area<U> {
         self.region
@@ -111,8 +107,6 @@ where
     pub fn value_ref(&self) -> &V {
         &self.value
     }
-
-    // pub(crate)
 
     pub(crate) fn new((region, value): (Area<U>, V), handle: u64) -> Self {
         Self {

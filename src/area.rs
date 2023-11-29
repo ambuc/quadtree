@@ -14,13 +14,11 @@
 
 //! A rectangular region in the tree.
 
+use crate::point::Point;
+use num::PrimInt;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use {
-    crate::point,
-    num::PrimInt,
-    std::{cmp::PartialOrd, default::Default, fmt::Debug},
-};
+use std::{cmp::PartialOrd, default::Default, fmt::Debug};
 
 /// A rectangular region in 2d space.
 ///
@@ -37,7 +35,7 @@ pub struct Area<U>
 where
     U: PrimInt + Default + PartialOrd,
 {
-    anchor: point::Point<U>,
+    anchor: Point<U>,
     #[builder(default = "(U::one(), U::one())")]
     dimensions: (U, U),
 }
@@ -101,7 +99,7 @@ where
     U: PrimInt + Default,
 {
     /// The top-left coordinate (anchor) of the region.
-    pub fn anchor(&self) -> point::Point<U> {
+    pub fn anchor(&self) -> Point<U> {
         self.anchor
     }
 
@@ -152,7 +150,7 @@ where
     }
 
     /// Whether or not an area contains a point.
-    pub fn contains_pt(self, pt: point::Point<U>) -> bool {
+    pub fn contains_pt(self, pt: Point<U>) -> bool {
         self.contains(
             AreaBuilder::default()
                 .anchor(pt)
@@ -164,9 +162,9 @@ where
 
     // NB: The center point is an integer and thus rounded, i.e. a 2x2 region at (0,0) has a center
     // at (0,0), when in reality the center would be at (0.5, 0.5).
-    pub(crate) fn center_pt(&self) -> point::Point<U> {
+    pub(crate) fn center_pt(&self) -> Point<U> {
         self.anchor()
-            + point::Point {
+            + Point {
                 x: self.width() / Self::two(),
                 y: self.height() / Self::two(),
             }

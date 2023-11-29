@@ -16,12 +16,11 @@
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use {
-    num::PrimInt,
-    std::{
-        fmt::Debug,
-        ops::{Add, Sub},
-    },
+
+use num::PrimInt;
+use std::{
+    fmt::Debug,
+    ops::{Add, Sub},
 };
 
 // Transparent alias. In docs and user-facing APIs, this resolves to (U, U).
@@ -101,8 +100,6 @@ impl<U> Point<U>
 where
     U: PrimInt,
 {
-    // pub
-
     /// The x-coordinate of the point.
     pub fn x(&self) -> U {
         self.x
