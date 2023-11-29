@@ -312,23 +312,23 @@ mod area_tests {
             let a = test_area();
 
             // DOES contain:
-            debug_assert!(a.contains_pt((1, 1).into()));
-            debug_assert!(a.contains_pt((1, 2).into()));
-            debug_assert!(a.contains_pt((2, 1).into()));
-            debug_assert!(a.contains_pt((2, 2).into()));
+            debug_assert!(a.contains_pt((1, 1)));
+            debug_assert!(a.contains_pt((1, 2)));
+            debug_assert!(a.contains_pt((2, 1)));
+            debug_assert!(a.contains_pt((2, 2)));
 
             // Does NOT contain:
-            debug_assert!(!a.contains_pt((0, 0).into()));
-            debug_assert!(!a.contains_pt((0, 1).into()));
-            debug_assert!(!a.contains_pt((0, 2).into()));
-            debug_assert!(!a.contains_pt((0, 3).into()));
-            debug_assert!(!a.contains_pt((1, 0).into()));
-            debug_assert!(!a.contains_pt((2, 0).into()));
-            debug_assert!(!a.contains_pt((3, 0).into()));
-            debug_assert!(!a.contains_pt((3, 0).into()));
-            debug_assert!(!a.contains_pt((3, 1).into()));
-            debug_assert!(!a.contains_pt((3, 2).into()));
-            debug_assert!(!a.contains_pt((3, 3).into()));
+            debug_assert!(!a.contains_pt((0, 0)));
+            debug_assert!(!a.contains_pt((0, 1)));
+            debug_assert!(!a.contains_pt((0, 2)));
+            debug_assert!(!a.contains_pt((0, 3)));
+            debug_assert!(!a.contains_pt((1, 0)));
+            debug_assert!(!a.contains_pt((2, 0)));
+            debug_assert!(!a.contains_pt((3, 0)));
+            debug_assert!(!a.contains_pt((3, 0)));
+            debug_assert!(!a.contains_pt((3, 1)));
+            debug_assert!(!a.contains_pt((3, 2)));
+            debug_assert!(!a.contains_pt((3, 3)));
         }
     }
 
@@ -600,28 +600,28 @@ mod area_tests {
             let a = test_area();
 
             // DOES contain:
-            debug_assert!(a.contains_pt((-1, -1).into()));
-            debug_assert!(a.contains_pt((-1, 0).into()));
-            debug_assert!(a.contains_pt((0, -1).into()));
-            debug_assert!(a.contains_pt((0, 0).into()));
+            debug_assert!(a.contains_pt((-1, -1)));
+            debug_assert!(a.contains_pt((-1, 0)));
+            debug_assert!(a.contains_pt((0, -1)));
+            debug_assert!(a.contains_pt((0, 0)));
 
             // Does NOT contain:
-            debug_assert!(!a.contains_pt((-2, -2).into()));
-            debug_assert!(!a.contains_pt((-2, -1).into()));
-            debug_assert!(!a.contains_pt((-2, 0).into()));
-            debug_assert!(!a.contains_pt((-2, 1).into()));
-            debug_assert!(!a.contains_pt((-2, 2).into()));
-            debug_assert!(!a.contains_pt((-1, 2).into()));
-            debug_assert!(!a.contains_pt((0, 2).into()));
-            debug_assert!(!a.contains_pt((1, 2).into()));
-            debug_assert!(!a.contains_pt((2, 2).into()));
-            debug_assert!(!a.contains_pt((2, 1).into()));
-            debug_assert!(!a.contains_pt((2, 0).into()));
-            debug_assert!(!a.contains_pt((2, -1).into()));
-            debug_assert!(!a.contains_pt((2, -2).into()));
-            debug_assert!(!a.contains_pt((1, -2).into()));
-            debug_assert!(!a.contains_pt((0, -2).into()));
-            debug_assert!(!a.contains_pt((-1, -2).into()));
+            debug_assert!(!a.contains_pt((-2, -2)));
+            debug_assert!(!a.contains_pt((-2, -1)));
+            debug_assert!(!a.contains_pt((-2, 0)));
+            debug_assert!(!a.contains_pt((-2, 1)));
+            debug_assert!(!a.contains_pt((-2, 2)));
+            debug_assert!(!a.contains_pt((-1, 2)));
+            debug_assert!(!a.contains_pt((0, 2)));
+            debug_assert!(!a.contains_pt((1, 2)));
+            debug_assert!(!a.contains_pt((2, 2)));
+            debug_assert!(!a.contains_pt((2, 1)));
+            debug_assert!(!a.contains_pt((2, 0)));
+            debug_assert!(!a.contains_pt((2, -1)));
+            debug_assert!(!a.contains_pt((2, -2)));
+            debug_assert!(!a.contains_pt((1, -2)));
+            debug_assert!(!a.contains_pt((0, -2)));
+            debug_assert!(!a.contains_pt((-1, -2)));
         }
     }
 
