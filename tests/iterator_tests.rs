@@ -85,7 +85,7 @@ mod iterator_tests {
         debug_assert_eq!(qt.len(), 3);
         qt.delete(
             AreaBuilder::default()
-                .anchor((-35, -35).into())
+                .anchor((-35, -35))
                 .dimensions((80, 80))
                 .build()
                 .unwrap(),
@@ -98,30 +98,18 @@ mod iterator_tests {
         let mut qt = mk_quadtree_for_iter_tests();
         debug_assert_eq!(qt.len(), 3);
         // Near miss.
-        qt.delete(
-            AreaBuilder::default()
-                .anchor((29, -36).into())
-                .build()
-                .unwrap(),
-        );
+        qt.delete(AreaBuilder::default().anchor((29, -36)).build().unwrap());
         debug_assert_eq!(qt.len(), 3);
 
         // Direct hit!
-        let mut returned_entries = qt.delete(
-            AreaBuilder::default()
-                .anchor((30, -35).into())
-                .build()
-                .unwrap(),
-        );
+        let mut returned_entries =
+            qt.delete(AreaBuilder::default().anchor((30, -35)).build().unwrap());
         debug_assert_eq!(qt.len(), 2);
         let hit = returned_entries.next().unwrap();
         debug_assert_eq!(hit.value_ref(), &40);
         debug_assert_eq!(
             hit.area(),
-            AreaBuilder::default()
-                .anchor((30, -35).into())
-                .build()
-                .unwrap()
+            AreaBuilder::default().anchor((30, -35)).build().unwrap()
         );
     }
 
@@ -134,7 +122,7 @@ mod iterator_tests {
         let returned_entries: Vec<Entry<i32, i8>> = qt
             .delete(
                 AreaBuilder::default()
-                    .anchor((-15, -5).into())
+                    .anchor((-15, -5))
                     .dimensions((16, 26))
                     .build()
                     .unwrap(),

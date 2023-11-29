@@ -39,7 +39,7 @@ use {
 ///
 /// let mut qt = Quadtree::<u32, f64>::new(4);
 /// let region_a = AreaBuilder::default()
-///     .anchor((1, 1).into())
+///     .anchor((1, 1))
 ///     .dimensions((3, 2))
 ///     .build().unwrap();
 ///
@@ -48,7 +48,7 @@ use {
 /// // Calling Quadtree::delete() on a region in the tree clears that region of the tree and returns the region/value associations which were deleted.
 ///
 /// let region_b = AreaBuilder::default()
-///     .anchor((2, 1).into())
+///     .anchor((2, 1))
 ///     .build().unwrap();
 ///
 /// // The iterator contains Entry<U, V> structs.

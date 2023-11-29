@@ -38,7 +38,7 @@ where
             match qt
                 .query(
                     AreaBuilder::default()
-                        .anchor((U::from_usize(i).unwrap(), U::from_usize(j).unwrap()).into())
+                        .anchor((U::from_usize(i).unwrap(), U::from_usize(j).unwrap()))
                         .build()
                         .unwrap(),
                 )

@@ -404,13 +404,13 @@ where
     /// let mut qt = Quadtree::<u32, char>::new(4);
     ///
     /// let region_a = AreaBuilder::default()
-    ///     .anchor((2, 1).into())
+    ///     .anchor((2, 1))
     ///     .dimensions((3, 2))
     ///     .build().unwrap();
     /// qt.insert(region_a, 'a');
     ///
     /// let region_b = AreaBuilder::default()
-    ///     .anchor((1, 4).into())
+    ///     .anchor((1, 4))
     ///     .dimensions((3, 1))
     ///     .build().unwrap();
     /// qt.insert(region_b, 'b');
@@ -423,7 +423,7 @@ where
     /// // 4 ░▒▒▒░░░
     /// // 5 ░░░░░░░
     /// let region_c = AreaBuilder::default()
-    ///     .anchor((2, 1).into()).build().unwrap();
+    ///     .anchor((2, 1)).build().unwrap();
     /// let mut query_a = qt.query(region_c);
     ///
     /// // We can use the Entry API to destructure the result.
@@ -442,7 +442,7 @@ where
     /// // 4 ░▓▓▓▒▒░
     /// // 5 ░░░░░░░
     /// let region_d = AreaBuilder::default()
-    ///     .anchor((1, 1).into())
+    ///     .anchor((1, 1))
     ///     .dimensions((4, 4))
     ///     .build().unwrap();
     /// let query_b = qt.query(region_d);
@@ -475,7 +475,7 @@ where
     /// let mut qt = Quadtree::<u8, bool>::new(3);
     ///
     /// let region_a = AreaBuilder::default()
-    ///     .anchor((0, 0).into())
+    ///     .anchor((0, 0))
     ///     .build().unwrap();
     /// let handle = qt.insert(region_a, true).unwrap();
     ///
@@ -531,13 +531,13 @@ where
     /// let mut qt = Quadtree::<u32, f64>::new(4);
     ///
     /// let region_a = AreaBuilder::default()
-    ///     .anchor((0, 0).into())
+    ///     .anchor((0, 0))
     ///     .dimensions((2, 2))
     ///     .build().unwrap();
     /// qt.insert(region_a, 1.23);
     ///
     /// let region_b = AreaBuilder::default()
-    ///     .anchor((1, 1).into())
+    ///     .anchor((1, 1))
     ///     .dimensions((3, 2))
     ///     .build().unwrap();
     /// qt.insert(region_b, 4.56);
@@ -548,7 +548,7 @@ where
     /// // 2  ░░░
     ///
     /// let region_c = AreaBuilder::default()
-    ///     .anchor((2, 1).into()).build().unwrap();
+    ///     .anchor((2, 1)).build().unwrap();
     /// let mut returned_entries = qt.delete(region_c);
     ///
     /// // We've removed one object from the quadtree.

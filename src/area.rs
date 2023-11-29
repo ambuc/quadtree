@@ -37,6 +37,7 @@ pub struct Area<U>
 where
     U: PrimInt + Default + PartialOrd,
 {
+    #[builder(setter(into))]
     anchor: point::Point<U>,
     #[builder(default = "(U::one(), U::one())")]
     dimensions: (U, U),
