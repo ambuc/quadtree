@@ -24,9 +24,6 @@ use {
     },
 };
 
-// Transparent alias. In docs and user-facing APIs, this resolves to (U, U).
-pub(crate) type Type<U> = (U, U);
-
 /// A type representing a point in space. Should be passed by value.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(PartialEq, Eq, Clone, Copy, Hash)]
@@ -44,25 +41,25 @@ where
     }
 }
 
-impl<U> From<Type<U>> for Point<U>
+impl<U> From<(U, U)> for Point<U>
 where
     U: PrimInt,
 {
-    fn from((x, y): Type<U>) -> Self {
+    fn from((x, y): (U, U)) -> Self {
         Self { x, y }
     }
 }
 
-impl<U> From<&Type<U>> for Point<U>
+impl<U> From<&(U, U)> for Point<U>
 where
     U: PrimInt,
 {
-    fn from((x, y): &Type<U>) -> Self {
+    fn from((x, y): &(U, U)) -> Self {
         Self { x: *x, y: *y }
     }
 }
 
-impl<U> From<Point<U>> for Type<U>
+impl<U> From<Point<U>> for (U, U)
 where
     U: PrimInt,
 {
@@ -101,8 +98,6 @@ impl<U> Point<U>
 where
     U: PrimInt,
 {
-    // pub
-
     /// The x-coordinate of the point.
     pub fn x(&self) -> U {
         self.x
