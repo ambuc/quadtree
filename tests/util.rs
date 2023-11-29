@@ -1,7 +1,14 @@
-use {
-    num::{cast::FromPrimitive, PrimInt},
-    quadtree_rs::area::AreaBuilder,
-    std::{collections::HashSet, default::Default, fmt::Debug, hash::Hash, iter::FromIterator},
+use num::{
+    cast::FromPrimitive,
+    PrimInt,
+};
+use quadtree_rs::area::AreaBuilder;
+use std::{
+    collections::HashSet,
+    default::Default,
+    fmt::Debug,
+    hash::Hash,
+    iter::FromIterator,
 };
 
 // Inspired by google/googletest's UnorderedElementsAre().

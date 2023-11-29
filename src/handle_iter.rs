@@ -12,10 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use {
-    crate::{area::Area, qtinner::QTInner, traversal::Traversal},
-    num::PrimInt,
-    std::{collections::HashSet, default::Default, iter::FusedIterator},
+use crate::{
+    area::Area,
+    qtinner::QTInner,
+    traversal::Traversal,
+};
+use num::PrimInt;
+use std::{
+    collections::HashSet,
+    default::Default,
+    iter::FusedIterator,
 };
 
 #[derive(Clone, Debug)]

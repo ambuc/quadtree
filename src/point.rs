@@ -14,13 +14,17 @@
 
 //! A point region in the tree.
 
+use num::PrimInt;
 #[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-use {
-    num::PrimInt,
-    std::{
-        fmt::Debug,
-        ops::{Add, Sub},
+use serde::{
+    Deserialize,
+    Serialize,
+};
+use std::{
+    fmt::Debug,
+    ops::{
+        Add,
+        Sub,
     },
 };
 

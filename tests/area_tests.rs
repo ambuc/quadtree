@@ -13,7 +13,10 @@
 // limitations under the License.
 
 mod area_tests {
-    use quadtree_rs::area::{Area, AreaBuilder};
+    use quadtree_rs::area::{
+        Area,
+        AreaBuilder,
+    };
 
     mod builder {
         use super::*;
