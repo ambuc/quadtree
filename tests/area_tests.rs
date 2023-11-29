@@ -21,7 +21,7 @@ mod area_tests {
         #[test]
         fn builder() {
             let a: Area<i8> = AreaBuilder::default()
-                .anchor((0, 0).into())
+                .anchor((0, 0))
                 .dimensions((2, 2))
                 .build()
                 .unwrap();
@@ -33,7 +33,7 @@ mod area_tests {
     fn bad_dims() {
         for dims in [(-1, 4), (1, -4), (0, 4), (1, 0)].iter() {
             debug_assert!(AreaBuilder::default()
-                .anchor((0, 0).into())
+                .anchor((0, 0))
                 .dimensions(*dims)
                 .build()
                 .is_err());
@@ -43,14 +43,14 @@ mod area_tests {
     #[test]
     fn point_in_all_quadrants() {
         for p in [(1, 1), (-1, 1), (1, -1), (-1, -1)].iter() {
-            let _a: Area<i8> = AreaBuilder::default().anchor(p.into()).build().unwrap();
+            let _a: Area<i8> = AreaBuilder::default().anchor(p).build().unwrap();
         }
     }
 
     #[test]
     fn properties() {
         let a = AreaBuilder::default()
-            .anchor((3, 4).into())
+            .anchor((3, 4))
             .dimensions((5, 7))
             .build()
             .unwrap();
@@ -82,7 +82,7 @@ mod area_tests {
 
         fn test_area() -> Area<u8> {
             AreaBuilder::default()
-                .anchor((1, 1).into())
+                .anchor((1, 1))
                 .dimensions((2, 2))
                 .build()
                 .unwrap()
@@ -94,28 +94,28 @@ mod area_tests {
 
             debug_assert!(a.contains(
                 AreaBuilder::default()
-                    .anchor((1, 1).into())
+                    .anchor((1, 1))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(a.contains(
                 AreaBuilder::default()
-                    .anchor((1, 2).into())
+                    .anchor((1, 2))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(a.contains(
                 AreaBuilder::default()
-                    .anchor((2, 1).into())
+                    .anchor((2, 1))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(a.contains(
                 AreaBuilder::default()
-                    .anchor((2, 2).into())
+                    .anchor((2, 2))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
@@ -128,7 +128,7 @@ mod area_tests {
 
             debug_assert!(a.contains(
                 AreaBuilder::default()
-                    .anchor((1, 1).into())
+                    .anchor((1, 1))
                     .dimensions((2, 2))
                     .build()
                     .unwrap()
@@ -141,112 +141,112 @@ mod area_tests {
 
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((0, 0).into())
+                    .anchor((0, 0))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((1, 0).into())
+                    .anchor((1, 0))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((2, 0).into())
+                    .anchor((2, 0))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((3, 0).into())
+                    .anchor((3, 0))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((4, 0).into())
+                    .anchor((4, 0))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((0, 3).into())
+                    .anchor((0, 3))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((1, 3).into())
+                    .anchor((1, 3))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((2, 3).into())
+                    .anchor((2, 3))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((3, 3).into())
+                    .anchor((3, 3))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((4, 3).into())
+                    .anchor((4, 3))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((0, 1).into())
+                    .anchor((0, 1))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((0, 2).into())
+                    .anchor((0, 2))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((0, 3).into())
+                    .anchor((0, 3))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((3, 1).into())
+                    .anchor((3, 1))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((3, 2).into())
+                    .anchor((3, 2))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((3, 3).into())
+                    .anchor((3, 3))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
@@ -259,14 +259,14 @@ mod area_tests {
 
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((0, 0).into())
+                    .anchor((0, 0))
                     .dimensions((2, 2))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((2, 2).into())
+                    .anchor((2, 2))
                     .dimensions((2, 2))
                     .build()
                     .unwrap()
@@ -279,28 +279,28 @@ mod area_tests {
 
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((0, 0).into())
+                    .anchor((0, 0))
                     .dimensions((3, 3))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((1, 0).into())
+                    .anchor((1, 0))
                     .dimensions((3, 3))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((1, 1).into())
+                    .anchor((1, 1))
                     .dimensions((3, 3))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((1, 1).into())
+                    .anchor((1, 1))
                     .dimensions((3, 3))
                     .build()
                     .unwrap()
@@ -349,7 +349,7 @@ mod area_tests {
 
         fn test_area() -> Area<i8> {
             AreaBuilder::default()
-                .anchor((-1, -1).into())
+                .anchor((-1, -1))
                 .dimensions((2, 2))
                 .build()
                 .unwrap()
@@ -361,28 +361,28 @@ mod area_tests {
 
             debug_assert!(a.contains(
                 AreaBuilder::default()
-                    .anchor((-1, -1).into())
+                    .anchor((-1, -1))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(a.contains(
                 AreaBuilder::default()
-                    .anchor((0, -1).into())
+                    .anchor((0, -1))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(a.contains(
                 AreaBuilder::default()
-                    .anchor((0, 0).into())
+                    .anchor((0, 0))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(a.contains(
                 AreaBuilder::default()
-                    .anchor((-1, 0).into())
+                    .anchor((-1, 0))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
@@ -395,7 +395,7 @@ mod area_tests {
 
             debug_assert!(a.contains(
                 AreaBuilder::default()
-                    .anchor((-1, -1).into())
+                    .anchor((-1, -1))
                     .dimensions((2, 2))
                     .build()
                     .unwrap()
@@ -408,112 +408,112 @@ mod area_tests {
 
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((-2, -2).into())
+                    .anchor((-2, -2))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((-2, -1).into())
+                    .anchor((-2, -1))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((-2, 0).into())
+                    .anchor((-2, 0))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((-2, 1).into())
+                    .anchor((-2, 1))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((-2, 2).into())
+                    .anchor((-2, 2))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((-1, 2).into())
+                    .anchor((-1, 2))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((0, 2).into())
+                    .anchor((0, 2))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((1, 2).into())
+                    .anchor((1, 2))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((2, 2).into())
+                    .anchor((2, 2))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((2, 1).into())
+                    .anchor((2, 1))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((2, 0).into())
+                    .anchor((2, 0))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((2, -1).into())
+                    .anchor((2, -1))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((2, -2).into())
+                    .anchor((2, -2))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((1, -2).into())
+                    .anchor((1, -2))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((0, -2).into())
+                    .anchor((0, -2))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((-1, -2).into())
+                    .anchor((-1, -2))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
@@ -526,21 +526,21 @@ mod area_tests {
 
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((0, 0).into())
+                    .anchor((0, 0))
                     .dimensions((2, 2))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((2, 2).into())
+                    .anchor((2, 2))
                     .dimensions((2, 2))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((-2, -2).into())
+                    .anchor((-2, -2))
                     .dimensions((2, 2))
                     .build()
                     .unwrap()
@@ -553,42 +553,42 @@ mod area_tests {
 
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((0, 0).into())
+                    .anchor((0, 0))
                     .dimensions((3, 3))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((1, 0).into())
+                    .anchor((1, 0))
                     .dimensions((3, 3))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((-1, -1).into())
+                    .anchor((-1, -1))
                     .dimensions((3, 3))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((-1, 1).into())
+                    .anchor((-1, 1))
                     .dimensions((3, 3))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((-2, 1).into())
+                    .anchor((-2, 1))
                     .dimensions((3, 3))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.contains(
                 AreaBuilder::default()
-                    .anchor((-2, -2).into())
+                    .anchor((-2, -2))
                     .dimensions((3, 3))
                     .build()
                     .unwrap()
@@ -646,7 +646,7 @@ mod area_tests {
 
         fn test_area() -> Area<u8> {
             AreaBuilder::default()
-                .anchor((2, 2).into())
+                .anchor((2, 2))
                 .dimensions((2, 2))
                 .build()
                 .unwrap()
@@ -659,28 +659,28 @@ mod area_tests {
 
             debug_assert!(a.intersects(
                 AreaBuilder::default()
-                    .anchor((2, 2).into())
+                    .anchor((2, 2))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(a.intersects(
                 AreaBuilder::default()
-                    .anchor((2, 3).into())
+                    .anchor((2, 3))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(a.intersects(
                 AreaBuilder::default()
-                    .anchor((3, 2).into())
+                    .anchor((3, 2))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(a.intersects(
                 AreaBuilder::default()
-                    .anchor((3, 3).into())
+                    .anchor((3, 3))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
@@ -694,7 +694,7 @@ mod area_tests {
 
             debug_assert!(a.intersects(
                 AreaBuilder::default()
-                    .anchor((2, 2).into())
+                    .anchor((2, 2))
                     .dimensions((2, 2))
                     .build()
                     .unwrap()
@@ -708,91 +708,91 @@ mod area_tests {
 
             debug_assert!(!a.intersects(
                 AreaBuilder::default()
-                    .anchor((1, 1).into())
+                    .anchor((1, 1))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.intersects(
                 AreaBuilder::default()
-                    .anchor((1, 1).into())
+                    .anchor((1, 1))
                     .dimensions((2, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.intersects(
                 AreaBuilder::default()
-                    .anchor((1, 1).into())
+                    .anchor((1, 1))
                     .dimensions((4, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.intersects(
                 AreaBuilder::default()
-                    .anchor((2, 1).into())
+                    .anchor((2, 1))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.intersects(
                 AreaBuilder::default()
-                    .anchor((3, 1).into())
+                    .anchor((3, 1))
                     .dimensions((2, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.intersects(
                 AreaBuilder::default()
-                    .anchor((4, 1).into())
+                    .anchor((4, 1))
                     .dimensions((2, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.intersects(
                 AreaBuilder::default()
-                    .anchor((1, 1).into())
+                    .anchor((1, 1))
                     .dimensions((1, 2))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.intersects(
                 AreaBuilder::default()
-                    .anchor((1, 2).into())
+                    .anchor((1, 2))
                     .dimensions((1, 2))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.intersects(
                 AreaBuilder::default()
-                    .anchor((1, 3).into())
+                    .anchor((1, 3))
                     .dimensions((1, 2))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.intersects(
                 AreaBuilder::default()
-                    .anchor((1, 4).into())
+                    .anchor((1, 4))
                     .dimensions((1, 2))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.intersects(
                 AreaBuilder::default()
-                    .anchor((2, 4).into())
+                    .anchor((2, 4))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.intersects(
                 AreaBuilder::default()
-                    .anchor((3, 4).into())
+                    .anchor((3, 4))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.intersects(
                 AreaBuilder::default()
-                    .anchor((4, 4).into())
+                    .anchor((4, 4))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
@@ -806,28 +806,28 @@ mod area_tests {
 
             debug_assert!(a.intersects(
                 AreaBuilder::default()
-                    .anchor((1, 1).into())
+                    .anchor((1, 1))
                     .dimensions((2, 2))
                     .build()
                     .unwrap()
             ));
             debug_assert!(a.intersects(
                 AreaBuilder::default()
-                    .anchor((0, 0).into())
+                    .anchor((0, 0))
                     .dimensions((3, 3))
                     .build()
                     .unwrap()
             ));
             debug_assert!(a.intersects(
                 AreaBuilder::default()
-                    .anchor((3, 3).into())
+                    .anchor((3, 3))
                     .dimensions((2, 2))
                     .build()
                     .unwrap()
             ));
             debug_assert!(a.intersects(
                 AreaBuilder::default()
-                    .anchor((1, 3).into())
+                    .anchor((1, 3))
                     .dimensions((2, 2))
                     .build()
                     .unwrap()
@@ -837,12 +837,12 @@ mod area_tests {
         #[test]
         fn regression_test() {
             let a: Area<u8> = AreaBuilder::default()
-                .anchor((3, 3).into())
+                .anchor((3, 3))
                 .dimensions((2, 2))
                 .build()
                 .unwrap();
             let b: Area<u8> = AreaBuilder::default()
-                .anchor((0, 0).into())
+                .anchor((0, 0))
                 .dimensions((6, 6))
                 .build()
                 .unwrap();
@@ -873,7 +873,7 @@ mod area_tests {
 
         fn test_area() -> Area<i8> {
             AreaBuilder::default()
-                .anchor((-1, -1).into())
+                .anchor((-1, -1))
                 .dimensions((2, 2))
                 .build()
                 .unwrap()
@@ -884,28 +884,28 @@ mod area_tests {
             let a = test_area();
             debug_assert!(a.intersects(
                 AreaBuilder::default()
-                    .anchor((-1, -1).into())
+                    .anchor((-1, -1))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(a.intersects(
                 AreaBuilder::default()
-                    .anchor((-1, 0).into())
+                    .anchor((-1, 0))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(a.intersects(
                 AreaBuilder::default()
-                    .anchor((0, 0).into())
+                    .anchor((0, 0))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(a.intersects(
                 AreaBuilder::default()
-                    .anchor((0, -1).into())
+                    .anchor((0, -1))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
@@ -917,7 +917,7 @@ mod area_tests {
             let a = test_area();
             debug_assert!(a.intersects(
                 AreaBuilder::default()
-                    .anchor((-1, -1).into())
+                    .anchor((-1, -1))
                     .dimensions((2, 2))
                     .build()
                     .unwrap()
@@ -929,28 +929,28 @@ mod area_tests {
             let a = test_area();
             debug_assert!(a.intersects(
                 AreaBuilder::default()
-                    .anchor((-2, -2).into())
+                    .anchor((-2, -2))
                     .dimensions((2, 2))
                     .build()
                     .unwrap()
             ));
             debug_assert!(a.intersects(
                 AreaBuilder::default()
-                    .anchor((0, -2).into())
+                    .anchor((0, -2))
                     .dimensions((2, 2))
                     .build()
                     .unwrap()
             ));
             debug_assert!(a.intersects(
                 AreaBuilder::default()
-                    .anchor((0, 0).into())
+                    .anchor((0, 0))
                     .dimensions((2, 2))
                     .build()
                     .unwrap()
             ));
             debug_assert!(a.intersects(
                 AreaBuilder::default()
-                    .anchor((-2, 0).into())
+                    .anchor((-2, 0))
                     .dimensions((2, 2))
                     .build()
                     .unwrap()
@@ -962,35 +962,35 @@ mod area_tests {
             let a = test_area();
             debug_assert!(!a.intersects(
                 AreaBuilder::default()
-                    .anchor((1, -1).into())
+                    .anchor((1, -1))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.intersects(
                 AreaBuilder::default()
-                    .anchor((1, 1).into())
+                    .anchor((1, 1))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.intersects(
                 AreaBuilder::default()
-                    .anchor((-1, 1).into())
+                    .anchor((-1, 1))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.intersects(
                 AreaBuilder::default()
-                    .anchor((-2, 0).into())
+                    .anchor((-2, 0))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
             ));
             debug_assert!(!a.intersects(
                 AreaBuilder::default()
-                    .anchor((-2, -2).into())
+                    .anchor((-2, -2))
                     .dimensions((1, 1))
                     .build()
                     .unwrap()
