@@ -115,25 +115,38 @@ mod qtinner;
 mod traversal;
 mod types;
 
+use crate::{
+    area::{
+        Area,
+        AreaBuilder,
+    },
+    entry::Entry,
+    handle_iter::HandleIter,
+    iter::{
+        IntoIter,
+        Iter,
+        Query,
+        Regions,
+        Values,
+    },
+    point::Point,
+    qtinner::QTInner,
+    traversal::Traversal,
+    types::StoreType,
+};
+use num::PrimInt;
 #[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-use {
-    crate::{
-        area::{Area, AreaBuilder},
-        entry::Entry,
-        handle_iter::HandleIter,
-        iter::{IntoIter, Iter, Query, Regions, Values},
-        point::Point,
-        qtinner::QTInner,
-        traversal::Traversal,
-        types::StoreType,
+use serde::{
+    Deserialize,
+    Serialize,
+};
+use std::{
+    collections::{
+        HashMap,
+        HashSet,
     },
-    num::PrimInt,
-    std::{
-        collections::{HashMap, HashSet},
-        default::Default,
-        hash::Hash,
-    },
+    default::Default,
+    hash::Hash,
 };
 
 /// A data structure for storing and accessing data in 2d space.
