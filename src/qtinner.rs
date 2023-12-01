@@ -12,22 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::{
-    area::Area,
-    entry::Entry,
-    point::Point,
-    types::StoreType,
-};
+use crate::{area::Area, entry::Entry, point::Point, types::StoreType};
 use num::PrimInt;
 #[cfg(feature = "serde")]
-use serde::{
-    Deserialize,
-    Serialize,
-};
-use std::{
-    default::Default,
-    fmt::Debug,
-};
+use serde::{Deserialize, Serialize};
+use std::{default::Default, fmt::Debug};
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, PartialEq, Eq)]
@@ -47,7 +36,7 @@ where
 
     // The subquadrants under this cell. [ne, nw, se, sw]. If there are no subquadrants, this
     // entire list could be None.
-    subquadrants: Option<[Box<QTInner<U>>; 4]>,
+    subquadrants: Option<Box<[QTInner<U>; 4]>>,
 
     // The last-inserted handle. This is a monotonically increasing counter.
     handle_counter: u64,
@@ -97,8 +86,8 @@ where
         &self.kept_handles
     }
 
-    pub fn subquadrants(&self) -> &Option<[Box<Self>; 4]> {
-        &self.subquadrants
+    pub fn subquadrants(&self) -> Option<&[Self; 4]> {
+        self.subquadrants.as_deref()
     }
 
     // Resets this quadtree.
@@ -196,28 +185,28 @@ where
     fn expand_subquadrants_by_pt(&mut self, p: Point<U>) {
         assert!(self.region.contains_pt(p));
 
-        self.subquadrants = Some([
+        self.subquadrants = Some(Box::new([
             // Northeast
-            Box::new(Self::new(
+            Self::new(
                 Point {
                     x: p.x(),
                     y: self.region.anchor().y(),
                 },
                 self.depth - 1,
-            )),
+            ),
             // Northwest
-            Box::new(Self::new(self.region.anchor(), self.depth - 1)),
+            Self::new(self.region.anchor(), self.depth - 1),
             // Southeast
-            Box::new(Self::new(p, self.depth - 1)),
+            Self::new(p, self.depth - 1),
             // Southwest
-            Box::new(Self::new(
+            Self::new(
                 Point {
                     x: self.region.anchor().x(),
                     y: p.y(),
                 },
                 self.depth - 1,
-            )),
-        ]);
+            ),
+        ]));
     }
 
     // Strongly-typed alias for U::one() + U::One()

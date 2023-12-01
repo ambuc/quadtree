@@ -12,17 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::{
-    area::Area,
-    qtinner::QTInner,
-    traversal::Traversal,
-};
+use crate::{area::Area, qtinner::QTInner, traversal::Traversal};
 use num::PrimInt;
-use std::{
-    collections::HashSet,
-    default::Default,
-    iter::FusedIterator,
-};
+use std::{collections::HashSet, default::Default, iter::FusedIterator};
 
 #[derive(Clone, Debug)]
 pub(crate) struct HandleIter<'a, U>
@@ -119,7 +111,7 @@ where
             // Then check the qt_stack.
             if let Some(qt) = self.qt_stack.pop() {
                 // Push my sub quadrants onto the qt_stack too.
-                if let Some(sub_quadrants) = qt.subquadrants().as_ref() {
+                if let Some(sub_quadrants) = qt.subquadrants() {
                     for sub_quadrant in sub_quadrants {
                         if sub_quadrant.region().intersects(self.search_area) {
                             self.qt_stack.push(sub_quadrant)
