@@ -36,7 +36,7 @@ where
 
     // The subquadrants under this cell. [ne, nw, se, sw]. If there are no subquadrants, this
     // entire list could be None.
-    subquadrants: Option<Box<[QTInner<U>; 4]>>,
+    subquadrants: Option<Box<[Self; 4]>>,
 
     // The last-inserted handle. This is a monotonically increasing counter.
     handle_counter: u64,
