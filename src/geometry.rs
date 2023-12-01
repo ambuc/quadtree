@@ -14,18 +14,12 @@
 
 use num::PrimInt;
 #[cfg(feature = "serde")]
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 use std::{
     cmp::PartialOrd,
     default::Default,
     fmt::Debug,
-    ops::{
-        Add,
-        Sub,
-    },
+    ops::{Add, Sub},
 };
 
 /// A rectangular region in 2d space.
@@ -64,12 +58,9 @@ where
 /// Why this custom From<>? Useful for type coercion:
 ///
 /// ```
-/// use quadtree_rs::{area::{Area, AreaBuilder}, point::Point};
+/// use quadtree_rs::{Area, Point};
 ///
-/// let area: Area<_> = AreaBuilder::default()
-///     .anchor(Point{x:1, y:2})
-///     .dimensions((3,4))
-///     .build().unwrap();
+/// let area: Area<_> = Area::new(3,4).at(Point{x:1, y:2});
 /// let (anchor, dims) = area.into();
 /// assert_eq!(anchor, (1,2));
 /// assert_eq!(dims, (3,4));

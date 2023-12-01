@@ -16,13 +16,7 @@ use crate::{
     entry::Entry,
     geometry::Area,
     handle_iter::HandleIter,
-    iter::{
-        IntoIter,
-        Iter,
-        Query,
-        Regions,
-        Values,
-    },
+    iter::{IntoIter, Iter, Query, Regions, Values},
     qtinner::QTInner,
     traversal::Traversal,
     types::StoreType,
@@ -30,15 +24,9 @@ use crate::{
 };
 use num::PrimInt;
 #[cfg(feature = "serde")]
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 use std::{
-    collections::{
-        HashMap,
-        HashSet,
-    },
+    collections::{HashMap, HashSet},
     default::Default,
     hash::Hash,
 };
@@ -91,7 +79,7 @@ where
     /// Creates a new, empty quadtree with some depth.
     /// A quadtree with depth `n` will accept coordinates in the range `[0, 2^n]`.
     /// ```
-    /// use quadtree_rs::{point::Point, Quadtree};
+    /// use quadtree_rs::{Point, Quadtree};
     ///
     /// let qt = Quadtree::<u32, u8>::new(/*depth=*/ 2);
     ///
@@ -115,12 +103,12 @@ where
     /// Creates a new, empty quadtree with some depth and an explicit anchor.
     ///
     /// The anchor of a rectangular region is its upper-left coordinate. The
-    /// anchor argument is of type [`point::Point`], and can either be
+    /// anchor argument is of type [`Point`], and can either be
     /// explicit (`Point {x: 2, y: 4}`) or implicit (`(2, 4).into()`).
     ///
-    /// [`point::Point`]: point/struct.Point.html
+    /// [`Point`]: point/struct.Point.html
     /// ```
-    /// use quadtree_rs::{point::Point, Quadtree};
+    /// use quadtree_rs::{Point, Quadtree};
     ///
     /// let anchor = Point {x: 2, y: 4};
     /// let depth = 3_usize;
@@ -180,7 +168,7 @@ where
     /// If the region is too large for, or doesn't overlap with, the region which this quadtree
     /// represents, returns `None`.
     /// ```
-    /// use quadtree_rs::{area::Area, Quadtree};
+    /// use quadtree_rs::{Area, Quadtree};
     ///
     /// let mut qt = Quadtree::<u32, i8>::new(8);
     ///
@@ -210,7 +198,7 @@ where
     /// the point still has to fit within the region.)
     ///
     /// ```
-    /// use quadtree_rs::{point::Point, Quadtree};
+    /// use quadtree_rs::{Point, Quadtree};
     ///
     /// let mut qt = Quadtree::<u32, i8>::new(2);
     ///
@@ -231,7 +219,7 @@ where
     /// fail and return `None`.
     ///
     /// ```
-    /// use quadtree_rs::{area::Area, Quadtree};
+    /// use quadtree_rs::{Area, Quadtree};
     ///
     /// let mut qt = Quadtree::<u32, f32>::new(4);
     ///
@@ -252,7 +240,7 @@ where
     /// associated [`Entry<U, V>`] struct.
     ///
     /// ```
-    /// use quadtree_rs::{area::Area, Quadtree};
+    /// use quadtree_rs::{Area, Quadtree};
     ///
     /// let mut qt = Quadtree::<u32, f32>::new(4);
     ///
@@ -276,7 +264,7 @@ where
     /// Returns an iterator over [`&Entry<U, V>`] structs representing values
     /// within the query region.
     /// ```
-    /// use quadtree_rs::{area::Area, Quadtree};
+    /// use quadtree_rs::{Area, Quadtree};
     ///
     /// //   0123456
     /// // 0 ░░░░░░░
@@ -344,7 +332,7 @@ where
     /// quadtree which intersecting the described region.
     ///
     /// ```
-    /// use quadtree_rs::{area::Area, Quadtree};
+    /// use quadtree_rs::{Area, Quadtree};
     ///
     /// let mut qt = Quadtree::<u8, bool>::new(3);
     ///
@@ -399,7 +387,7 @@ where
     /// Along the way, consumed [`Entry<U, V>`] entries are collected and returned in an iterator
     /// [`IntoIter<U, V>`].
     /// ```
-    /// use quadtree_rs::{area::Area, Quadtree};
+    /// use quadtree_rs::{Area, Quadtree};
     ///
     /// let mut qt = Quadtree::<u32, f64>::new(4);
     ///

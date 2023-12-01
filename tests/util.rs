@@ -1,15 +1,6 @@
-use num::{
-    cast::FromPrimitive,
-    PrimInt,
-};
+use num::{cast::FromPrimitive, PrimInt};
 use quadtree_rs::Area;
-use std::{
-    collections::HashSet,
-    default::Default,
-    fmt::Debug,
-    hash::Hash,
-    iter::FromIterator,
-};
+use std::{collections::HashSet, default::Default, fmt::Debug, hash::Hash, iter::FromIterator};
 
 // Inspired by google/googletest's UnorderedElementsAre().
 // https://github.com/google/googletest/blob/master/googlemock/docs/CheatSheet.md#container-matchers
