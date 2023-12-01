@@ -13,10 +13,10 @@
 // limitations under the License.
 
 use crate::{
-    area::Area,
     entry::Entry,
-    point::Point,
     types::StoreType,
+    Area,
+    Point,
 };
 use num::PrimInt;
 #[cfg(feature = "serde")]
@@ -200,8 +200,8 @@ where
             // Northeast
             Self::new(
                 Point {
-                    x: p.x(),
-                    y: self.region.anchor().y(),
+                    x: p.x,
+                    y: self.region.anchor().y,
                 },
                 self.depth - 1,
             ),
@@ -212,8 +212,8 @@ where
             // Southwest
             Self::new(
                 Point {
-                    x: self.region.anchor().x(),
-                    y: p.y(),
+                    x: self.region.anchor().x,
+                    y: p.y,
                 },
                 self.depth - 1,
             ),

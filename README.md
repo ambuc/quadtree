@@ -14,7 +14,7 @@ For documentation, see [docs.rs/quadtree_rs](https://docs.rs/quadtree_rs/).
 # Quick Start
 
 ```rust
-use quadtree_rs::{area::AreaBuilder, point::Point, Quadtree};
+use quadtree_rs::{Area, Point, Quadtree};
 
 // Instantiate a new quadtree which associates String values with u64
 // coordinates.
@@ -24,17 +24,11 @@ let mut qt = Quadtree::<u64, String>::new(/*depth=*/4);
 assert_eq!(qt.width(), 16);
 
 // Associate the value "foo" with a rectangle of size 2x1, anchored at (0, 0).
-let region_a = AreaBuilder::default()
-    .anchor(Point {x: 0, y: 0})
-    .dimensions((2, 1))
-    .build().unwrap();
+let region_a = Area::new(2, 1).at(Point {x: 0, y: 0});
 qt.insert(region_a, "foo".to_string());
 
 // Query over a region of size 2x2, anchored at (1, 0).
-let region_b = AreaBuilder::default()
-    .anchor(Point {x: 1, y: 0})
-    .dimensions((2, 2))
-    .build().unwrap();
+let region_b = Area::new(2, 2).at(Point {x: 1, y: 0});
 let mut query = qt.query(region_b);
 
 // The query region (region_b) intersects the region "foo" is associated with

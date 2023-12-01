@@ -17,7 +17,7 @@
 //!
 //! # Quick Start
 //! ```
-//! use quadtree_rs::{area::Area, Quadtree};
+//! use quadtree_rs::{Area, Quadtree};
 //!
 //! // Instantiate a new quadtree which associates String values with u64 coordinates.
 //! let mut qt = Quadtree::<u64, String>::new(/*depth=*/4);
@@ -39,7 +39,7 @@
 //!
 //! # Implementation
 //! ```
-//! use quadtree_rs::{area::Area, point::Point, Quadtree};
+//! use quadtree_rs::{Area, Point, Quadtree};
 //!
 //! let mut qt = Quadtree::<u8, char>::new(2);
 //!
@@ -101,10 +101,9 @@
 // For extra-pedantic documentation tests.
 #![doc(test(attr(deny(warnings))))]
 
-pub mod area;
 pub mod entry;
+pub mod geometry;
 pub mod iter;
-pub mod point;
 
 mod handle_iter;
 mod qtinner;
@@ -112,9 +111,5 @@ mod quadtree;
 mod traversal;
 mod types;
 
-pub use area::{
-    Area,
-    AreaBuilder,
-};
-pub use point::Point;
+pub use geometry::{Area, Point};
 pub use quadtree::Quadtree;

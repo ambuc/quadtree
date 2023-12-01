@@ -13,13 +13,13 @@
 // limitations under the License.
 
 mod point_tests {
-    use quadtree_rs::point::Point;
+    use quadtree_rs::Point;
 
     #[test]
     fn builder() {
         let p: Point<i8> = (1, 2).into();
-        debug_assert_eq!(p.x(), 1);
-        debug_assert_eq!(p.y(), 2);
+        debug_assert_eq!(p.x, 1);
+        debug_assert_eq!(p.y, 2);
     }
 
     #[test]

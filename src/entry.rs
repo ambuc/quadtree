@@ -15,16 +15,10 @@
 //! A view into a single entry in the Quadtree.
 // Influenced by https://doc.rust-lang.org/std/collections/hash_map/enum.Entry.html.
 
-use crate::{
-    area::Area,
-    point::Point,
-};
+use crate::{geometry::Area, Point};
 use num::PrimInt;
 #[cfg(feature = "serde")]
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 use std::default::Default;
 
 /// A region/value association in the [`Quadtree`].
@@ -37,7 +31,7 @@ use std::default::Default;
 /// [`.delete()`]: ../struct.Quadtree.html#method.delete
 /// ```
 /// use quadtree_rs::{
-///   area::Area,
+///   Area,
 ///   Quadtree,
 /// };
 ///
@@ -55,8 +49,8 @@ use std::default::Default;
 ///
 /// let entry = returned_entries.next().unwrap();
 ///
-/// assert_eq!(entry.anchor().x(), 1);
-/// assert_eq!(entry.anchor().y(), 1);
+/// assert_eq!(entry.anchor().x, 1);
+/// assert_eq!(entry.anchor().y, 1);
 /// assert_eq!(entry.width(), 3);
 /// assert_eq!(entry.height(), 2);
 ///

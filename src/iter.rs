@@ -13,8 +13,8 @@
 // limitations under the License.
 
 use crate::{
-    area::Area,
     entry::Entry,
+    geometry::Area,
     handle_iter::HandleIter,
     qtinner::QTInner,
     traversal::Traversal,

@@ -36,8 +36,8 @@ mod query_tests {
         let entry = iter1.next().unwrap();
         let entry_area = entry.area();
 
-        debug_assert_eq!(entry_area.anchor().x(), 0);
-        debug_assert_eq!(entry_area.anchor().y(), 0);
+        debug_assert_eq!(entry_area.anchor().x, 0);
+        debug_assert_eq!(entry_area.anchor().y, 0);
         debug_assert_eq!(entry_area.width(), 1);
         debug_assert_eq!(entry_area.height(), 1);
 

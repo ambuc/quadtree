@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::area::Area;
+use crate::geometry::Area;
 use num::PrimInt;
 use std::default::Default;
 
