@@ -16,8 +16,8 @@
 // Influenced by https://doc.rust-lang.org/std/collections/hash_map/enum.Entry.html.
 
 use crate::{
-    area::Area,
-    point::Point,
+    geometry::Area,
+    Point,
 };
 use num::PrimInt;
 #[cfg(feature = "serde")]

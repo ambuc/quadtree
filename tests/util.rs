@@ -2,7 +2,7 @@ use num::{
     cast::FromPrimitive,
     PrimInt,
 };
-use quadtree_rs::area::AreaBuilder;
+use quadtree_rs::Area;
 use std::{
     collections::HashSet,
     default::Default,
@@ -43,12 +43,7 @@ where
         print!("│");
         for j in 0..qt.height() {
             match qt
-                .query(
-                    AreaBuilder::default()
-                        .anchor((U::from_usize(i).unwrap(), U::from_usize(j).unwrap()))
-                        .build()
-                        .unwrap(),
-                )
+                .query(Area::unit().at((U::from_usize(i).unwrap(), U::from_usize(j).unwrap())))
                 .count()
             {
                 0 => print!(" "),

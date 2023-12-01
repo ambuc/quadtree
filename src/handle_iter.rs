@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use crate::{
-    area::Area,
+    geometry::Area,
     qtinner::QTInner,
     traversal::Traversal,
 };

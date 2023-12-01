@@ -12,10 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! A rectangular region in the tree.
-
-use crate::point;
-use derive_builder::Builder;
 use num::PrimInt;
 #[cfg(feature = "serde")]
 use serde::{
@@ -26,6 +22,10 @@ use std::{
     cmp::PartialOrd,
     default::Default,
     fmt::Debug,
+    ops::{
+        Add,
+        Sub,
+    },
 };
 
 /// A rectangular region in 2d space.
@@ -37,33 +37,13 @@ use std::{
 ///   quadrant.
 ///   - The width and height must both be positive and nonzero.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(PartialEq, Eq, Clone, Copy, Hash, Builder)]
-#[builder(build_fn(validate = "Self::validate"))]
+#[derive(PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Area<U>
 where
     U: PrimInt + Default + PartialOrd,
 {
-    #[builder(setter(into))]
-    anchor: point::Point<U>,
-    #[builder(default = "(U::one(), U::one())")]
+    anchor: Point<U>,
     dimensions: (U, U),
-}
-
-impl<U> AreaBuilder<U>
-where
-    U: PrimInt + Default + PartialOrd,
-{
-    fn validate(&self) -> Result<(), String> {
-        if let Some((w, h)) = self.dimensions {
-            if w <= U::zero() {
-                return Err("Areas may not have nonpositive widths.".to_string());
-            }
-            if h <= U::zero() {
-                return Err("Areas may not have nonpositive heights.".to_string());
-            }
-        }
-        Ok(())
-    }
 }
 
 impl<U> Debug for Area<U>
@@ -107,8 +87,36 @@ impl<U> Area<U>
 where
     U: PrimInt + Default,
 {
+    /// Construct a new [`Area`].
+    /// # Panics
+    /// Panics if either width or height is negative.
+    pub fn new(width: U, height: U) -> Self {
+        assert!(width > U::zero() && height > U::zero());
+        Self {
+            anchor: (U::one(), U::one()).into(),
+            dimensions: (width, height),
+        }
+    }
+
+    /// Unit area with width and height of one.
+    pub fn unit() -> Self {
+        Self::new(U::one(), U::one())
+    }
+
+    /// Returns a new area with it's top-left point set to `anchor`
+    pub fn at(self, anchor: impl Into<Point<U>>) -> Self {
+        let Self {
+            anchor: _,
+            dimensions,
+        } = self;
+        Self {
+            anchor: anchor.into(),
+            dimensions,
+        }
+    }
+
     /// The top-left coordinate (anchor) of the region.
-    pub fn anchor(&self) -> point::Point<U> {
+    pub fn anchor(&self) -> Point<U> {
         self.anchor
     }
 
@@ -124,22 +132,22 @@ where
 
     /// The coordinate of the top edge of the region.
     pub fn top_edge(&self) -> U {
-        self.anchor().y()
+        self.anchor().y
     }
 
     /// The coordinate of the bottom edge of the region.
     pub fn bottom_edge(&self) -> U {
-        self.anchor().y() + self.height()
+        self.anchor().y + self.height()
     }
 
     /// The coordinate of the left edge of the region.
     pub fn left_edge(&self) -> U {
-        self.anchor().x()
+        self.anchor().x
     }
 
     /// The coordinate of the right edge of the region.
     pub fn right_edge(&self) -> U {
-        self.anchor().x() + self.width()
+        self.anchor().x + self.width()
     }
 
     /// Whether or not an area intersects another area.
@@ -161,21 +169,15 @@ where
     }
 
     /// Whether or not an area contains a point.
-    pub fn contains_pt(self, pt: impl Into<point::Point<U>>) -> bool {
-        self.contains(
-            AreaBuilder::default()
-                .anchor(pt)
-                .dimensions((U::one(), U::one()))
-                .build()
-                .expect("Unexpected error in Area::contains_pt."),
-        )
+    pub fn contains_pt(self, pt: impl Into<Point<U>>) -> bool {
+        self.contains(Self::unit().at(pt))
     }
 
     // NB: The center point is an integer and thus rounded, i.e. a 2x2 region at (0,0) has a center
     // at (0,0), when in reality the center would be at (0.5, 0.5).
-    pub(crate) fn center_pt(&self) -> point::Point<U> {
+    pub(crate) fn center_pt(&self) -> Point<U> {
         self.anchor()
-            + point::Point {
+            + Point {
                 x: self.width() / Self::two(),
                 y: self.height() / Self::two(),
             }
@@ -193,24 +195,90 @@ where
 
 impl<P, U> From<(P, (U, U))> for Area<U>
 where
-    P: Into<point::Point<U>>,
+    P: Into<Point<U>>,
     U: PrimInt + Default + PartialOrd,
 {
-    fn from((anchor, dimensions): (P, (U, U))) -> Self {
-        AreaBuilder::default()
-            .anchor(anchor)
-            .dimensions(dimensions)
-            .build()
-            .unwrap()
+    fn from((anchor, (width, height)): (P, (U, U))) -> Self {
+        Self::new(width, height).at(anchor)
     }
 }
 
 impl<P, U> From<P> for Area<U>
 where
-    P: Into<point::Point<U>>,
+    P: Into<Point<U>>,
     U: PrimInt + Default + PartialOrd,
 {
     fn from(anchor: P) -> Self {
-        AreaBuilder::default().anchor(anchor).build().unwrap()
+        Self::unit().at(anchor)
+    }
+}
+
+/// A type representing a point in space. Should be passed by value.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(PartialEq, Eq, Clone, Copy, Hash)]
+pub struct Point<U> {
+    pub x: U, // The x-coordinate of the point.
+    pub y: U, // The y-coordinate of the point.
+}
+
+impl<U> Debug for Point<U>
+where
+    U: PrimInt + Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}x{:?}", self.x, self.y)
+    }
+}
+
+impl<U> From<(U, U)> for Point<U>
+where
+    U: PrimInt,
+{
+    fn from((x, y): (U, U)) -> Self {
+        Self { x, y }
+    }
+}
+
+impl<U> From<&(U, U)> for Point<U>
+where
+    U: PrimInt,
+{
+    fn from((x, y): &(U, U)) -> Self {
+        Self { x: *x, y: *y }
+    }
+}
+
+impl<U> From<Point<U>> for (U, U)
+where
+    U: PrimInt,
+{
+    fn from(value: Point<U>) -> Self {
+        (value.x, value.y)
+    }
+}
+
+impl<U> Add for Point<U>
+where
+    U: PrimInt,
+{
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
+        Self {
+            x: self.x.saturating_add(other.x),
+            y: self.y.saturating_add(other.y),
+        }
+    }
+}
+
+impl<U> Sub for Point<U>
+where
+    U: PrimInt,
+{
+    type Output = Self;
+    fn sub(self, other: Self) -> Self {
+        Self {
+            x: self.x.saturating_sub(other.x),
+            y: self.y.saturating_sub(other.y),
+        }
     }
 }

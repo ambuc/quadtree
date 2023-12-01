@@ -13,11 +13,8 @@
 // limitations under the License.
 
 use crate::{
-    area::{
-        Area,
-        AreaBuilder,
-    },
     entry::Entry,
+    geometry::Area,
     handle_iter::HandleIter,
     iter::{
         IntoIter,
@@ -26,10 +23,10 @@ use crate::{
         Regions,
         Values,
     },
-    point::Point,
     qtinner::QTInner,
     traversal::Traversal,
     types::StoreType,
+    Point,
 };
 use num::PrimInt;
 #[cfg(feature = "serde")]
@@ -224,10 +221,7 @@ where
     /// [`Area`]: area/struct.Area.html
     /// [`Point`]: point/struct.Point.html
     pub fn insert_pt(&mut self, point: Point<U>, val: V) -> Option<u64> {
-        if let Ok(area) = AreaBuilder::default().anchor(point).build() {
-            return self.insert(area, val);
-        }
-        None
+        self.insert(Area::from(point), val)
     }
 
     /// Given the handle from an [`.insert()`] operation, provides read-only

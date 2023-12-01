@@ -101,10 +101,9 @@
 // For extra-pedantic documentation tests.
 #![doc(test(attr(deny(warnings))))]
 
-pub mod area;
 pub mod entry;
+pub mod geometry;
 pub mod iter;
-pub mod point;
 
 mod handle_iter;
 mod qtinner;
@@ -112,9 +111,8 @@ mod quadtree;
 mod traversal;
 mod types;
 
-pub use area::{
+pub use geometry::{
     Area,
-    AreaBuilder,
+    Point,
 };
-pub use point::Point;
 pub use quadtree::Quadtree;

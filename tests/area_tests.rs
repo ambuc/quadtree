@@ -13,10 +13,7 @@
 // limitations under the License.
 
 mod area_tests {
-    use quadtree_rs::area::{
-        Area,
-        AreaBuilder,
-    };
+    use quadtree_rs::geometry::Area;
 
     mod builder {
         use super::*;
@@ -29,19 +26,16 @@ mod area_tests {
     }
 
     #[test]
+    #[should_panic]
     fn bad_dims() {
-        for dims in [(-1, 4), (1, -4), (0, 4), (1, 0)].iter() {
-            debug_assert!(AreaBuilder::default()
-                .anchor((0, 0))
-                .dimensions(*dims)
-                .build()
-                .is_err());
+        for (h, w) in [(-1, 4), (1, -4), (0, 4), (1, 0)] {
+            Area::new(h, w);
         }
     }
 
     #[test]
     fn point_in_all_quadrants() {
-        for p in [(1, 1), (-1, 1), (1, -1), (-1, -1)].iter() {
+        for p in [(1, 1), (-1, 1), (1, -1), (-1, -1)] {
             let _a: Area<i8> = p.into();
         }
     }

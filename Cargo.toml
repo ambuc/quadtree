@@ -27,8 +27,7 @@ maintenance = { status = "actively-developed" }
 
 [dependencies]
 num = "0.2"
-derive_builder = "0.7"
-serde = { version = "1.0.152", features = ["derive"], optional=true}
+serde = { version = "1.0.152", features = ["derive"], optional = true }
 
 [features]
 serde = ["dep:serde"]
@@ -39,5 +38,9 @@ serde = ["dep:serde"]
 [dev-dependencies.cargo-husky]
 version = "1"
 default-features = false # Disable features which are enabled by default
-features = ["precommit-hook", "run-cargo-test", "run-cargo-clippy", "run-cargo-fmt"]
-
+features = [
+    "precommit-hook",
+    "run-cargo-test",
+    "run-cargo-clippy",
+    "run-cargo-fmt",
+]
