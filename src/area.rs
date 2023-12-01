@@ -15,6 +15,7 @@
 //! A rectangular region in the tree.
 
 use crate::point;
+use derive_builder::Builder;
 use num::PrimInt;
 #[cfg(feature = "serde")]
 use serde::{
