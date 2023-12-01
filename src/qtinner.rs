@@ -12,11 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::{area::Area, entry::Entry, point::Point, types::StoreType};
+use crate::{
+    area::Area,
+    entry::Entry,
+    point::Point,
+    types::StoreType,
+};
 use num::PrimInt;
 #[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-use std::{default::Default, fmt::Debug};
+use serde::{
+    Deserialize,
+    Serialize,
+};
+use std::{
+    default::Default,
+    fmt::Debug,
+};
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, PartialEq, Eq)]
