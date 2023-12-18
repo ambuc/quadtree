@@ -29,9 +29,11 @@ maintenance = { status = "actively-developed" }
 num = "0.2"
 derive_builder = "0.7"
 serde = { version = "1.0.152", features = ["derive"], optional=true}
+bevy = { version = "0.12.1", optional = true }
 
 [features]
 serde = ["dep:serde"]
+bevy = ["dep:bevy"]
 
 
 # Run cargo tests and cargo-clippy as a precommit-hook, per the example in
